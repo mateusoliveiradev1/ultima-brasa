@@ -1,0 +1,16 @@
+{
+  "name": "ultima-brasa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Última Brasa — roguelike incremental 2.5D pós-apocalíptico + Forja de Efeitos",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@fontsource/bebas-neue": "^5.2.5",
+    "@fontsource/rajdhani": "^5.2.5",
+    "esbuild": "^0.25.0",
+    "three": "^0.186.1"
+  }
+}

@@ -1,0 +1,7 @@
+:root{
+  --void:#0a0708;--soot:#14100f;--char:#221916;--umber:#3a241b;--rust:#8c3b1c;--rustLight:#c2562a;
+  --ember:#ff7a2a;--glow:#ffb347;--flame:#ffd98a;--hot:#fff2c8;--ash:#b9ada0;--bone:#e9dcc6;--toxic:#42e0b4;--blood:#c0322a;
+}
+*{-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--void);color:var(--bone);overflow:hidden;font-family:'Rajdhani',sans-serif}
+#app{position:fixed;inset:0}
