@@ -5,10 +5,10 @@ export const CS = 22; // tamanho do chunk (unidades de mundo)
 const EMPTY = [];
 const key = (cx, cz) => cx * 65536 + cz;
 // caixa de colisão no chão por tipo: [meia-largura, z-atrás, z-frente]
-const BOX = { ruin: [2.3, 1.4, 0.2], wreck: [1.7, 0.7, 0.1], pillar: [0.75, 0.6, 0.1], tree: [0.45, 0.4, 0.1], barrel: [0.5, 0.4, 0.15] };
+const BOX = { ruin: [2.3, 1.4, 0.2], wreck: [1.7, 0.7, 0.1], pillar: [0.75, 0.6, 0.1], tree: [0.45, 0.4, 0.1], barrel: [0.5, 0.4, 0.15], spire: [1.0, 0.6, 0.1], crystal: [0.75, 0.4, 0.1] };
 
 export class World {
-  constructor(props) { this.P = props; this.chunks = new Map(); this.boxIdx = new Map(); }
+  constructor(props, cfg) { this.P = props; this.cfg = cfg; this.chunks = new Map(); this.boxIdx = new Map(); }
 
   chunk(cx, cz) {
     const k = key(cx, cz); let c = this.chunks.get(k);
@@ -24,13 +24,13 @@ export class World {
     const free = (x, z, d) => Math.hypot(x, z) > 11 && list.every((p) => Math.hypot(p.x - x, p.z - z) > d);
     const add = (type, x, z) => {
       const arr = P[type], v = (rnd() * arr.length) | 0, def = arr[v], bx = BOX[type];
-      const p = { type, v, x, z, def, a: 1, flip: rnd() < 0.5, fire: type === 'barrel' && rnd() < 0.75, box: null, ph: rnd() * 6.28 };
+      const p = { type, v, x, z, def, a: 1, flip: rnd() < 0.5, fire: type === 'barrel' && rnd() < 0.75, glow: def.glow || null, box: null, ph: rnd() * 6.28 };
       if (bx) { p.box = [x - bx[0], x + bx[0], z - bx[1], z + bx[2]]; this.addBox(p.box); }
       list.push(p);
     };
-    const nR = (rnd() < 0.5 ? 1 : 0) + (rnd() < 0.18 ? 1 : 0);
+    const nR = (rnd() < this.cfg.ruinP ? 1 : 0) + (rnd() < this.cfg.ruinP * 0.35 ? 1 : 0);
     for (let i = 0; i < nR; i++) for (let t = 0; t < 8; t++) { const x = x0 + 4 + rnd() * (CS - 8), z = z0 + 4 + rnd() * (CS - 8); if (free(x, z, 7)) { add('ruin', x, z); break; } }
-    const n = 8 + ((rnd() * 6) | 0), W = [['rubble', 0.28], ['tree', 0.15], ['wreck', 0.1], ['pillar', 0.12], ['sign', 0.07], ['barrel', 0.28]];
+    const n = 8 + ((rnd() * 6) | 0), W = this.cfg.props;
     for (let i = 0; i < n; i++) {
       let r = rnd(), type = 'rubble'; for (const [t, w] of W) { if (r < w) { type = t; break; } r -= w; }
       for (let t = 0; t < 6; t++) { const x = x0 + 1 + rnd() * (CS - 2), z = z0 + 1 + rnd() * (CS - 2); if (free(x, z, 3.2)) { add(type, x, z); break; } }
