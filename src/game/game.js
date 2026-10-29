@@ -92,7 +92,7 @@ export class Game {
     this.cam = { x: 0, z: 0, shake: 0, sx: 0, sz: 0 };
     this.ash = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), s: 0.5 + rnd(), v: 0.02 + rnd() * 0.05, w: rnd() * TAU }));
     this.qLight = cv(8); this.qFx = cv(8); this.qG1 = cv(8); this.qG2 = cv(8);
-    this.bloom = true; this.fpsAvg = 16; this.quality = 1;
+    this.bloom = true; this.fpsAvg = 16; this.quality = 1; this.opts = { shake: 1, numbers: true }; this.camHub = { x: 2.4, z: 0.5 };
     this.resize();
     this.enterHub({ skill: 'lamina', biome: 'ruinas' });
   }
@@ -114,7 +114,7 @@ export class Game {
     this.cam.x = 0; this.cam.z = 0; this.cam.shake = 0;
     this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = xpNeed(1); this.pending = 0; this.scrapRun = 0; this.scrapPieces = 0;
     this.sk = {}; this.skillLv = {}; this.pass = {}; PASSIVE_IDS.forEach((k) => (this.pass[k] = 0));
-    this.hitFx = 0; this.hitSfx = 0; this.deathSfx = 0; this.spawnAcc = 0; this.packT = 22; this.bruteT = 105; this.boss = null; this.bossSpawned = false; this.bossDead = false; this.dying = 0; this.over = false; this.slow = 1; this.hurtFlash = 0; this.rerolls = 0; this.hubT = 0; this.lvlQueued = false; this.combo = 0; this.comboT = 0; this.maxCombo = 0; this.elitesKilled = 0; this.pools = []; this.chests = 0; this.eventT = 70; this.event = null; this.revives = 0; this.endless = false; this.bossN = 0; this.tideT = 0; this.bossAt = BOSS_TIME; this.eliteT = 55;
+    this.hitFx = 0; this.hitSfx = 0; this.deathSfx = 0; this.spawnAcc = 0; this.packT = 22; this.bruteT = 105; this.boss = null; this.bossSpawned = false; this.bossDead = false; this.dying = 0; this.over = false; this.slow = 1; this.hurtFlash = 0; this.rerolls = 0; this.hubT = 0; this.lvlQueued = false; this.combo = 0; this.comboT = 0; this.maxCombo = 0; this.elitesKilled = 0; this.pools = []; this.chests = 0; this.eventT = 70; this.event = null; this.revives = 0; this.endless = false; this.bossN = 0; this.tideT = 0; this.bossAt = BOSS_TIME; this.eliteT = 55; this.rings = []; this.ghosts = []; this.ghostT = 0; this.flashA = 0; this.flashCol = '#7dffcf'; this.hitStop = 0; this.trailT = 0;
   }
   enterHub(o) {
     this.reset(); this.setBiome(o.biome || this.biomeId || 'ruinas'); this.mode = 'hub'; this.paused = false; this.hubSkill = o.skill || 'lamina';
@@ -180,7 +180,7 @@ export class Game {
     e.hp -= d; e.flash = 0.1;
     if (o.kb && !e.d.boss) { const k = o.kb * (e.d.heavy ? 0.25 : 1); e.kx += (o.kdx ?? 0) * k; e.kz += (o.kdz ?? 0) * k; }
     if (o.text !== false) this.floatText(e.x + (rnd() - 0.5) * 0.6, (e.d.fly ? e.hover : 0) + 1.5 * (e.sc || 1) * (e.d.boss ? 2 : 1), e.z, Math.round(d), crit ? '#fff2c8' : '#ffb347', crit);
-    if (crit && this.hitFx < 6) { this.hitFx++; this.spawnImpact(e.x, e.z, 0.9); }
+    if (crit && this.hitFx < 6) { this.hitFx++; this.spawnImpact(e.x, e.z, 0.9); if (this.mode === 'run') { this.hitStop = Math.max(this.hitStop, e.d.boss ? 0.02 : 0.035); this.cam.shake = Math.max(this.cam.shake, 0.12); } }
     if (this.hitSfx < 3) { this.hitSfx++; A.sfx(pick(['hit1', 'hit2', 'hit3']), { vol: crit ? 0.5 : 0.28, pan: clamp((e.x - this.cam.x) / 12, -1, 1) }); }
     if (e.hp <= 0) this.killEnemy(e);
   }
@@ -197,7 +197,7 @@ export class Game {
     }
     if (e.elite) { this.elitesKilled++; this.gems.push({ x: e.x, z: e.z, v: 1, tier: 'chest', vx: 0, vz: 0, pull: false, t: 0, bob: 0 }); this.hooks.onWarn?.('Elite derrotado — baú!'); A.sfx('bell', { vol: 0.35, rate: 1.4 }); }
     if (rnd() < (d.heavy ? 0.25 : 0.006) && !d.boss) this.gems.push({ x: e.x, z: e.z, v: 0.25, tier: 'heart', vx: 0, vz: 0, pull: false, t: 0, bob: 0 });
-    const big = d.heavy ? 2.2 : 1;
+    const big = d.heavy ? 2.2 : 1; if (d.heavy && !d.boss) { this.ring(e.x, e.z, 2.6, '#ff9a54', 0.45, 0.12); this.hitStop = Math.max(this.hitStop, 0.04); } if (e.elite) this.ring(e.x, e.z, 5, '#ffc24a', 0.7, 0.16);
     this.addSpark({ tex: 'smoke', x: e.x, y: 0.6, z: e.z, vx: 0, vy: 0.8, vz: 0, life: 0.7, s0: 1.2 * big, s1: 2.6 * big, a: 0.55, add: false, rot: rnd() * TAU });
     for (let i = 0; i < (d.heavy ? 8 : 3); i++) this.addSpark({ tex: 'spark', x: e.x, y: 0.8, z: e.z, vx: (rnd() - 0.5) * 7, vy: 2 + rnd() * 4, vz: (rnd() - 0.5) * 7, life: 0.5, s0: 0.5, s1: 0.1, a: 1, add: true, g: 12, rot: rnd() * TAU, stretch: true });
     if (this.decals.length < 90) this.decals.push({ x: e.x, z: e.z, r: 0.9 * big * (0.8 + rnd() * 0.5), rot: rnd() * TAU, a: 0.6 });
@@ -206,13 +206,15 @@ export class Game {
     else if (d.heavy) { this.cam.shake = Math.max(this.cam.shake, 0.3); }
   }
   addSpark(s) { if (this.sparks.length < 260) { s.age = 0; this.sparks.push(s); } }
-  floatText(x, y, z, txt, col, crit) { if (this.texts.length > 44) this.texts.shift(); this.texts.push({ x, y, z, txt: String(txt), col, crit, t: 0, life: crit ? 0.9 : 0.65, vx: (rnd() - 0.5) * 0.8 }); }
+  ring(x, z, r, col, life = 0.6, w = 0.12) { if (this.rings.length > 14) this.rings.shift(); this.rings.push({ x, z, r, col, life, w, t: 0 }); }
+  burst(x, z, n, y = 0.8, sp = 8) { for (let i = 0; i < n; i++) { const a = rnd() * TAU, v = sp * (0.4 + rnd() * 0.6); this.addSpark({ tex: 'spark', x, y, z, vx: Math.cos(a) * v, vy: 2 + rnd() * 5, vz: Math.sin(a) * v, life: 0.6 + rnd() * 0.3, s0: 0.5, s1: 0.1, a: 1, add: true, g: 12, rot: rnd() * TAU, stretch: true }); } }
+  floatText(x, y, z, txt, col, crit) { if (!this.opts.numbers && !crit && this.mode === 'run') return; if (this.texts.length > 44) this.texts.shift(); this.texts.push({ x, y, z, txt: String(txt), col, crit, t: 0, life: crit ? 0.9 : 0.65, vx: (rnd() - 0.5) * 0.8 }); }
   areaDamage(x, z, r, dmg, o = {}) {
     for (const e of this.enemies) { if (!this.ok(e)) continue; const d = Math.hypot(e.x - x, e.z - z); if (d < r + e.r) { const k = d || 1; this.hurt(e, dmg, { ...o, kdx: (e.x - x) / k, kdz: (e.z - z) / k }); } }
   }
   hurtHero(dmg, srcx, srcz, o = {}) {
     const h = this.hero; if (h.iframes > 0 || h.dashT > 0 || this.over || this.mode !== 'run' || this.dying > 0) return;
-    dmg = Math.max(1, dmg - this.stats.armor); h.hp -= dmg; h.iframes = 0.55; h.hurt = 0.25; this.hurtFlash = 1; this.cam.shake = Math.max(this.cam.shake, 0.45); this.combo = Math.floor(this.combo * 0.5);
+    dmg = Math.max(1, dmg - this.stats.armor); h.hp -= dmg; h.iframes = 0.55; h.hurt = 0.25; this.hurtFlash = 1; this.hitStop = Math.max(this.hitStop, 0.06); this.ring(h.x, h.z, 3, '#ff4a3a', 0.45, 0.14); this.burst(h.x, h.z, 8, 1, 6); this.cam.shake = Math.max(this.cam.shake, 0.45); this.combo = Math.floor(this.combo * 0.5);
     if (o.slow) h.slowT = 1.6;
     this.floatText(h.x, 2.2, h.z, '-' + Math.round(dmg), '#ff5a4a', false); A.synth('hurt', { vol: 0.5 }); A.sfx('punch', { vol: 0.5, rate: 0.8 });
     const k = Math.hypot(h.x - srcx, h.z - srcz) || 1; h.vx += ((h.x - srcx) / k) * 4; h.vz += ((h.z - srcz) / k) * 4;
@@ -355,7 +357,7 @@ export class Game {
   }
   gainXp(v) {
     this.xp += v * this.stats.xp;
-    while (this.xp >= this.xpNext) { this.xp -= this.xpNext; this.level++; this.xpNext = xpNeed(this.level); this.pending++; this.hooks.onLevelGain?.(this.level); this.floatText(this.hero.x, 3, this.hero.z, 'NÍVEL ' + this.level, '#7dffcf', true); }
+    while (this.xp >= this.xpNext) { this.xp -= this.xpNext; this.level++; this.xpNext = xpNeed(this.level); this.pending++; this.hooks.onLevelGain?.(this.level); this.ring(this.hero.x, this.hero.z, 7.5, '#7dffcf', 0.9, 0.22); this.ring(this.hero.x, this.hero.z, 4, '#ffffff', 0.55, 0.1); this.burst(this.hero.x, this.hero.z, 18, 1, 9); this.flashA = 0.32; this.flashCol = '#7dffcf'; this.floatText(this.hero.x, 3, this.hero.z, 'NÍVEL ' + this.level, '#7dffcf', true); }
     if (this.pending > 0 && !this.paused) this.queueLevel();
   }
   finish(victory) {
@@ -401,7 +403,7 @@ export class Game {
     if (this.tideT > 0) this.tideT -= dt;
     if (!this.bossSpawned && t >= this.bossAt) {
       this.bossSpawned = true; const [x, z] = this.ringPos(1), b = this.spawnEnemy(B.boss, x, z); b.hp *= 1 + this.bossN * 0.7; b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
-      this.hooks.onBoss?.(b); A.sfx('bell', { vol: 0.8, rate: 0.5 }); this.cam.shake = 0.8;
+      this.hooks.onBoss?.(b); A.sfx('bell', { vol: 0.8, rate: 0.5 }); this.cam.shake = 0.8; this.ring(this.hero.x, this.hero.z, 13, '#ff4a2a', 1.2, 0.3); this.ring(this.hero.x, this.hero.z, 8, '#ffb347', 0.9, 0.18); this.flashA = 0.35; this.flashCol = '#ff3a1a';
       for (const e of this.enemies) if (!e.d.boss && rnd() < 0.5) e.dead = true;
     }
     const alive = this.enemies.length, cap = Math.min(150, 42 + t * 0.34) * (this.bossSpawned && !this.bossDead ? 0.5 : 1);
@@ -420,7 +422,7 @@ export class Game {
   update(dtReal) {
     this.hitFx = 0; this.hitSfx = 0; this.deathSfx = 0;
     let dt = Math.min(dtReal, 0.05); if (this.slow < 1) { this.slow = Math.min(1, this.slow + dtReal * 0.35); }
-    dt *= this.slow;
+    dt *= this.slow; if (this.hitStop > 0) { this.hitStop -= dtReal; dt *= 0.08; }
     // timers e fx rodam também com o jogo parado nos menus? (não) — mas não no hub
     if (!this.paused) { for (let i = this.timers.length - 1; i >= 0; i--) { const t = this.timers[i]; t.t -= dt; if (t.t <= 0) { this.timers.splice(i, 1); t.fn(); } } }
     if (this.paused && this.mode === 'run') { this.cam.shake *= 0.9; return; }
@@ -434,7 +436,7 @@ export class Game {
       if (this.hubSkill === 'brasas') this.updateSkills(dt);
       for (const e of this.enemies) { e.flash = Math.max(0, e.flash - dt); e.kx *= Math.exp(-6 * dt); e.kz *= Math.exp(-6 * dt); e.anim += dt; }
       for (const p of this.proj) { p.life -= dt; p.x += p.dx * p.speed * dt; p.z += p.dz * p.speed * dt; if (p.life <= 0) p.dead = true; } this.proj = this.proj.filter((p) => !p.dead);
-      this.tickCommon(dt); this.cam.x = lerp(this.cam.x, 2.4, 0.05); this.cam.z = lerp(this.cam.z, 0.5, 0.05); return;
+      this.tickCommon(dt); this.cam.x = lerp(this.cam.x, this.camHub.x, 0.05); this.cam.z = lerp(this.cam.z, this.camHub.z, 0.05); return;
     }
 
     this.time += dt;
@@ -445,8 +447,10 @@ export class Game {
       const sp = this.stats.speed * (h.slowT > 0 ? 0.62 : 1); h.vx = lerp(h.vx, ix * sp, 1 - Math.exp(-14 * dt)); h.vz = lerp(h.vz, iz * sp, 1 - Math.exp(-14 * dt));
       if (h.moving) { h.dx = ix; h.dz = iz; if (Math.abs(ix) > 0.15) h.face = ix > 0 ? 1 : -1; }
     }
-    if (this.dashReq && h.dashCd <= 0 && !this.dying) { this.dashReq = false; const l = Math.hypot(ix, iz); h.ddx = l > 0.1 ? ix / l : h.face; h.ddz = l > 0.1 ? iz / l : 0; h.dashT = 0.17; h.dashCd = this.stats.dashCd; h.iframes = Math.max(h.iframes, 0.25); A.synth('whoosh', { vol: 0.25 }); }
+    if (this.dashReq && h.dashCd <= 0 && !this.dying) { this.dashReq = false; const l = Math.hypot(ix, iz); h.ddx = l > 0.1 ? ix / l : h.face; h.ddz = l > 0.1 ? iz / l : 0; h.dashT = 0.17; h.dashCd = this.stats.dashCd; this.ghostT = 0; this.ring(h.x, h.z, 2.4, '#ffe2b0', 0.35, 0.1); h.iframes = Math.max(h.iframes, 0.25); A.synth('whoosh', { vol: 0.25 }); }
     this.dashReq = false; h.dashCd = Math.max(0, h.dashCd - dt);
+    if (h.dashT > 0) { this.ghostT -= dt; if (this.ghostT <= 0) { this.ghostT = 0.028; this.ghosts.push({ x: h.x, z: h.z, face: h.face, an: h.anim, a: 0.55 }); } }
+    if (h.moving && h.dashT <= 0) { this.trailT -= dt; if (this.trailT <= 0) { this.trailT = 0.09; this.addSpark({ tex: 'spark', x: h.x - h.dx * 0.2 + (rnd() - 0.5) * 0.3, y: 0.15, z: h.z - h.dz * 0.2 + (rnd() - 0.5) * 0.2, vx: -h.dx * 0.8 + (rnd() - 0.5), vy: 0.9 + rnd(), vz: -h.dz * 0.8 + (rnd() - 0.5), life: 0.55, s0: 0.28, s1: 0.04, a: 0.8, add: true, rot: rnd() * TAU }); } }
     h.x += h.vx * dt; h.z += h.vz * dt; this.world.pushOut(h, 0.42);
     h.anim += dt * (h.moving ? 1 : 0.3) * (h.dashT > 0 ? 2 : 1); h.iframes = Math.max(0, h.iframes - dt); h.hurt = Math.max(0, h.hurt - dt); h.slowT = Math.max(0, (h.slowT || 0) - dt);
     h.hp = Math.min(h.maxHp, h.hp + this.stats.regen * dt);
@@ -465,7 +469,9 @@ export class Game {
   }
   tickCommon(dt) {
     this.cam.shake = Math.max(0, this.cam.shake - dt * 2.2); this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.2);
-    this.cam.sx = (rnd() - 0.5) * this.cam.shake * 12; this.cam.sz = (rnd() - 0.5) * this.cam.shake * 12;
+    const shk = this.cam.shake * 12 * this.opts.shake; this.cam.sx = (rnd() - 0.5) * shk; this.cam.sz = (rnd() - 0.5) * shk;
+    for (const r of this.rings) r.t += dt; this.rings = this.rings.filter((r) => r.t < r.life);
+    for (const g of this.ghosts) g.a -= dt * 2.6; this.ghosts = this.ghosts.filter((g) => g.a > 0.02); this.flashA = Math.max(0, this.flashA - dt * 1.6);
     for (const t of this.texts) { t.t += dt; t.y += dt * (t.crit ? 1.1 : 1.6); t.x += t.vx * dt; } this.texts = this.texts.filter((t) => t.t < t.life);
     for (const l of this.lights) l.t -= dt; this.lights = this.lights.filter((l) => l.t > 0);
     for (const s of this.sparks) { s.age += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; if (s.g) s.vy -= s.g * dt; s.vx *= 0.985; s.vz *= 0.985; if (s.y < 0.03 && s.g) { s.y = 0.03; s.vy *= -0.3; } } this.sparks = this.sparks.filter((s) => s.age < s.life);
@@ -555,8 +561,8 @@ export class Game {
       if (d < 0.75) {
         g.dead = true;
         if (g.tier === 'scrap') { this.scrapRun += g.v * this.dm.scrap; this.scrapPieces++; A.sfx(pick(['coin', 'coin2']), { vol: 0.25, rate: 1.2, gap: 0.06 }); }
-        else if (g.tier === 'chest') { this.chests++; this.pending++; this.floatText(h.x, 3, h.z, 'BAÚ!', '#ffd98a', true); A.sfx('coin2', { vol: 0.6, rate: 0.8 }); this.queueLevel(0.2); }
-        else if (g.tier === 'heart') { h.hp = Math.min(h.maxHp, h.hp + h.maxHp * g.v); this.floatText(h.x, 2.4, h.z, '+' + Math.round(h.maxHp * g.v), '#7dffcf', false); A.synth('tick', { f: 520, vol: 0.4 }); }
+        else if (g.tier === 'chest') { this.chests++; this.pending++; this.ring(h.x, h.z, 6, '#ffc24a', 0.8, 0.18); this.burst(h.x, h.z, 16, 1.2, 8); this.flashA = 0.2; this.flashCol = '#ffc24a'; this.floatText(h.x, 3, h.z, 'BAÚ!', '#ffd98a', true); A.sfx('coin2', { vol: 0.6, rate: 0.8 }); this.queueLevel(0.2); }
+        else if (g.tier === 'heart') { this.ring(h.x, h.z, 3.5, '#7dffcf', 0.6, 0.12); h.hp = Math.min(h.maxHp, h.hp + h.maxHp * g.v); this.floatText(h.x, 2.4, h.z, '+' + Math.round(h.maxHp * g.v), '#7dffcf', false); A.synth('tick', { f: 520, vol: 0.4 }); }
         else { this.gainXp(g.v * this.comboMul()); A.synth('tick', { f: 700 + Math.min(this.gems.length, 40) * 8 + g.tier * 160, vol: 0.18 }); }
       }
     }
@@ -601,6 +607,8 @@ export class Game {
     ctx.globalAlpha = 1;
     // sprites ordenados
     const T = now / 1000;
+    for (const gh of this.ghosts) { const S = this.art.sheets.player, [sx, sy] = this.proj3(gh.x, 0, gh.z), hh = S.h * ppu, w = (hh * S.fw) / S.fh, fr = Math.floor(gh.an * 7.5) % S.frames; ctx.save(); ctx.translate(sx, sy + hh * 0.07); if (gh.face < 0) ctx.scale(-1, 1); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = gh.a; ctx.drawImage(this.art.flash.player, fr * S.fw, 0, S.fw, S.fh, -w / 2, -hh, w, hh); ctx.restore(); }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     for (const it of items) {
       if (it.k === 0) { const p = it.o, [sx, sy] = this.proj3(p.x, 0, p.z), w = p.def.w * ppu, hh = p.def.h * ppu, cw = p.def.canvas; ctx.globalAlpha = p.a;
         if (p.flip) { ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(cw, -w / 2, sy - hh * p.def.anchor, w, hh); ctx.restore(); } else ctx.drawImage(cw, sx - w / 2, sy - hh * p.def.anchor, w, hh); ctx.globalAlpha = 1; }
@@ -625,17 +633,18 @@ export class Game {
     // luz (multiplicação)
     this.glowersNow = glowers; this.drawLights(ctx, fires, T);
     // efeitos das habilidades (meia resolução + bloom barato)
-    this.drawFxLayer(ctx);
+    this.drawFxLayer(ctx); this.drawRings(ctx);
     // faíscas/fumaça (Kenney)
     this.drawSparks(ctx);
     // números de dano
     ctx.textAlign = 'center'; ctx.lineJoin = 'round';
-    for (const t of this.texts) { const [sx, sy] = this.proj3(t.x, t.y, t.z), u = t.t / t.life, sc = t.crit ? 1 + 0.5 * Math.sin(Math.min(1, u * 5) * Math.PI * 0.5) : 1; ctx.globalAlpha = 1 - u * u; ctx.font = `${Math.round((t.crit ? 30 : 21) * (ppu / 52) * sc)}px "Bebas Neue", sans-serif`; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(10,5,4,.9)'; ctx.strokeText(t.txt, sx, sy); ctx.fillStyle = t.col; ctx.fillText(t.txt, sx, sy); }
+    for (const t of this.texts) { const [sx, sy] = this.proj3(t.x, t.y, t.z), u = t.t / t.life, sc = (t.crit ? 1 + 0.5 * Math.sin(Math.min(1, u * 5) * Math.PI * 0.5) : 1) * (1 + 0.45 * Math.max(0, 1 - u * 7)); ctx.globalAlpha = 1 - u * u; ctx.font = `${Math.round((t.crit ? 30 : 21) * (ppu / 52) * sc)}px "Bebas Neue", sans-serif`; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(10,5,4,.9)'; ctx.strokeText(t.txt, sx, sy); ctx.fillStyle = t.col; ctx.fillText(t.txt, sx, sy); }
     ctx.globalAlpha = 1;
     // cinzas caindo
     ctx.globalCompositeOperation = 'source-over';
     for (const a of this.ash) { a.y += a.v * 0.016 * (this.paused ? 0 : 1); a.x += Math.sin(T * 0.6 + a.w) * 0.0006 + 0.0004; if (a.y > 1.05) { a.y = -0.05; a.x = rnd(); } if (a.x > 1.05) a.x = -0.05; ctx.globalAlpha = 0.28 * a.s; ctx.fillStyle = this.biome.ash; const s = a.s * 1.6 * (W / 1200 + 0.6); ctx.fillRect(a.x * W, a.y * H, s, s); }
     ctx.globalAlpha = 1;
+    if (this.flashA > 0.01) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = this.flashA * 0.55; ctx.fillStyle = this.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
     // vinheta + dano
     const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, W * 0.72); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(5,3,3,.78)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     const low = this.mode === 'run' ? clamp(1 - h.hp / h.maxHp * 2.2, 0, 1) : 0, hf = Math.max(this.hurtFlash * 0.6, low * (0.25 + 0.15 * Math.sin(T * 6)));
@@ -682,6 +691,11 @@ export class Game {
     ctx.globalCompositeOperation = 'multiply'; ctx.imageSmoothingEnabled = true; ctx.drawImage(q, 0, 0, this.W, this.H); ctx.globalCompositeOperation = 'source-over';
     // halo quente extra (somar)
     ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.22; ctx.drawImage(q, 0, 0, this.W, this.H); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  }
+  drawRings(ctx) {
+    if (!this.rings.length) return; ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (const r of this.rings) { const u = r.t / r.life, e = 1 - Math.pow(1 - u, 3), rad = r.r * e * this.ppu, [sx, sy] = this.proj3(r.x, 0, r.z); ctx.globalAlpha = (1 - u) * 0.9; ctx.strokeStyle = r.col; ctx.lineWidth = Math.max(1, this.ppu * r.w * 0.5 * (1 - u * 0.7)); ctx.beginPath(); ctx.ellipse(sx, sy, rad, rad * SIN, 0, 0, TAU); ctx.stroke(); }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   }
   drawFxLayer(ctx) {
     const q = this.qFx, x = q.getContext('2d'), k = q.width / this.W; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, q.width, q.height);

@@ -34,13 +34,13 @@ export async function mountGame(root) {
   const art = await buildArt((p) => { bar.style.width = Math.round(p * 100) + '%'; });
   loading.remove();
 
-  let game = null, screen = 'hub', forja = null, hudT = 0, lastHud = 0;
+  let game = null, screen = 'title', forja = null, hudT = 0, lastHud = 0;
   const hooks = {
     onLevelUp: (choices, rerolls) => showLevelUp(choices, rerolls),
     onChosen: () => { levelUp.classList.remove('show'); },
     onEnd: (r) => showResult(r),
     onWarn: (t) => banner(t),
-    onBoss: (b) => banner('⚠ ' + (b?.d?.name || 'O chefe') + ' chegou', 3200),
+    onBoss: (b) => banner('⚠ ' + (b?.d?.name || 'O chefe'), 3400, 'CHEGOU — derrube-o para vencer'),
   };
   game = new Game(stage, art, hooks); game.bloom = true; game.start();
   window.addEventListener('resize', () => game.resize());
@@ -54,7 +54,89 @@ export async function mountGame(root) {
   const toast = el('div', { class: 'g-toast' }); ui.append(toast);
   function showToast(t, ms = 3200) { toast.textContent = t; toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), ms); }
   const bannerEl = el('div', { class: 'g-banner' }); ui.append(bannerEl); let banT = 0;
-  function banner(t, ms = 2000) { bannerEl.textContent = t; bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show'); clearTimeout(banT); banT = setTimeout(() => bannerEl.classList.remove('show'), ms); }
+  function banner(t, ms = 2000, sub = '') { bannerEl.innerHTML = ''; bannerEl.append(el('b', {}, t), sub ? el('small', {}, sub) : null); bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show'); clearTimeout(banT); banT = setTimeout(() => bannerEl.classList.remove('show'), ms); }
+
+  // ───────── MENU INICIAL ─────────
+  const VERSION = 'v0.3';
+  const applyOpts = () => { game.opts.shake = save.opts.shake; game.opts.numbers = save.opts.numbers; game.bloom = save.opts.bloom; };
+  applyOpts();
+  const dlgCard = el('div', { class: 'ms-card dlg' }), dlg = el('div', { class: 'g-overlay ms' }, dlgCard);
+  ui.append(dlg);
+  const openDlg = (title, ...kids) => { dlgCard.innerHTML = ''; dlgCard.append(el('h2', {}, title), ...kids, el('div', { class: 'dlg-foot' }, btn('sm pri', 'Fechar', closeDlg))); dlg.classList.add('show'); };
+  const closeDlg = () => { dlg.classList.remove('show'); SV.save(); };
+  dlg.addEventListener('pointerdown', (e) => { if (e.target === dlg) closeDlg(); });
+  const sw = (label, sub, key, on) => { const b = el('button', { class: 'sw' + (save.opts[key] ?? save[key] ? ' on' : ''), onmouseenter: sfxOver, onclick: () => { sfxClick(); on(); b.classList.toggle('on'); } }, el('i')); return el('div', { class: 'op-row' }, el('div', {}, el('b', {}, label), el('small', {}, sub)), b); };
+  function openOptions() {
+    const shakeBtns = [['Off', 0], ['Leve', 0.5], ['Normal', 1]].map(([n, v]) => btn('sm' + (save.opts.shake === v ? ' on' : ''), n, () => { save.opts.shake = v; applyOpts(); shakeBtns.forEach((b, i) => b.classList.toggle('on', [0, 0.5, 1][i] === v)); }));
+    const wipe = btn('sm danger', 'Apagar progresso', () => { if (wipe.dataset.sure) { SV.reset(); location.reload(); } else { wipe.dataset.sure = 1; wipe.textContent = 'Tem certeza? Clique de novo'; setTimeout(() => { delete wipe.dataset.sure; wipe.textContent = 'Apagar progresso'; }, 3500); } });
+    openDlg('Opções',
+      sw('Efeitos sonoros', 'Golpes, passos, interface', 'sfx', () => { save.sfx = !save.sfx; A.setEnabled({ sfx: save.sfx, music: save.music }); syncSound(); }),
+      sw('Música', 'Trilha ambiente que reage ao perigo', 'music', () => { save.music = !save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); syncSound(); }),
+      sw('Números de dano', 'Mostra o dano dos golpes comuns (críticos sempre aparecem)', 'numbers', () => { save.opts.numbers = !save.opts.numbers; applyOpts(); }),
+      sw('Brilho dos efeitos (bloom)', 'Desligue se o jogo estiver pesado', 'bloom', () => { save.opts.bloom = !save.opts.bloom; applyOpts(); }),
+      el('div', { class: 'op-row' }, el('div', {}, el('b', {}, 'Tremor de tela'), el('small', {}, 'Intensidade do shake nos impactos')), el('div', { class: 'op-seg' }, ...shakeBtns)),
+      el('div', { class: 'op-row' }, el('div', {}, el('b', {}, 'Tela cheia')), btn('sm', 'Alternar', () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch {} })),
+      el('div', { class: 'op-row' }, el('div', {}, el('b', {}, 'Dados salvos'), el('small', {}, 'Salvos neste navegador')), wipe));
+  }
+  function openHelp() {
+    const row = (k, t) => el('div', { class: 'hp-row' }, el('span', { class: 'kbd' }, k), el('span', {}, t));
+    openDlg('Como jogar',
+      el('p', { class: 'hp-p' }, 'Sobreviva até o chefe do mapa aparecer e derrube-o. As habilidades disparam sozinhas; você só se posiciona.'),
+      row('WASD / Setas', 'Mover (no celular: arraste na metade esquerda da tela)'), row('Espaço / Shift', 'Dash — invulnerável por um instante'), row('1 · 2 · 3', 'Escolher carta ao subir de nível'), row('P / Esc', 'Pausar'),
+      el('p', { class: 'hp-p' }, el('b', {}, 'Dentro da expedição: '), 'colete gemas verdes para subir de nível e escolher habilidades e passivas. Elites dourados soltam baús. Matar rápido enche o combo e aumenta o XP.'),
+      el('p', { class: 'hp-p' }, el('b', {}, 'No abrigo: '), 'a sucata da expedição compra nós na Árvore da Brasa — vida, dano, sorte, catadores que rendem até offline e novas habilidades iniciais. Vença chefes para liberar mapas e profundidades. Quando travar, Renascer dá Cinzas permanentes.'));
+  }
+  function openCredits() {
+    openDlg('Créditos',
+      el('p', { class: 'hp-p' }, el('b', {}, 'Última Brasa'), ' — ', VERSION),
+      el('p', { class: 'hp-p' }, 'Arte, código e efeitos: feitos com Claude (Anthropic) e Mateus. Os efeitos das habilidades foram pintados na Forja de Efeitos.'),
+      el('p', { class: 'hp-p' }, 'Texturas de partículas e efeitos sonoros: Kenney.nl (CC0). Fontes: Bebas Neue e Rajdhani (SIL OFL).'),
+      el('p', { class: 'dim' }, 'Licenças completas no repositório, pasta licenses/.'));
+  }
+
+  const embers = el('canvas', { class: 'tt-embers' });
+  const stat = el('div', { class: 'tt-stat' });
+  const mkBtn = (label, sub, fn, cls = '') => el('button', { class: 'tt-btn ' + cls, onmouseenter: (e) => focusItem(e.currentTarget), onclick: () => { sfxClick(); fn(); } }, el('b', {}, label), el('small', {}, sub));
+  const playBtn = mkBtn('JOGAR', '', () => goHub(), 'main');
+  const items = [playBtn, mkBtn('ÁRVORE DA BRASA', 'Gastar sucata e evoluir', () => { goHub(); openTree(); }), mkBtn('FORJA DE EFEITOS', 'Pinte os efeitos das habilidades', () => openForja())];
+  const sec = [['Como jogar', openHelp], ['Opções', openOptions], ['Créditos', openCredits]].map(([t, f]) => el('button', { class: 'tt-sec', onmouseenter: (e) => focusItem(e.currentTarget), onclick: () => { sfxClick(); f(); } }, t));
+  const allItems = [...items, ...sec]; let focusIx = 0;
+  function focusItem(b) { focusIx = Math.max(0, allItems.indexOf(b)); allItems.forEach((x, i) => x.classList.toggle('foc', i === focusIx)); }
+  const title = el('div', { class: 'g-title' }, embers,
+    el('div', { class: 'tt-side' },
+      el('div', { class: 'tt-kicker' }, 'roguelike incremental · pós-apocalipse'),
+      el('h1', { class: 'tt-logo', 'aria-label': GAME_TITLE }, el('span', { class: 'a' }, 'ÚLTIMA'), el('span', { class: 'b' }, 'BRASA')),
+      el('div', { class: 'tt-tag' }, 'O mundo acabou. A chama não.'),
+      el('div', { class: 'tt-menu' }, ...items), el('div', { class: 'tt-secs' }, ...sec), stat),
+    el('div', { class: 'tt-foot' }, el('span', {}, VERSION), el('span', {}, '↑ ↓ Enter')));
+  ui.append(title);
+  let embT = 0, embRun = false; const eparts = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), s: 0.6 + Math.random() * 1.8, v: 0.03 + Math.random() * 0.09, w: Math.random() * 6.28, h: Math.random() }));
+  function emberLoop(t) {
+    if (!embRun) return; const c = embers, dpr = Math.min(2, devicePixelRatio || 1), W = c.clientWidth, H = c.clientHeight;
+    if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H); x.globalCompositeOperation = 'lighter';
+    for (const p of eparts) { p.y -= p.v * 0.016; p.x += Math.sin(t / 900 + p.w) * 0.0004; if (p.y < -0.05) { p.y = 1.05; p.x = Math.random(); } const a = (0.25 + 0.5 * Math.abs(Math.sin(t / 400 + p.w))) * Math.min(1, p.y * 3), r = p.s * 1.25, px = p.x * W, py = p.y * H;
+      const g = x.createRadialGradient(px, py, 0, px, py, r * 4); g.addColorStop(0, `hsla(${22 + p.h * 22},100%,${60 + p.h * 20}%,${a})`); g.addColorStop(1, 'hsla(20,100%,50%,0)'); x.fillStyle = g; x.fillRect(px - r * 4, py - r * 4, r * 8, r * 8); }
+    requestAnimationFrame(emberLoop);
+  }
+  function refreshTitle() {
+    const fresh = save.runs === 0 && save.lifetime < 50;
+    playBtn.querySelector('b').textContent = fresh ? 'JOGAR' : 'CONTINUAR'; playBtn.querySelector('small').textContent = fresh ? 'Comece sua primeira expedição' : `Abrigo · ${BIOMES[save.biome].name}`;
+    stat.innerHTML = fresh ? '' : `<span>Patente <b>${patente()}</b></span><span>⬢ <b>${fmt(Math.floor(save.scrap))}</b></span>${save.cinzas ? `<span>Cinzas <b>${save.cinzas}</b></span>` : ''}<span>Melhor <b>${fmtTime(save.best.time)}</b></span>`;
+  }
+  function showTitle() {
+    screen = 'title'; hub.classList.add('off'); hud.classList.remove('on'); title.classList.add('show'); refreshTitle(); focusItem(allItems[0]);
+    game.camHub = innerWidth < 820 ? { x: 1.2, z: 3.4 } : { x: -2.7, z: 0.6 };
+    if (!embRun) { embRun = true; requestAnimationFrame(emberLoop); }
+  }
+  function goHub() { title.classList.remove('show'); embRun = false; hub.classList.remove('off'); screen = 'hub'; game.camHub = { x: 2.4, z: 0.5 }; renderAll(); A.init(); }
+  function titleKey(k) {
+    if (dlg.classList.contains('show')) { if (k === 'escape') closeDlg(); return; }
+    if (k === 'arrowdown' || k === 's') focusIx = (focusIx + 1) % allItems.length; else if (k === 'arrowup' || k === 'w') focusIx = (focusIx - 1 + allItems.length) % allItems.length;
+    else if (k === 'arrowright' && focusIx >= 3) focusIx = 3 + ((focusIx - 3 + 1) % 3); else if (k === 'arrowleft' && focusIx >= 3) focusIx = 3 + ((focusIx - 3 + 2) % 3);
+    else if (k === 'enter' || k === ' ') { sfxClick(); allItems[focusIx].click(); return; } else return;
+    focusItem(allItems[focusIx]); sfxOver();
+  }
 
   // ───────── ABRIGO (hub) ─────────
   const patente = () => patenteOf(save.lifetime);
@@ -64,6 +146,7 @@ export async function mountGame(root) {
     el('div', { class: 'g-logo' }, GAME_TITLE, el('small', {}, 'roguelike incremental')),
     el('div', { class: 'h-sp' }),
     el('div', { class: 'h-scrap', title: 'Sucata: moeda permanente' }, el('span', { class: 'ic' }, '⬢'), scrapVal, scrapRate),
+    btn('sm', '← Menu', () => showTitle(), { title: 'Voltar ao menu inicial' }),
     btn('sm', '♪', () => { save.music = !save.music; save.sfx = save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); SV.save(); syncSound(); }, { id: 'snd', title: 'Som ligado/desligado' }),
     btn('sm', 'Forja de Efeitos', () => openForja(), { title: 'Pinte os efeitos das habilidades' }));
   const syncSound = () => { const b = topbar.querySelector('#snd'); b.textContent = save.music ? '♪' : '✕'; b.classList.toggle('off', !save.music); };
@@ -88,7 +171,7 @@ export async function mountGame(root) {
     el('div', { class: 'h-sub' }, 'Profundidade'),
     el('div', { class: 'h-depth' }, btn('sm', '−', () => setDepth(-1)), el('div', { class: 'h-dv' }, 'Nível ', depthVal), btn('sm', '+', () => setDepth(1))), depthInfo, go);
   const tabs = el('div', { class: 'h-tabs' }, btn('sm', 'Sobrevivente', () => setTab('surv'), { id: 'tsurv' }), btn('sm on', 'Expedição', () => setTab('exp'), { id: 'texp' }));
-  const hub = el('div', { class: 'g-hub', 'data-tab': 'exp' }, topbar, tabs, survivor, expedition);
+  const hub = el('div', { class: 'g-hub off', 'data-tab': 'exp' }, topbar, tabs, survivor, expedition);
   ui.append(hub);
   function setTab(t) { hub.dataset.tab = t; tabs.querySelector('#tsurv').classList.toggle('on', t === 'surv'); tabs.querySelector('#texp').classList.toggle('on', t === 'exp'); }
 
@@ -159,7 +242,7 @@ export async function mountGame(root) {
     for (const p of parents) { const ln = document.createElementNS(svgNS, 'line'); ln.setAttribute('x1', px(p)); ln.setAttribute('y1', py(p)); ln.setAttribute('x2', px(n)); ln.setAttribute('y2', py(n)); edgeSvg.append(ln); edgeEls.push({ ln, from: p.id, to: n.id, color: BRANCH[n.branch].color }); } }
   const rootEl = el('div', { class: 't-root', style: 'left:1200px;top:1000px' }, el('b', {}, '🔥'), el('span', {}, 'Brasa')); world.append(rootEl);
   for (const n of TREE) {
-    const b = BRANCH[n.branch], e = el('button', { class: 't-node', style: `left:${1200 + px(n)}px;top:${1000 + py(n)}px;--c:${b.color}`, onclick: (ev) => { ev.stopPropagation(); selectNode(n.id); } }, el('span', { class: 'g' }, n.ico), el('i', { class: 'lv' }));
+    const b = BRANCH[n.branch], e = el('button', { class: 't-node', style: `left:${1200 + px(n)}px;top:${1000 + py(n)}px;--c:${b.color}`, onclick: (ev) => { ev.stopPropagation(); selectNode(n.id); } }, el('span', { class: 'g' }, n.ico), el('i', { class: 'lv' }), el('span', { class: 'nm' }, n.name));
     nodeEls[n.id] = e; world.append(e);
   }
   for (const [k, t, x, y] of [['off', 'FÚRIA', 0, -4.5], ['def', 'CASCO', 0, 5.2], ['eco', 'ENGENHO', -5.2, -1.2], ['hab', 'FORJA', 4.9, 1.5]]) world.append(el('div', { class: 't-label', style: `left:${1200 + x * U}px;top:${1000 + y * U}px;color:${BRANCH[k].color}` }, t));
@@ -309,6 +392,7 @@ export async function mountGame(root) {
   function showResult(r) {
     hud.classList.remove('on'); levelUp.classList.remove('show'); pauseEl.classList.remove('show');
     const b = BIOMES[r.biome]; let unlockMsg = [];
+    const rec = { time: r.time > save.best.time && save.best.time > 0, kills: r.kills > save.best.kills && save.best.kills > 0, level: r.level > save.best.level && save.best.level > 0, combo: r.combo > (save.best.combo || 0) && (save.best.combo || 0) > 0 };
     if (r.victory && !runFlags.won) {
       runFlags.won = true; save.wins++; save.biomeWins[r.biome] = (save.biomeWins[r.biome] || 0) + 1;
       if (r.depth >= save.depthMax && save.depthMax < 30) { save.depthMax = r.depth + 1; unlockMsg.push(`Profundidade ${save.depthMax} liberada!`); }
@@ -320,7 +404,7 @@ export async function mountGame(root) {
       : [btn('go sm2', 'Nova expedição', () => { bank(r); close(); startRun(); }), btn('', 'Voltar ao abrigo', () => { bank(r); close(); toHub(); })];
     resEl.append(el('div', { class: 'rs-card' + (r.victory ? ' win' : '') },
       el('div', { class: 'rs-t' }, r.victory ? 'Chefe derrotado' : 'A brasa se apagou'), el('div', { class: 'rs-s' }, r.victory ? `${b.name} · profundidade ${r.depth} concluída` : `${b.name} · resistiu ${fmtTime(r.time)}`),
-      el('div', { class: 'rs-grid' }, ...[['Tempo', fmtTime(r.time)], ['Abates', fmt(r.kills)], ['Nível', r.level], ['Maior combo', r.combo], ['Elites', r.elites], ['Sucata achada', '⬢ ' + fmt(Math.floor(r.scrapFound))]].map(([a, v]) => el('div', {}, el('span', {}, a), el('b', {}, v)))),
+      el('div', { class: 'rs-grid' }, ...[['Tempo', fmtTime(r.time), rec.time], ['Abates', fmt(r.kills), rec.kills], ['Nível', r.level, rec.level], ['Maior combo', r.combo, rec.combo], ['Elites', r.elites], ['Sucata achada', '⬢ ' + fmt(Math.floor(r.scrapFound))]].map(([a, v, nr], i) => el('div', { class: nr ? 'rec' : '', style: `animation-delay:${0.15 + i * 0.09}s` }, el('span', {}, a), el('b', {}, v, nr ? el('em', {}, 'RECORDE') : null)))),
       el('div', { class: 'rs-gain' }, r.victory ? 'Sucata a coletar ' : 'Sucata recolhida ', gainEl),
       ...unlockMsg.map((m) => el('div', { class: 'rs-unlock' }, m)),
       r.victory ? el('p', { class: 'dim' }, 'No modo infinito um chefe mais forte surge a cada 2:30 e a sucata continua acumulando. Se morrer, você ainda recolhe tudo.') : null,
@@ -332,11 +416,11 @@ export async function mountGame(root) {
 
   // ───────── fluxo ─────────
   function startRun() {
-    A.init(); screen = 'run'; hub.classList.add('off'); hud.classList.add('on'); slotKey = '';
+    A.init(); screen = 'run'; title.classList.remove('show'); embRun = false; hub.classList.add('off'); hud.classList.add('on'); slotKey = '';
     runFlags = { won: false }; const mul = mulOf();
-    game.startRun({ skill: save.startSkill, depth: save.depth, meta: { ...save.meta }, biome: save.biome, mul }); renderHubTop(); banner(BIOMES[save.biome].name + ' — sobreviva e derrube o chefe', 2600);
+    game.startRun({ skill: save.startSkill, depth: save.depth, meta: { ...save.meta }, biome: save.biome, mul }); renderHubTop(); banner(BIOMES[save.biome].name, 2800, 'Sobreviva e derrube o chefe');
   }
-  function toHub() { screen = 'hub'; hub.classList.remove('off'); hud.classList.remove('on'); game.enterHub({ skill: save.startSkill, biome: save.biome }); renderAll(); }
+  function toHub() { screen = 'hub'; game.camHub = { x: 2.4, z: 0.5 }; hub.classList.remove('off'); hud.classList.remove('on'); game.enterHub({ skill: save.startSkill, biome: save.biome }); renderAll(); }
 
   // ───────── Forja embutida ─────────
   function openForja() {
@@ -354,6 +438,8 @@ export async function mountGame(root) {
   window.addEventListener('keydown', (e) => {
     if (forja) return; unlock();
     const k = e.key.toLowerCase();
+    if (screen === 'title') { if (['arrowup', 'arrowdown', ' '].includes(k)) e.preventDefault(); titleKey(k); return; }
+    if (screen === 'hub' && k === 'escape' && !treeOpen && !dlg.classList.contains('show') && !msModal.classList.contains('show')) { showTitle(); return; }
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     if (levelUp.classList.contains('show')) { if (['1', '2', '3'].includes(k)) game.choose(+k - 1); else if (k === 'r') game.reroll(); return; }
     if (screen === 'run') {
@@ -373,5 +459,6 @@ export async function mountGame(root) {
   // laço de UI
   setInterval(() => { if (screen === 'run' && !forja) updateHud(); }, 66);
   // expõe para testes automatizados
+  showTitle();
   window.__game = { game, save, startRun, toHub, openForja, closeForja };
 }
