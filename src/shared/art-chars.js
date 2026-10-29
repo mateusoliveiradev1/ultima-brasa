@@ -416,6 +416,137 @@ function drawColossus(ctx, f) {
 }
 
 // ───────────── PICKUPS ─────────────
+// ───────────── CÃO DE SUCATA ─────────────
+function drawHound(ctx, f) {
+  const ph = (f / 4) * TAU, rnd = mulberry32(91), bob = Math.abs(Math.sin(ph * 2)) * 3.5, by = -bob;
+  const leg = (hx, hy, off, col, w) => {
+    const a = ph + off, fx = hx + Math.sin(a) * 17, lift = Math.max(0, Math.cos(a)) * 10, fy = 119 - lift;
+    const kx = (hx + fx) / 2 + 8, ky = (hy + fy) / 2 - 1;
+    limb(ctx, hx, hy, kx, ky, w, w * 0.78, col); limb(ctx, kx, ky, fx, fy, w * 0.78, w * 0.5, col);
+    ctx.fillStyle = '#0d0c0c'; ctx.beginPath(); ctx.ellipse(fx + 3, fy + 1, 6.5, 3.2, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#d8d0c4'; ctx.lineWidth = 1.6; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(fx + 7, fy + 1); ctx.lineTo(fx + 11, fy + 2 + i * 1.5 - 1.5); ctx.stroke(); }
+  };
+  // rabo de arame
+  ctx.strokeStyle = '#2a2523'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(40, 68 + by); ctx.quadraticCurveTo(22, 58 + by + Math.sin(ph) * 4, 18, 74 + by + Math.sin(ph) * 5); ctx.stroke();
+  leg(122, 84 + by, 0.7, '#1b1a1c', 11); leg(64, 84 + by, 3.9, '#1b1a1c', 12);
+  // tronco magro
+  const body = [[32, 72], [44, 56], [76, 50], [110, 52], [136, 58], [144, 74], [130, 92], [94, 98], [56, 96], [38, 88]].map(([x, y]) => [x, y + by]);
+  smooth(ctx, body);
+  ctx.fillStyle = lin(ctx, 40, 50, 140, 100, [[0, '#6a6663'], [0.55, '#3b3836'], [1, '#1c1a1b']]); ctx.fill();
+  ctx.save(); ctx.clip();
+  patches(ctx, rnd, 9, 30, 50, 146, 100, ['#7a3a1e', '#2a2222', '#a2542a'], 5, 13, 0.5);
+  grime(ctx, rnd, 30, 52, 146, 100, 24);
+  // costelas à mostra
+  ctx.strokeStyle = 'rgba(14,10,10,.8)'; ctx.lineWidth = 2.2;
+  for (let i = 0; i < 5; i++) { const x = 66 + i * 12; ctx.beginPath(); ctx.moveTo(x, 70 + by); ctx.quadraticCurveTo(x + 6, 84 + by, x + 2, 96 + by); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(230,214,190,.35)'; ctx.lineWidth = 1; for (let i = 0; i < 5; i++) { const x = 66 + i * 12; ctx.beginPath(); ctx.moveTo(x - 1, 70 + by); ctx.quadraticCurveTo(x + 5, 84 + by, x + 1, 96 + by); ctx.stroke(); }
+  ctx.restore();
+  // placas de sucata e vergalhões nas costas
+  for (let i = 0; i < 4; i++) {
+    const x = 56 + i * 20, y = 52 + (i % 2) * 2 + by; ctx.save(); ctx.translate(x, y); ctx.rotate(-0.4 + i * 0.1);
+    ctx.fillStyle = lin(ctx, 0, -10, 0, 6, [[0, '#a6623a'], [1, '#4a2a1a']]); poly(ctx, [[-9, 6], [-6, -9], [8, -9], [10, 6]]); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,190,130,.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-6, -8); ctx.lineTo(8, -8); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = '#6f4a30'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(x + 4, y - 4); ctx.lineTo(x - 3 - i, y - 17 - (i % 2) * 4); ctx.stroke();
+  }
+  rivets(ctx, [[60, 54 + by], [80, 54 + by], [100, 54 + by]], 1.8);
+  // brilho do motor no peito
+  glow(ctx, 112, 80 + by, 15, '#ff7a2a', 0.6);
+  ctx.fillStyle = '#ffb347'; ctx.beginPath(); ctx.arc(112, 80 + by, 3.2, 0, TAU); ctx.fill();
+  leg(132, 86 + by, 3.1, '#3a3836', 12); leg(74, 86 + by, 2.3, '#403d3b', 13);
+  // pescoço e cabeça
+  limb(ctx, 130, 68 + by, 150, 58 + by, 20, 15, '#4b4745');
+  smooth(ctx, [[140, 48], [156, 42], [174, 52], [182, 60], [176, 68], [156, 70], [142, 64]].map(([x, y]) => [x, y + by]));
+  ctx.fillStyle = lin(ctx, 140, 42, 180, 70, [[0, '#7a7570'], [1, '#2b2827']]); ctx.fill();
+  // mandíbula aberta
+  const jw = 4 + Math.abs(Math.sin(ph)) * 3;
+  smooth(ctx, [[150, 66], [172, 66], [180, 70 + jw], [160, 76 + jw], [148, 72]].map(([x, y]) => [x, y + by]));
+  ctx.fillStyle = '#2a1e1c'; ctx.fill();
+  ctx.fillStyle = '#e8dfcf';
+  for (let i = 0; i < 4; i++) { const x = 156 + i * 6; ctx.beginPath(); ctx.moveTo(x, 66 + by); ctx.lineTo(x + 2, 66 + by + 5); ctx.lineTo(x + 4, 66 + by); ctx.fill(); ctx.beginPath(); ctx.moveTo(x + 1, 70 + by + jw); ctx.lineTo(x + 3, 70 + by + jw - 4); ctx.lineTo(x + 5, 70 + by + jw); ctx.fill(); }
+  ctx.fillStyle = '#6a3a22'; poly(ctx, [[142, 46 + by], [136, 32 + by], [150, 44 + by]]); ctx.fill(); poly(ctx, [[150, 42 + by], [150, 28 + by], [158, 41 + by]]); ctx.fill();
+  ctx.fillStyle = '#fff2c8'; ctx.beginPath(); ctx.ellipse(160, 52 + by, 3.4, 2.4, -0.2, 0, TAU); ctx.fill(); glow(ctx, 160, 52 + by, 15, '#ff7a2a', 0.95);
+}
+
+// ───────────── XAMÃ DAS CINZAS ─────────────
+function drawShaman(ctx, f) {
+  const ph = (f / 4) * TAU, sway = Math.sin(ph) * 3, bob = Math.abs(Math.cos(ph)) * 2.5, rnd = mulberry32(57);
+  // cajado
+  const sx = 98 + sway * 0.5;
+  limb(ctx, sx, 178, sx + 1, 52 - bob, 6, 5, '#4a3424');
+  ctx.strokeStyle = '#8a6a48'; ctx.lineWidth = 1; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(sx - 3, 70 + i * 17); ctx.lineTo(sx + 3, 74 + i * 17); ctx.stroke(); }
+  // manto esfarrapado
+  const robe = [[56, 86 - bob], [66, 76 - bob], [82, 78 - bob], [90, 90 - bob], [96, 130], [102, 176], [90, 181 + sway * 0.4], [80, 174], [70, 182], [58, 175], [48, 181 - sway * 0.4], [44, 150], [48, 112]];
+  smooth(ctx, robe);
+  ctx.fillStyle = lin(ctx, 44, 76, 100, 182, [[0, '#4a3a42'], [0.5, '#2c2430'], [1, '#14101a']]); ctx.fill();
+  ctx.save(); ctx.clip();
+  patches(ctx, rnd, 9, 42, 78, 102, 182, ['#6a2c3a', '#1a1220', '#8a4a30'], 6, 14, 0.5);
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 2; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(52 + i * 8, 100); ctx.quadraticCurveTo(50 + i * 8 + sway, 140, 50 + i * 8, 178); ctx.stroke(); }
+  ctx.restore();
+  // faixa com trecos (latas, ossos)
+  ctx.fillStyle = '#6a4a2a'; ctx.save(); ctx.translate(70, 124 - bob * 0.5); ctx.rotate(0.08); ctx.fillRect(-26, -4, 52, 7); ctx.restore();
+  [[52, 134], [62, 137], [76, 136], [86, 133]].forEach(([x, y], i) => { ctx.fillStyle = i % 2 ? '#d9d0c0' : '#8a8f94'; ctx.beginPath(); ctx.ellipse(x, y - bob * 0.5, 3, 5, 0.2, 0, TAU); ctx.fill(); });
+  // braço com mão no cajado
+  limb(ctx, 82, 92 - bob, 94 + sway * 0.4, 112, 10, 8, '#3a2c36'); ctx.fillStyle = '#7a6a5e'; ctx.beginPath(); ctx.arc(sx, 112, 4.5, 0, TAU); ctx.fill();
+  // capuz
+  const hood = [[54, 80 - bob], [58, 56 - bob], [72, 40 - bob], [90, 52 - bob], [92, 72 - bob], [84, 86 - bob], [68, 86 - bob]];
+  smooth(ctx, hood); ctx.fillStyle = lin(ctx, 54, 40, 92, 86, [[0, '#5a4a52'], [1, '#1c1622']]); ctx.fill();
+  // rosto: vazio + máscara de crânio
+  ctx.fillStyle = '#0a0709'; ctx.beginPath(); ctx.ellipse(77, 64 - bob, 12, 14, 0.1, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#d8cfbf'; smooth(ctx, [[70, 56 - bob], [82, 54 - bob], [86, 68 - bob], [80, 80 - bob], [72, 78 - bob], [68, 66 - bob]]); ctx.fill();
+  ctx.fillStyle = '#0a0709'; ctx.beginPath(); ctx.ellipse(74, 64 - bob, 3.2, 4, 0, 0, TAU); ctx.ellipse(82, 64 - bob, 3.2, 4, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#0a0709'; for (let i = 0; i < 4; i++) ctx.fillRect(72 + i * 3.2, 74 - bob, 1.4, 5);
+  [[74, 64], [82, 64]].forEach(([x, y]) => { ctx.fillStyle = '#ffd98a'; ctx.beginPath(); ctx.arc(x, y - bob, 1.9, 0, TAU); ctx.fill(); glow(ctx, x, y - bob, 12, '#ff9a40', 0.9); });
+  ctx.fillStyle = '#6a4a2a'; poly(ctx, [[62, 48 - bob], [56, 30 - bob], [68, 44 - bob]]); ctx.fill(); poly(ctx, [[86, 48 - bob], [96, 32 - bob], [90, 52 - bob]]); ctx.fill();
+  // orbe no topo do cajado
+  const oy = 46 - bob; ctx.strokeStyle = '#8a6a48'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx + 1, oy, 9, Math.PI * 0.9, Math.PI * 2.1); ctx.stroke();
+  const pulse = 0.75 + 0.25 * Math.sin(ph);
+  ctx.fillStyle = rad(ctx, sx + 1, oy, 0, 8, [[0, '#fff2c8'], [0.45, '#ffb347'], [1, '#c2562a']]); ctx.beginPath(); ctx.arc(sx + 1, oy, 7 * pulse + 1.5, 0, TAU); ctx.fill();
+  glow(ctx, sx + 1, oy, 30, '#ff7a2a', 0.9 * pulse);
+  // brasas orbitando
+  for (let i = 0; i < 4; i++) { const a = ph + i * 1.57, ex = sx + 1 + Math.cos(a) * 17, ey = oy + Math.sin(a) * 7; ctx.fillStyle = '#ffd98a'; ctx.beginPath(); ctx.arc(ex, ey, 1.8, 0, TAU); ctx.fill(); glow(ctx, ex, ey, 7, '#ff9a40', 0.8); }
+}
+
+// ───────────── ESCORPIÃO DE SUCATA ─────────────
+function drawScorpion(ctx, f) {
+  const ph = (f / 4) * TAU, rnd = mulberry32(73), bob = Math.abs(Math.sin(ph * 2)) * 2, by = -bob, snap = Math.sin(ph) * 0.18;
+  const legs = (col, dx, off) => {
+    for (let i = 0; i < 4; i++) {
+      const hx = 70 + i * 17 + dx, hy = 112 + by, a = ph + off + i * 1.1, fx = hx - 8 - i * 1 + Math.sin(a) * 9, lift = Math.max(0, Math.cos(a)) * 7, fy = 142 - lift;
+      const kx = hx - 16, ky = hy - 6; limb(ctx, hx, hy, kx, ky, 6, 5, col); limb(ctx, kx, ky, fx, fy, 5, 3, col);
+    }
+  };
+  legs('#2a1c16', 4, 0.8);
+  // cauda segmentada em arco sobre o corpo
+  const tail = [[56, 112], [38, 100], [30, 78], [38, 54], [60, 36], [88, 34], [108, 46]];
+  const sway = Math.sin(ph) * 2;
+  tail.forEach(([x, y], i) => { const r = 11 - i * 0.9, tx = x + (i > 2 ? sway : 0), ty = y + by * 0.5; limb(ctx, tx, ty, tail[Math.min(i + 1, 6)][0] + (i + 1 > 2 ? sway : 0), tail[Math.min(i + 1, 6)][1] + by * 0.5, r * 2, (r - 0.9) * 2, i % 2 ? '#8a4a28' : '#a2602f'); });
+  tail.forEach(([x, y], i) => { const r = 11 - i * 0.9; ctx.fillStyle = 'rgba(255,190,130,.28)'; ctx.beginPath(); ctx.arc(x + (i > 2 ? sway : 0) - r * 0.25, y + by * 0.5 - r * 0.3, r * 0.45, 0, TAU); ctx.fill(); });
+  // ferrão
+  const sxp = 112 + sway, syp = 54 + by * 0.5; ctx.fillStyle = '#d8c8a8'; poly(ctx, [[sxp - 6, syp - 8], [sxp + 14, syp + 6], [sxp - 5, syp + 6]]); ctx.fill();
+  glow(ctx, sxp + 10, syp + 5, 17, '#ffb347', 0.95); ctx.fillStyle = '#fff2c8'; ctx.beginPath(); ctx.arc(sxp + 10, syp + 5, 2.4, 0, TAU); ctx.fill();
+  // corpo-couraça
+  const body = [[44, 116], [52, 98], [80, 90], [114, 94], [134, 106], [130, 124], [100, 132], [64, 132]].map(([x, y]) => [x, y + by]);
+  smooth(ctx, body); ctx.fillStyle = lin(ctx, 44, 90, 134, 132, [[0, '#b0683a'], [0.5, '#7a3e22'], [1, '#2e1a12']]); ctx.fill();
+  ctx.save(); ctx.clip(); patches(ctx, rnd, 8, 44, 90, 134, 132, ['#5a2a16', '#d08a4a', '#2a1a14'], 5, 12, 0.5); grime(ctx, rnd, 44, 92, 134, 132, 18);
+  ctx.strokeStyle = 'rgba(20,10,8,.7)'; ctx.lineWidth = 2; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(62 + i * 14, 92 + by); ctx.quadraticCurveTo(66 + i * 14, 112 + by, 62 + i * 14, 132 + by); ctx.stroke(); }
+  ctx.restore();
+  rivets(ctx, [[70, 100 + by], [90, 98 + by], [110, 102 + by], [76, 122 + by]], 2);
+  glow(ctx, 96, 112 + by, 14, '#ff7a2a', 0.5);
+  legs('#4a2e22', -2, 0);
+  // pinças
+  const claw = (cy, side, col) => {
+    const open = (0.35 + snap) * side; ctx.save(); ctx.translate(134, cy + by);
+    limb(ctx, 0, 0, 20, side * -4, 12, 10, col); ctx.translate(20, side * -4);
+    ctx.save(); ctx.rotate(-open); ctx.fillStyle = lin(ctx, 0, -6, 28, 6, [[0, '#b0683a'], [1, '#5a301c']]); smooth(ctx, [[-4, -7], [14, -11], [30, -2], [28, 4], [10, 2], [-4, 6]]); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.rotate(open * 0.7); ctx.fillStyle = lin(ctx, 0, -2, 26, 8, [[0, '#8a4a28'], [1, '#3a2016']]); smooth(ctx, [[-4, -4], [14, -1], [28, 3], [24, 9], [8, 8], [-4, 6]]); ctx.fill(); ctx.restore();
+    ctx.restore();
+  };
+  claw(104, -1, '#6a3a22'); claw(120, 1, '#8a4a28');
+  // cabeça/olhos
+  ctx.fillStyle = '#2a1812'; ctx.beginPath(); ctx.ellipse(130, 112 + by, 8, 8, 0, 0, TAU); ctx.fill();
+  [[134, 108], [134, 116]].forEach(([x, y]) => { ctx.fillStyle = '#ffe2a0'; ctx.beginPath(); ctx.arc(x, y + by, 2, 0, TAU); ctx.fill(); glow(ctx, x, y + by, 11, '#ffb347', 0.9); });
+}
+
 function drawGem(ctx, ox, tier) {
   const cols = [
     ['#fff2c8', '#ffb347', '#c2562a'], // fagulha (pequena)
@@ -449,6 +580,9 @@ export const SHEETS = {
   drone: { fw: 128, fh: 192, frames: 4, h: 1.7, draw: drawDrone },
   brute: { fw: 192, fh: 224, frames: 4, h: 3.1, draw: drawBrute },
   boss: { fw: 256, fh: 256, frames: 4, h: 6.2, draw: drawColossus },
+  hound: { fw: 192, fh: 128, frames: 4, h: 1.15, draw: drawHound },
+  shaman: { fw: 128, fh: 192, frames: 4, h: 2.0, draw: drawShaman },
+  scorpion: { fw: 192, fh: 160, frames: 4, h: 1.7, draw: drawScorpion },
 };
 
 export function buildSheet(name) {

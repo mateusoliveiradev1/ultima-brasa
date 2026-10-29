@@ -48,7 +48,7 @@ function chestSprite() {
 export async function buildArt(onProgress = () => {}) {
   const step = () => new Promise((r) => setTimeout(r, 0));
   const art = { sheets: {}, flash: {} };
-  for (const n of ['player', 'raider', 'ghoul', 'drone', 'brute', 'boss']) { const s = buildSheet(n); art.sheets[n] = s; art.flash[n] = flashOf(s.canvas); onProgress(0.15 + Math.random() * 0.01); await step(); }
+  for (const n of ['player', 'raider', 'ghoul', 'drone', 'brute', 'boss', 'hound', 'shaman', 'scorpion']) { const s = buildSheet(n); art.sheets[n] = s; art.flash[n] = flashOf(s.canvas); onProgress(0.15 + Math.random() * 0.01); await step(); }
   art.pick = buildPickups(); art.scrap = scrapSprite(); art.soft = buildSoft(); onProgress(0.3); await step();
   art.ground = buildGround(512); onProgress(0.5); await step();
   art.baseProps = buildAllProps(); art.chest = chestSprite(); art.biomeCache = {}; onProgress(0.8); await step();
@@ -127,7 +127,7 @@ export class Game {
     if (id === 'brasas') this.skillLv = { brasas: 4 };
   }
   startRun({ skill, depth, meta, biome, mul }) {
-    this.reset(); this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; this.dm = { hp: dm.hp * b.hp, dmg: dm.dmg * b.dmg, scrap: dm.scrap * b.scrap }; this.rerolls = meta.reroll || 0;
+    this.reset(); this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; this.dm = { hp: dm.hp * b.hp, dmg: dm.dmg * b.dmg, scrap: dm.scrap * b.scrap }; this.rerolls = meta.reroll || 0;
     this.skillLv[skill] = 1 + (meta.maestria || 0); this.sk[skill] = { cd: 0.3, inst: null };
     this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive;
     if (meta.impulso) { this.pending = meta.impulso; this.timers.push({ t: 0.7, fn: () => { if (this.pending > 0 && !this.paused) this.openLevelUp(); } }); }
@@ -149,8 +149,14 @@ export class Game {
     const d = ENEMIES[id], t = this.time || 0, dm = this.dm || { hp: 1, dmg: 1 };
     const hpMul = (1 + (t / 60) * 0.3 + Math.pow(t / 60, 2) * 0.012) * dm.hp * (o.elite ? 7 : 1), dmgMul = (1 + (t / 60) * 0.1) * dm.dmg * (o.elite ? 1.3 : 1);
     const hp = d.hp * hpMul, sc = (d.scale || 1) * (o.elite ? 1.3 : 1);
-    return { d, id, x, z, hp, maxHp: hp, r: d.r * sc, sc, elite: !!o.elite, speed: d.speed * (0.92 + rnd() * 0.16) * (d.wob ? 1.05 : 1) * (o.elite ? 1.1 : 1), dmg: dmgMul * d.dmg, face: -1, anim: rnd() * 6, flash: 0, kx: 0, kz: 0, atk: 0.3, spawn: o.dummy ? 1 : 0, orbCd: 0, t: rnd() * 10, dummy: !!o.dummy, shoot: 1 + rnd() * 1.5, chargeT: 3 + rnd() * 3, charging: 0, fuse: 0, enr: false, hover: d.fly ? 1.15 : 0, mv: {} };
+    const e = { d, id, x, z, hp, maxHp: hp, r: d.r * sc, sc, elite: !!o.elite, speed: d.speed * (0.92 + rnd() * 0.16) * (d.wob ? 1.05 : 1) * (o.elite ? 1.1 : 1), dmg: dmgMul * d.dmg, face: -1, anim: rnd() * 6, flash: 0, kx: 0, kz: 0, atk: 0.3, spawn: o.dummy ? 1 : 0, orbCd: 0, t: rnd() * 10, dummy: !!o.dummy, shoot: 1 + rnd() * 1.5, chargeT: 3 + rnd() * 3, charging: 0, fuse: 0, enr: false, hover: d.fly ? 1.15 : 0, mv: {}, fl: rnd() * 2 - 1, lg: 0, lgCd: 1 + rnd() * 2, cast: 3 + rnd() * 3, buff: 0, lx: x, lz: z, stT: 0, slideT: 0, slideS: 1, affix: null, afT: 2 + rnd() * 2 };
+    if (o.elite && !d.boss) this.applyAffix(e);
+    return e;
   }
+  applyAffix(e) {
+    const A_ = [['veloz', 'Veloz', '#7dffcf'], ['blindado', 'Blindado', '#9fb0bc'], ['explosivo', 'Explosivo', '#ff5a2a'], ['vampiro', 'Vampiro', '#e0433a'], ['atirador', 'Atirador', '#ffb347']], a = pick(A_);
+    e.affix = a[0]; e.affixName = a[1]; e.affixCol = a[2];
+    if (a[0] === 'veloz') e.speed *= 1.4; if (a[0] === 'blindado') { e.hp *= 1.7; e.maxHp = e.hp; e.r *= 1.08; e.sc *= 1.08; }  }
   spawnEnemy(id, x, z) { const e = this.makeEnemy(id, x, z); this.enemies.push(e); return e; }
   ringPos(extra = 0) {
     const hx = this.W / (2 * this.ppu) + 2.2 + extra, hz = this.H / (2 * this.ppu * SIN) + 2.2 + extra, a = rnd() * TAU;
@@ -197,6 +203,7 @@ export class Game {
     }
     if (e.elite) { this.elitesKilled++; this.gems.push({ x: e.x, z: e.z, v: 1, tier: 'chest', vx: 0, vz: 0, pull: false, t: 0, bob: 0 }); this.hooks.onWarn?.('Elite derrotado — baú!'); A.sfx('bell', { vol: 0.35, rate: 1.4 }); }
     if (rnd() < (d.heavy ? 0.25 : 0.006) && !d.boss) this.gems.push({ x: e.x, z: e.z, v: 0.25, tier: 'heart', vx: 0, vz: 0, pull: false, t: 0, bob: 0 });
+    if (e.affix === 'explosivo') { const ex = e.x, ez = e.z, dm_ = e.dmg * 1.1; this.telegraph(ex, ez, 3.6, 0.9, () => this.blastAt(ex, ez, 3.6, dm_)); }
     const big = d.heavy ? 2.2 : 1; if (d.heavy && !d.boss) { this.ring(e.x, e.z, 2.6, '#ff9a54', 0.45, 0.12); this.hitStop = Math.max(this.hitStop, 0.04); } if (e.elite) this.ring(e.x, e.z, 5, '#ffc24a', 0.7, 0.16);
     this.addSpark({ tex: 'smoke', x: e.x, y: 0.6, z: e.z, vx: 0, vy: 0.8, vz: 0, life: 0.7, s0: 1.2 * big, s1: 2.6 * big, a: 0.55, add: false, rot: rnd() * TAU });
     for (let i = 0; i < (d.heavy ? 8 : 3); i++) this.addSpark({ tex: 'spark', x: e.x, y: 0.8, z: e.z, vx: (rnd() - 0.5) * 7, vy: 2 + rnd() * 4, vz: (rnd() - 0.5) * 7, life: 0.5, s0: 0.5, s1: 0.1, a: 1, add: true, g: 12, rot: rnd() * TAU, stretch: true });
@@ -411,7 +418,7 @@ export class Game {
     this.spawnAcc += rate * dt;
     while (this.spawnAcc >= 1) { this.spawnAcc -= 1; if (alive >= cap) continue; const [x, z] = this.ringPos(); this.spawnEnemy(this.pickPool(t), x, z); }
     this.packT -= dt;
-    if (this.packT <= 0 && !this.bossSpawned) { this.packT = Math.max(11, 26 - t * 0.04); const n = 8 + Math.floor(t / 14), a0 = rnd() * TAU, id = B.pool[0][0]; for (let i = 0; i < n; i++) { const a = a0 + (i / n) * 1.3, hx = this.W / (2 * this.ppu) + 2.5, hz = this.H / (2 * this.ppu * SIN) + 2.5; this.spawnEnemy(id, this.cam.x + Math.cos(a) * hx, this.cam.z + Math.sin(a) * hz); } this.hooks.onWarn?.('Horda!'); }
+    if (this.packT <= 0 && !this.bossSpawned) { this.packT = Math.max(11, 26 - t * 0.04); const n = 8 + Math.floor(t / 14), a0 = (Math.hypot(this.hero.vx || 0, this.hero.vz || 0) > 1 && rnd() < 0.6) ? Math.atan2(this.hero.vz, this.hero.vx) - 0.65 : rnd() * TAU, id = B.pool[0][0]; for (let i = 0; i < n; i++) { const a = a0 + (i / n) * 1.3, hx = this.W / (2 * this.ppu) + 2.5, hz = this.H / (2 * this.ppu * SIN) + 2.5; this.spawnEnemy(id, this.cam.x + Math.cos(a) * hx, this.cam.z + Math.sin(a) * hz); } this.hooks.onWarn?.('Horda!'); }
     this.bruteT -= dt;
     if (this.bruteT <= 0 && !this.bossSpawned) { this.bruteT = Math.max(9, 22 - t * 0.035); const [x, z] = this.ringPos(); this.spawnEnemy(B.brute, x, z); }
     this.eliteT = (this.eliteT ?? 55) - dt;
@@ -499,8 +506,34 @@ export class Game {
       if (d.ranged) {
         if (dist < 5) { mx = -dx; mz = -dz; } else if (dist < 7.5) { const sg = Math.sign(Math.sin(e.anim * 0.7)) || 1; mx = -dz * sg; mz = dx * sg; sp *= 0.7; }
         if (d.erratic) { mx += Math.sin(e.t * 3.1 + e.anim) * 0.9; mz += Math.cos(e.t * 2.7) * 0.9; }
-        e.shoot -= dt; if (e.shoot <= 0 && dist < 12 && e.spawn >= 1) { e.shoot = (d.fly ? 2.3 : 2.9) + rnd() * 0.8; this.shootBolt(e, Math.atan2(dz, dx)); A.sfx('latch', { vol: 0.2, rate: 1.8 }); }
+        e.shoot -= dt; if (e.shoot <= 0 && dist < 12 && e.spawn >= 1) { e.shoot = (d.fly ? 2.3 : 2.9) + rnd() * 0.8; const lead = (dist / 7.2) * 0.75, ang0 = Math.atan2(h.z + (h.vz || 0) * lead - e.z, h.x + (h.vx || 0) * lead - e.x); if (d.fan) { for (let k = -1; k <= 1; k++) this.shootBolt(e, ang0 + k * 0.26); } else this.shootBolt(e, ang0); A.sfx('latch', { vol: 0.2, rate: 1.8 }); }
       }
+      // — flanco: inimigos de corpo a corpo desviam em arco e fecham o cerco perto do herói
+      if (!d.ranged && !d.boss && !d.bomber && !d.support && e.charging <= 0 && dist > 2.6 && this.mode === 'run') {
+        const ang = e.fl * 0.9 * clamp((dist - 2.4) / 7, 0, 1), ca = Math.cos(ang), sa = Math.sin(ang); mx = dx * ca - dz * sa; mz = dx * sa + dz * ca;
+        if (d.wob) { const w = Math.sin(e.t * 5 + e.anim) * 0.5; mx += -dz * w; mz += dx * w; }
+      }
+      // — desvio de obstáculos: se não saiu do lugar, contorna pelo lado
+      if (!d.fly && !d.boss && this.mode === 'run') {
+        e.stT += dt; if (e.stT >= 0.35) { const mvd = Math.hypot(e.x - e.lx, e.z - e.lz); if (mvd < e.speed * 0.35 * 0.3 && dist > e.r + 1.3 && e.spawn >= 1) { e.slideT = 0.8; e.slideS = rnd() < 0.5 ? -1 : 1; } e.lx = e.x; e.lz = e.z; e.stT = 0; }
+        if (e.slideT > 0) { e.slideT -= dt; mx = mx * 0.35 - dz * e.slideS; mz = mz * 0.35 + dx * e.slideS; }
+      }
+      // — investida de golpe (aviso curto antes de saltar)
+      if (d.lunge && this.mode === 'run') {
+        e.lgCd -= dt;
+        if (e.lg === 0 && e.lgCd <= 0 && dist < 3.1 && dist > 1.0 && e.spawn >= 1) { e.lg = -0.34; e.cdx = dx; e.cdz = dz; }
+        if (e.lg < 0) { e.lg += dt; sp = 0; e.flash = Math.max(e.flash, 0.06); if (e.lg >= 0) e.lg = 0.22; }
+        else if (e.lg > 0) { e.lg -= dt; sp *= 4.4; mx = e.cdx; mz = e.cdz; if (e.lg <= 0) { e.lg = 0; e.lgCd = 2.4 + rnd() * 1.6; } }
+      }
+      // — xamã: mantém distância e fortalece/cura aliados
+      if (d.support && this.mode === 'run') {
+        if (dist < 6.5) { mx = -dx; mz = -dz; sp *= 1.05; } else if (dist > 9.5) { mx = dx; mz = dz; } else { const sg = e.fl > 0 ? 1 : -1; mx = -dz * sg * 0.6; mz = dx * sg * 0.6; sp *= 0.6; }
+        e.cast -= dt;
+        if (e.cast <= 0 && e.spawn >= 1) { e.cast = 6.5 + rnd() * 1.5; let n = 0; for (const o of this.enemies) { if (o.dead || o === e || o.d.boss) continue; if ((o.x - e.x) ** 2 + (o.z - e.z) ** 2 < 49) { o.buff = 4.5; o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.15); n++; } } this.ring(e.x, e.z, 7, '#ffb347', 0.7, 0.16); this.burst(e.x, e.z, 10, 1.6, 5); A.synth('chime', { vol: 0.25 }); }
+      }
+      if (e.buff > 0) { e.buff -= dt; sp *= 1.4; }
+      // — afixos de elite
+      if (e.affix === 'atirador') { e.afT -= dt; if (e.afT <= 0 && dist < 13 && e.spawn >= 1) { e.afT = 3.6; for (let i = 0; i < 8; i++) this.shootBolt(e, (i / 8) * TAU + e.t, 5.5, 3.2); A.sfx('latch', { vol: 0.3, rate: 1.1 }); } }
       if (d.bomber) {
         if (e.fuse > 0) { e.fuse -= dt; sp = 0; if (e.fuse <= 0) { const ex = e.x, ez = e.z; this.blastAt(ex, ez, 2.9, e.dmg); e.hp = 0; this.killEnemy(e); continue; } }
         else if (dist < 3.3 && e.spawn >= 1) { e.fuse = 0.75; this.telegraphs.push({ x: e.x, z: e.z, r: 2.9, t: 0.75, total: 0.75, follow: e }); A.sfx('latch', { vol: 0.4, rate: 0.7 }); }
@@ -535,7 +568,7 @@ export class Game {
       for (let ax = -1; ax <= 1; ax++) for (let az = -1; az <= 1; az++) { const a = grid.get(((gx + ax + 512) << 12) | (gz + az + 512)); if (!a) continue;
         for (const o of a) { if (o === e || o.dead) continue; const ox = e.x - o.x, oz = e.z - o.z, rr = e.r + o.r, d2 = ox * ox + oz * oz; if (d2 < rr * rr && d2 > 1e-6) { const dd = Math.sqrt(d2), push = ((rr - dd) / dd) * (d.heavy && !o.d.heavy ? 0.1 : 0.5); e.x += ox * push; e.z += oz * push; } } }
       if (!d.fly) this.world.pushOut(e, e.r * 0.8);
-      if (dist < e.r + 0.42 && e.atk <= 0 && e.spawn >= 1 && this.mode === 'run' && !d.bomber) { e.atk = d.boss ? 1.1 : 0.85; this.hurtHero(e.dmg, e.x, e.z, { slow: d.slow }); }
+      if (dist < e.r + 0.42 && e.atk <= 0 && e.spawn >= 1 && this.mode === 'run' && !d.bomber) { e.atk = d.boss ? 1.1 : 0.85; this.hurtHero(e.dmg * (e.buff > 0 ? 1.2 : 1), e.x, e.z, { slow: d.slow }); if (e.affix === 'vampiro') e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.2); }
       if (dist > 34 && !d.boss && this.mode === 'run') { const [x, z] = this.ringPos(); e.x = x; e.z = z; }
     }
     for (const b of this.ebolts) {
@@ -655,14 +688,16 @@ export class Game {
   drawEnemy(ctx, e) {
     const ppu = this.ppu, { S, F } = this.art.sheetFor(e.d);
     const [sx, sy] = this.proj3(e.x, e.hover + (e.d.fly ? Math.sin(e.t * 3) * 0.12 : 0), e.z), h = S.h * ppu * (e.sc || 1), w = (h * S.fw) / S.fh, fr = Math.floor(e.anim * 1.6) % S.frames;
-    if (e.elite) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(e.t * 5); const a = w * 1.5; ctx.drawImage(softTint(this.art, '#ffc24a'), sx - a / 2, sy - h * 0.55 - a / 2, a, a); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
-    const winding = (e.charging < 0 || e.chging < 0) ? 1 + Math.sin(e.t * 50) * 0.02 : 1, fuse = e.fuse > 0 ? 0.5 + 0.5 * Math.sin(e.t * 40) : 0;
+    if (e.elite) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(e.t * 5); const a = w * 1.5; ctx.drawImage(softTint(this.art, e.affixCol || '#ffc24a'), sx - a / 2, sy - h * 0.55 - a / 2, a, a); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
+    if (e.buff > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.35 + 0.15 * Math.sin(e.t * 8); const a2 = w * 1.2; ctx.drawImage(softTint(this.art, '#ffb347'), sx - a2 / 2, sy - h * 0.4 - a2 / 2, a2, a2); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
+    const winding = (e.charging < 0 || e.chging < 0 || e.lg < 0) ? 1 + Math.sin(e.t * 50) * 0.02 : 1, fuse = e.fuse > 0 ? 0.5 + 0.5 * Math.sin(e.t * 40) : 0;
     ctx.save(); ctx.globalAlpha = e.spawn; ctx.translate(sx, sy + h * 0.07); if (e.face < 0) ctx.scale(-1, 1); const sq = 1 + Math.sin(e.anim * 4.2) * 0.025; ctx.scale(winding, sq * (e.charging < 0 ? 0.92 : 1));
     ctx.drawImage(S.canvas, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h);
     const fl = Math.max(e.flash > 0 ? Math.min(1, e.flash * 9) : 0, fuse * 0.7);
     if (fl > 0) { ctx.globalAlpha = fl * e.spawn; ctx.drawImage(F, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h); }
     ctx.restore(); ctx.globalAlpha = 1;
-    if ((e.d.heavy || e.elite) && !e.d.boss && e.hp < e.maxHp && !e.dummy) { const bw = w * 0.5; ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(sx - bw / 2, sy - h - 8, bw, 5); ctx.fillStyle = e.elite ? '#ffc24a' : '#c2562a'; ctx.fillRect(sx - bw / 2, sy - h - 8, bw * clamp(e.hp / e.maxHp, 0, 1), 5); }
+    if ((e.d.heavy || e.elite) && !e.d.boss && (e.hp < e.maxHp || e.elite) && !e.dummy) { const bw = Math.max(w * 0.5, 34), col = e.affixCol || (e.elite ? '#ffc24a' : '#c2562a'); ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(sx - bw / 2, sy - h - 8, bw, 5); ctx.fillStyle = col; ctx.fillRect(sx - bw / 2, sy - h - 8, bw * clamp(e.hp / e.maxHp, 0, 1), 5);
+      if (e.affixName) { ctx.font = `700 ${Math.round(13 * (ppu / 52))}px Rajdhani, sans-serif`; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,4,4,.9)'; ctx.strokeText(e.affixName.toUpperCase(), sx, sy - h - 12); ctx.fillStyle = col; ctx.fillText(e.affixName.toUpperCase(), sx, sy - h - 12); } }
   }
   drawHero(ctx, T) {
     const h = this.hero, ppu = this.ppu, S = this.art.sheets.player, [sx, sy] = this.proj3(h.x, 0, h.z), hh = S.h * ppu, w = (hh * S.fw) / S.fh, fr = h.moving ? Math.floor(h.anim * 7.5) % S.frames : (Math.floor(T * 1.8) % 2) * 2;
