@@ -109,7 +109,7 @@ export class Game {
 
   // ─────────── ciclo de vida ───────────
   reset() {
-    this.fx.clear(); this.enemies = []; this.gems = []; this.proj = []; this.ebolts = []; this.texts = []; this.decals = []; this.timers = []; this.lights = []; this.sparks = []; this.telegraphs = [];
+    this.fx.clear(); this.dmgInd = []; this.corpses = []; this.enemies = []; this.gems = []; this.proj = []; this.ebolts = []; this.texts = []; this.decals = []; this.timers = []; this.lights = []; this.sparks = []; this.telegraphs = [];
     this.hero = { x: 0, z: 0, vx: 0, vz: 0, dx: 1, dz: 0, face: 1, hp: 100, maxHp: 100, iframes: 0, dashT: 0, dashCd: 0, ddx: 1, ddz: 0, anim: 0, hurt: 0, moving: false };
     this.cam.x = 0; this.cam.z = 0; this.cam.shake = 0;
     this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = xpNeed(1); this.pending = 0; this.scrapRun = 0; this.scrapPieces = 0;
@@ -183,7 +183,7 @@ export class Game {
     let d = dmg * this.stats.dmg, crit = false;
     if (this.stats.exec && e.hp < e.maxHp * 0.25) d *= 1 + this.stats.exec;
     if (rnd() < this.stats.crit) { d *= this.stats.critMul; crit = true; }
-    e.hp -= d; e.flash = 0.1;
+    e.hp -= d; e.flash = 0.1; e.hitT = 0.2; e.hkx = o.kdx ?? 0;
     if (o.kb && !e.d.boss) { const k = o.kb * (e.d.heavy ? 0.25 : 1); e.kx += (o.kdx ?? 0) * k; e.kz += (o.kdz ?? 0) * k; }
     if (o.text !== false) this.floatText(e.x + (rnd() - 0.5) * 0.6, (e.d.fly ? e.hover : 0) + 1.5 * (e.sc || 1) * (e.d.boss ? 2 : 1), e.z, Math.round(d), crit ? '#fff2c8' : '#ffb347', crit);
     if (crit && this.hitFx < 6) { this.hitFx++; this.spawnImpact(e.x, e.z, 0.9); if (this.mode === 'run') { this.hitStop = Math.max(this.hitStop, e.d.boss ? 0.02 : 0.035); this.cam.shake = Math.max(this.cam.shake, 0.12); } }
@@ -193,6 +193,7 @@ export class Game {
   spawnImpact(x, z, sc = 0.8) { const d = store.resolveFx('impacto'); if (d) this.fx.spawn(d, { x, z, dx: 1, dz: 0, scale: sc }); }
   comboMul() { return 1 + Math.min(0.6, Math.floor(this.combo / 10) * 0.05); }
   killEnemy(e) {
+    if (this.mode === 'run' || this.mode === 'hub') this.corpses.push({ d: e.d, x: e.x, z: e.z, sc: e.sc || 1, face: e.face, anim: e.anim, hover: e.hover || 0, dir: (e.hkx ?? e.kx) >= 0 ? 1 : -1, t: 0, life: e.d.boss ? 0.7 : 0.34 });
     e.dead = true; this.kills++; this.combo++; this.comboT = 3.2; this.maxCombo = Math.max(this.maxCombo, this.combo);
     const d = e.d, tier = d.xp >= 12 ? 2 : d.xp >= 3 ? 1 : 0, cm = this.comboMul();
     this.gems.push({ x: e.x, z: e.z, v: d.xp * (e.elite ? 4 : 1), tier, vx: (rnd() - 0.5) * 3, vz: (rnd() - 0.5) * 3, pull: false, t: 0, bob: rnd() * 6 });
@@ -223,6 +224,7 @@ export class Game {
     const h = this.hero; if (h.iframes > 0 || h.dashT > 0 || this.over || this.mode !== 'run' || this.dying > 0) return;
     dmg = Math.max(1, dmg - this.stats.armor); h.hp -= dmg; h.iframes = 0.55; h.hurt = 0.25; this.hurtFlash = 1; this.hitStop = Math.max(this.hitStop, 0.06); this.ring(h.x, h.z, 3, '#ff4a3a', 0.45, 0.14); this.burst(h.x, h.z, 8, 1, 6); this.cam.shake = Math.max(this.cam.shake, 0.45); this.combo = Math.floor(this.combo * 0.5);
     if (o.slow) h.slowT = 1.6;
+    this.addDmgInd(o.ox ?? srcx, o.oz ?? srcz, false);
     this.floatText(h.x, 2.2, h.z, '-' + Math.round(dmg), '#ff5a4a', false); A.synth('hurt', { vol: 0.5 }); A.sfx('punch', { vol: 0.5, rate: 0.8 });
     const k = Math.hypot(h.x - srcx, h.z - srcz) || 1; h.vx += ((h.x - srcx) / k) * 4; h.vz += ((h.z - srcz) / k) * 4;
     if (this.stats.thorns) { this.areaDamage(h.x, h.z, 3.2, this.stats.thorns, { kb: 5 }); this.spawnImpact(h.x, h.z, 1.7); }
@@ -441,7 +443,7 @@ export class Game {
       this.hubCast -= dt;
       if (this.hubCast <= 0) { const id = this.hubSkill; this.hubCast = id === 'chuva' ? 3.2 : id === 'nova' ? 2.6 : 1.8; if (id === 'brasas') this.hubCast = 99; this.cast(id); }
       if (this.hubSkill === 'brasas') this.updateSkills(dt);
-      for (const e of this.enemies) { e.flash = Math.max(0, e.flash - dt); e.kx *= Math.exp(-6 * dt); e.kz *= Math.exp(-6 * dt); e.anim += dt; }
+      for (const e of this.enemies) { e.flash = Math.max(0, e.flash - dt); e.kx *= Math.exp(-6 * dt); e.kz *= Math.exp(-6 * dt); e.anim += dt; if (e.hitT > 0) e.hitT = Math.max(0, e.hitT - dt); }
       for (const p of this.proj) { p.life -= dt; p.x += p.dx * p.speed * dt; p.z += p.dz * p.speed * dt; if (p.life <= 0) p.dead = true; } this.proj = this.proj.filter((p) => !p.dead);
       this.tickCommon(dt); this.cam.x = lerp(this.cam.x, this.camHub.x, 0.05); this.cam.z = lerp(this.cam.z, this.camHub.z, 0.05); return;
     }
@@ -477,6 +479,8 @@ export class Game {
   tickCommon(dt) {
     this.cam.shake = Math.max(0, this.cam.shake - dt * 2.2); this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.2);
     const shk = this.cam.shake * 12 * this.opts.shake; this.cam.sx = (rnd() - 0.5) * shk; this.cam.sz = (rnd() - 0.5) * shk;
+    for (const di of this.dmgInd) di.t += dt; this.dmgInd = this.dmgInd.filter((d) => d.t < d.life);
+    for (const c of this.corpses) c.t += dt; this.corpses = this.corpses.filter((c) => c.t < c.life);
     for (const r of this.rings) r.t += dt; this.rings = this.rings.filter((r) => r.t < r.life);
     for (const g of this.ghosts) g.a -= dt * 2.6; this.ghosts = this.ghosts.filter((g) => g.a > 0.02); this.flashA = Math.max(0, this.flashA - dt * 1.6);
     for (const t of this.texts) { t.t += dt; t.y += dt * (t.crit ? 1.1 : 1.6); t.x += t.vx * dt; } this.texts = this.texts.filter((t) => t.t < t.life);
@@ -492,13 +496,22 @@ export class Game {
       this.pools = this.pools.filter((p) => p.life > 0);
     }
   }
-  shootBolt(e, ang, sp = 7.2, life = 3.4) { this.ebolts.push({ x: e.x, z: e.z, y: e.hover || 1, vx: Math.cos(ang) * sp, vz: Math.sin(ang) * sp, life, dmg: e.dmg, col: e.d.bolt || '#ff7a2a', slow: e.d.slow }); }
+  // Indicador direcional de dano: só aparece quando a fonte NÃO está visível na tela (ataque de longe / fora do quadro).
+  // warn = aviso de atirador fora da tela prestes a disparar. Ataques que o jogador está vendo não mostram nada.
+  addDmgInd(x, z, warn) {
+    const h = this.hero, W = this.W, H = this.H; if (!W) return;
+    const [sx, sy] = this.proj3(x, 0.8, z); if (sx > 44 && sx < W - 44 && sy > 44 && sy < H - 44) return;
+    const [hx, hy] = this.proj3(h.x, 0.9, h.z), ang = Math.atan2(sy - hy, sx - hx), ex = this.dmgInd.find((d) => d.warn === warn && Math.abs(Math.atan2(Math.sin(d.ang - ang), Math.cos(d.ang - ang))) < 0.4);
+    if (ex) { ex.t = 0; ex.ang = ang; ex.n++; return; }
+    if (this.dmgInd.length < 6) this.dmgInd.push({ ang, t: 0, life: warn ? 0.9 : 1.5, warn, n: 1 });
+  }
+  shootBolt(e, ang, sp = 7.2, life = 3.4) { this.addDmgInd(e.x, e.z, true); this.ebolts.push({ ox: e.x, oz: e.z, x: e.x, z: e.z, y: e.hover || 1, vx: Math.cos(ang) * sp, vz: Math.sin(ang) * sp, life, dmg: e.dmg, col: e.d.bolt || '#ff7a2a', slow: e.d.slow }); }
   updateEnemies(dt) {
     const h = this.hero, grid = new Map(), CELL = 1.6;
     for (const e of this.enemies) { if (e.dead) continue; const k = ((Math.floor(e.x / CELL) + 512) << 12) | (Math.floor(e.z / CELL) + 512); let a = grid.get(k); if (!a) grid.set(k, (a = [])); a.push(e); }
     for (const e of this.enemies) {
       if (e.dead) continue;
-      const d = e.d, mv = e.mv; e.t += dt; e.spawn = Math.min(1, e.spawn + dt * 2.2); e.flash = Math.max(0, e.flash - dt); e.atk -= dt;
+      const d = e.d, mv = e.mv; e.t += dt; e.spawn = Math.min(1, e.spawn + dt * 2.2); e.flash = Math.max(0, e.flash - dt); e.atk -= dt; if (e.hitT > 0) e.hitT = Math.max(0, e.hitT - dt); if (e.atkT > 0) e.atkT = Math.max(0, e.atkT - dt);
       let dx = h.x - e.x, dz = h.z - e.z; const dist = Math.hypot(dx, dz) || 1; dx /= dist; dz /= dist;
       if (Math.abs(dx) > 0.1) e.face = dx > 0 ? 1 : -1;
       let sp = e.speed, mx = dx, mz = dz;
@@ -562,18 +575,18 @@ export class Game {
         }
       }
       const slowK = e.spawn < 1 ? 0.3 : 1;
-      e.x += (mx * sp * slowK + e.kx) * dt; e.z += (mz * sp * slowK + e.kz) * dt;
+      e.mvx = mx * sp * slowK; e.x += (mx * sp * slowK + e.kx) * dt; e.z += (mz * sp * slowK + e.kz) * dt;
       e.kx *= Math.exp(-5 * dt); e.kz *= Math.exp(-5 * dt); e.anim += dt * (0.6 + sp * 0.9);
       const gx = Math.floor(e.x / CELL), gz = Math.floor(e.z / CELL);
       for (let ax = -1; ax <= 1; ax++) for (let az = -1; az <= 1; az++) { const a = grid.get(((gx + ax + 512) << 12) | (gz + az + 512)); if (!a) continue;
         for (const o of a) { if (o === e || o.dead) continue; const ox = e.x - o.x, oz = e.z - o.z, rr = e.r + o.r, d2 = ox * ox + oz * oz; if (d2 < rr * rr && d2 > 1e-6) { const dd = Math.sqrt(d2), push = ((rr - dd) / dd) * (d.heavy && !o.d.heavy ? 0.1 : 0.5); e.x += ox * push; e.z += oz * push; } } }
       if (!d.fly) this.world.pushOut(e, e.r * 0.8);
-      if (dist < e.r + 0.42 && e.atk <= 0 && e.spawn >= 1 && this.mode === 'run' && !d.bomber) { e.atk = d.boss ? 1.1 : 0.85; this.hurtHero(e.dmg * (e.buff > 0 ? 1.2 : 1), e.x, e.z, { slow: d.slow }); if (e.affix === 'vampiro') e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.2); }
+      if (dist < e.r + 0.42 && e.atk <= 0 && e.spawn >= 1 && this.mode === 'run' && !d.bomber) { e.atk = d.boss ? 1.1 : 0.85; e.atkT = 0.24; this.hurtHero(e.dmg * (e.buff > 0 ? 1.2 : 1), e.x, e.z, { slow: d.slow }); if (e.affix === 'vampiro') e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.2); }
       if (dist > 34 && !d.boss && this.mode === 'run') { const [x, z] = this.ringPos(); e.x = x; e.z = z; }
     }
     for (const b of this.ebolts) {
       b.life -= dt; b.x += b.vx * dt; b.z += b.vz * dt;
-      if ((b.x - h.x) ** 2 + (b.z - h.z) ** 2 < 0.55 ** 2) { this.hurtHero(b.dmg, b.x - b.vx * 0.1, b.z - b.vz * 0.1, { slow: b.slow }); b.life = 0; }
+      if ((b.x - h.x) ** 2 + (b.z - h.z) ** 2 < 0.55 ** 2) { this.hurtHero(b.dmg, b.x - b.vx * 0.1, b.z - b.vz * 0.1, { slow: b.slow, ox: b.ox, oz: b.oz }); b.life = 0; }
     }
     this.ebolts = this.ebolts.filter((b) => b.life > 0);
   }
@@ -630,6 +643,7 @@ export class Game {
     } });
     for (const g of this.gems) items.push({ z: g.z, k: 1, o: g });
     for (const e of this.enemies) items.push({ z: e.z, k: 2, o: e });
+    for (const c of this.corpses) items.push({ z: c.z, k: 5, o: c });
     items.push({ z: h.z, k: 3, o: h });
     for (const b of this.ebolts) items.push({ z: b.z, k: 4, o: b });
     items.sort((a, b) => a.z - b.z);
@@ -651,6 +665,7 @@ export class Game {
         else { const fr = g.tier === 'heart' ? 3 : g.tier; ctx.drawImage(art.pick.canvas, fr * 64, 0, 64, 64, sx - sz / 2, sy - sz / 2, sz, sz); } }
       else if (it.k === 2) this.drawEnemy(ctx, it.o);
       else if (it.k === 3) this.drawHero(ctx, T);
+      else if (it.k === 5) this.drawCorpse(ctx, it.o);
       else if (it.k === 4) { const b = it.o, [sx, sy] = this.proj3(b.x, b.y, b.z), s = 1.1 * ppu; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(this.flareFor(b.col), sx - s / 2, sy - s / 2, s, s); ctx.globalCompositeOperation = 'source-over'; }
     }
     // fogo dos barris (chamas Kenney)
@@ -682,6 +697,15 @@ export class Game {
     const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, W * 0.72); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(5,3,3,.78)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     const low = this.mode === 'run' ? clamp(1 - h.hp / h.maxHp * 2.2, 0, 1) : 0, hf = Math.max(this.hurtFlash * 0.6, low * (0.25 + 0.15 * Math.sin(T * 6)));
     if (hf > 0.01) { const rg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.7); rg.addColorStop(0, 'rgba(160,20,10,0)'); rg.addColorStop(1, `rgba(190,28,16,${hf})`); ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H); }
+    // indicadores direcionais de dano/aviso (só fontes fora da tela)
+    for (const di of this.dmgInd) {
+      const k = 1 - di.t / di.life, a = Math.min(1, k * 1.8) * (di.warn ? 0.8 : 1), rx = W / 2 - 34, ry = H / 2 - 34, px = W / 2 + Math.cos(di.ang) * rx, py = H / 2 + Math.sin(di.ang) * ry, s = Math.max(14, W / 70) * (di.warn ? 0.85 : 1.15), col = di.warn ? '255,190,70' : '255,60,44';
+      ctx.save(); ctx.translate(px, py); ctx.rotate(di.ang); ctx.globalAlpha = a;
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 3.2); g.addColorStop(0, `rgba(${col},.55)`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 3.2, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(${col},1)`; ctx.strokeStyle = 'rgba(20,4,4,.85)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s * 0.9, 0); ctx.lineTo(-s * 0.7, -s * 0.85); ctx.lineTo(-s * 0.25, 0); ctx.lineTo(-s * 0.7, s * 0.85); ctx.closePath(); ctx.stroke(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
     if (this.dying > 0) { ctx.fillStyle = `rgba(10,0,0,${clamp(1 - this.dying / 1.3, 0, 0.7)})`; ctx.fillRect(0, 0, W, H); }
   }
   flareFor(col) { const c = col || '#ff7a2a'; this._fl = this._fl || {}; if (!this._fl[c]) { const im = this.art.k.k_flare, k = cv(96), x = k.getContext('2d'); x.drawImage(im, 0, 0, 96, 96); x.globalCompositeOperation = 'multiply'; x.fillStyle = c; x.fillRect(0, 0, 96, 96); x.globalCompositeOperation = 'destination-in'; x.drawImage(im, 0, 0, 96, 96); this._fl[c] = k; } return this._fl[c]; }
@@ -691,7 +715,16 @@ export class Game {
     if (e.elite) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(e.t * 5); const a = w * 1.5; ctx.drawImage(softTint(this.art, e.affixCol || '#ffc24a'), sx - a / 2, sy - h * 0.55 - a / 2, a, a); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
     if (e.buff > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.35 + 0.15 * Math.sin(e.t * 8); const a2 = w * 1.2; ctx.drawImage(softTint(this.art, '#ffb347'), sx - a2 / 2, sy - h * 0.4 - a2 / 2, a2, a2); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
     const winding = (e.charging < 0 || e.chging < 0 || e.lg < 0) ? 1 + Math.sin(e.t * 50) * 0.02 : 1, fuse = e.fuse > 0 ? 0.5 + 0.5 * Math.sin(e.t * 40) : 0;
-    ctx.save(); ctx.globalAlpha = e.spawn; ctx.translate(sx, sy + h * 0.07); if (e.face < 0) ctx.scale(-1, 1); const sq = 1 + Math.sin(e.anim * 4.2) * 0.025; ctx.scale(winding, sq * (e.charging < 0 ? 0.92 : 1));
+    ctx.save(); ctx.globalAlpha = e.spawn; ctx.translate(sx, sy + h * 0.07);
+    // animação procedural: surgir, inclinar no movimento, passo saltitado, antecipar/avançar no ataque, recuar ao apanhar
+    const spw = e.spawn, back = spw >= 1 ? 1 : 1 + 2.2 * Math.pow(spw - 1, 3) + 1.2 * Math.pow(spw - 1, 2), mvx = e.mvx || 0, moving = Math.abs(mvx) + 0 > 0.4 || Math.abs(e.kx) > 0.5;
+    let ax = 1, ay = 1, tx = 0, ty = (1 - spw) * h * 0.18;
+    if (!e.d.boss || true) { ctx.rotate(clamp(mvx / 7, -1, 1) * 0.08 * (e.d.fly ? 1.4 : 1)); }
+    if (moving && !e.d.fly) ty -= Math.abs(Math.sin(e.anim * 3.4)) * h * 0.022;
+    if (e.atkT > 0) { const u = 1 - e.atkT / 0.24, s = Math.sin(u * Math.PI), dir = this.hero.x > e.x ? 1 : -1; tx += dir * s * h * 0.2; ax *= 1 + 0.13 * s; ay *= 1 - 0.09 * s; }
+    else if (e.atk > 0 && e.atk < 0.2 && e.spawn >= 1 && this.mode === 'run' && Math.hypot(this.hero.x - e.x, this.hero.z - e.z) < e.r + 1.1) { const k = 1 - e.atk / 0.2; ax *= 1 + 0.06 * k; ay *= 1 - 0.08 * k; tx -= (this.hero.x > e.x ? 1 : -1) * k * h * 0.04; }
+    if (e.hitT > 0) { const k = e.hitT / 0.2; ax *= 1 + 0.16 * k; ay *= 1 - 0.14 * k; tx += Math.sign(e.hkx || e.kx || 0) * k * h * 0.06; }
+    ctx.translate(tx, ty); if (e.face < 0) ctx.scale(-1, 1); const sq = 1 + Math.sin(e.anim * 4.2) * 0.025; ctx.scale(winding * ax * back, sq * (e.charging < 0 ? 0.92 : 1) * ay * back);
     ctx.drawImage(S.canvas, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h);
     const fl = Math.max(e.flash > 0 ? Math.min(1, e.flash * 9) : 0, fuse * 0.7);
     if (fl > 0) { ctx.globalAlpha = fl * e.spawn; ctx.drawImage(F, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h); }
@@ -699,9 +732,21 @@ export class Game {
     if ((e.d.heavy || e.elite) && !e.d.boss && (e.hp < e.maxHp || e.elite) && !e.dummy) { const bw = Math.max(w * 0.5, 34), col = e.affixCol || (e.elite ? '#ffc24a' : '#c2562a'); ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(sx - bw / 2, sy - h - 8, bw, 5); ctx.fillStyle = col; ctx.fillRect(sx - bw / 2, sy - h - 8, bw * clamp(e.hp / e.maxHp, 0, 1), 5);
       if (e.affixName) { ctx.font = `700 ${Math.round(13 * (ppu / 52))}px Rajdhani, sans-serif`; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,4,4,.9)'; ctx.strokeText(e.affixName.toUpperCase(), sx, sy - h - 12); ctx.fillStyle = col; ctx.fillText(e.affixName.toUpperCase(), sx, sy - h - 12); } }
   }
+  drawCorpse(ctx, c) {
+    const u = c.t / c.life, { S, F } = this.art.sheetFor(c.d), ppu = this.ppu, [sx, sy] = this.proj3(c.x + c.dir * u * 0.5, c.hover * (1 - u), c.z), h = S.h * ppu * c.sc, w = (h * S.fw) / S.fh, fr = Math.floor(c.anim * 1.6) % S.frames;
+    ctx.save(); ctx.globalAlpha = Math.pow(1 - u, 1.3); ctx.translate(sx, sy + h * 0.07); ctx.rotate(c.dir * (1 - Math.pow(1 - u, 2)) * 1.25); if (c.face < 0) ctx.scale(-1, 1); ctx.scale(1 + 0.25 * u, 1 - 0.5 * u);
+    ctx.drawImage(S.canvas, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h);
+    if (u < 0.35) { ctx.globalAlpha = (1 - u / 0.35) * 0.9; ctx.drawImage(F, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h); }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
   drawHero(ctx, T) {
     const h = this.hero, ppu = this.ppu, S = this.art.sheets.player, [sx, sy] = this.proj3(h.x, 0, h.z), hh = S.h * ppu, w = (hh * S.fw) / S.fh, fr = h.moving ? Math.floor(h.anim * 7.5) % S.frames : (Math.floor(T * 1.8) % 2) * 2;
-    ctx.save(); ctx.translate(sx, sy + hh * 0.07); if (h.face < 0) ctx.scale(-1, 1);
+    ctx.save(); ctx.translate(sx, sy + hh * 0.07);
+    // animação procedural: inclinar no movimento, passo saltitado, esticar no dash, encolher ao apanhar
+    ctx.rotate(clamp((h.vx || 0) / 6, -1, 1) * 0.07);
+    if (h.moving && h.dashT <= 0) ctx.translate(0, -Math.abs(Math.sin(h.anim * Math.PI * 3.75)) * hh * 0.028);
+    if (h.dashT > 0) ctx.scale(1.28, 0.84); if (h.hurt > 0) { const k = h.hurt / 0.25; ctx.scale(1 + 0.14 * k, 1 - 0.12 * k); ctx.translate(-Math.sign(h.vx || 0) * k * hh * 0.03, 0); }
+    if (h.face < 0) ctx.scale(-1, 1);
     const sq = h.moving ? 1 + Math.sin(h.anim * 15) * 0.03 : 1 + Math.sin(T * 2) * 0.012; ctx.scale(1, sq);
     ctx.globalAlpha = h.iframes > 0 && h.dashT <= 0 ? 0.55 + 0.45 * Math.sin(T * 50) : h.dashT > 0 ? 0.55 : 1;
     ctx.drawImage(S.canvas, fr * S.fw, 0, S.fw, S.fh, -w / 2, -hh, w, hh);
