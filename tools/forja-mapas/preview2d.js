@@ -11,7 +11,7 @@ export function renderPreview(spec, { W = 1280, H = 720 } = {}) {
   const g = paintGround(1024, 3), pat = x.createPattern(g.albedo, 'repeat'), half = spec.ground.half;
   x.fillStyle = '#2a1812'; x.fillRect(0, 0, W, H);
   x.save(); x.beginPath(); x.rect(0, 0, W, H); x.clip(); x.setTransform(S / 640 * 1.6 * 4, 0, 0, S / 640 * 1.6 * 4 * SIN, sx(-half), sy(-half)); x.fillStyle = pat; x.fillRect(0, 0, 2 * half * 640 / (S / 640 * 1.6 * 4) / 640 * 640, 2 * half * 640 / (S / 640 * 1.6 * 4)); x.restore();
-  const macro = paintGroundMacro(2048, spec.ground.macroSeed, half, spec.ground.paths);
+  const macro = paintGroundMacro(2048, spec.ground.macroSeed, half, spec.ground.paths, spec.ground.patches || []);
   x.drawImage(macro, sx(-half), sy(-half), 2 * half * S, 2 * half * S * SIN);
   // sprites usados
   const cat = Object.fromEntries(CATALOG.map((e) => [e.id, e])), cache = {};

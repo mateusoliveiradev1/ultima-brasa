@@ -21,12 +21,12 @@ export function createMap(base) {
   const rnd = mulberry32(spec.seed);
   const api = {
     spec, rnd,
-    ok(id, x, z, { allowPath = false } = {}) {
+    ok(id, x, z, { allowPath = false, y = 0 } = {}) {
       const f = FOOT[id]; if (!f) throw new Error('prop desconhecido: ' + id);
       if (x < spec.bounds.x[0] || x > spec.bounds.x[1] || z < spec.bounds.z[0] || z > spec.bounds.z[1]) return false;
       if (Math.hypot(x - spec.spawn.x, z - spec.spawn.z) < spec.spawn.r + (f.decal ? 0 : f.r)) return false;
       if (!allowPath && f.block) for (const p of spec.ground.paths) if (distToPath(x, z, p) < PATH_HALF + f.r + 0.15) return false;
-      for (const q of spec.props) { const g = FOOT[q.id]; if (f.decal || g.decal) continue; if (Math.hypot(q.x - x, q.z - z) < (f.r + g.r) * 0.85 && (q.y || 0) === 0) return false; }
+      for (const q of spec.props) { const g = FOOT[q.id]; if (f.decal || g.decal) continue; if (Math.hypot(q.x - x, q.z - z) < (f.r + g.r) * 0.85 && (q.y || 0) === y) return false; }
       return true;
     },
     place(id, x, z, opts = {}) { if (!opts.force && !api.ok(id, x, z, opts)) return null; const p = { id, x: +x.toFixed(2), z: +z.toFixed(2), v: opts.v ?? ((rnd() * 99) | 0) }; if (opts.y) p.y = opts.y; if (opts.s) p.s = opts.s; spec.props.push(p); return p; },
@@ -74,6 +74,6 @@ export function lint(spec) {
   if (spec.lights.length < 3) warns.push(`poucas luzes (${spec.lights.length}); alvo ≥ 3 para pontos focais`);
   const heavy = solid.filter((p) => FOOT[p.id].r >= 1.2).length; if (heavy < 3) warns.push(`poucas âncoras grandes (${heavy}); a cena fica sem pontos focais`);
   // cada luz deveria iluminar algo
-  for (const L of spec.lights) if (!solid.some((p) => Math.hypot(p.x - L.x, p.z - L.z) < L.r)) warns.push(`luz sem nada por perto: (${L.x},${L.z})`);
+  for (const L of spec.lights) if (Math.hypot(L.x - spec.spawn.x, L.z - spec.spawn.z) > 1.5 && !solid.some((p) => Math.hypot(p.x - L.x, p.z - L.z) < L.r)) warns.push(`luz sem nada por perto: (${L.x},${L.z})`);
   return { errors, warns, stats: { props: P.length, tipos: Object.keys(cnt).length, grade: grid, porTipo: cnt } };
 }

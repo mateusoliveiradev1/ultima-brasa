@@ -22,10 +22,10 @@ export function buildMap3D(spec, { W = 1280, H = 720, paint = true } = {}) {
   // chão: tile pintado + camada macro (trilhas, manchas)
   const half = spec.ground.half, gp = paintGround(1024, 3), gT = tex(gp.albedo), nT = tex(gp.normal, false); for (const t of [gT, nT]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2.2, 2.2); }
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(half * 2, half * 2), new THREE.MeshStandardMaterial({ map: gT, normalMap: nT, normalScale: new THREE.Vector2(1.4, 1.4), roughness: 0.92 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-  const ov = new THREE.Mesh(new THREE.PlaneGeometry(half * 2, half * 2), new THREE.MeshStandardMaterial({ map: tex(paintGroundMacro(2560, spec.ground.macroSeed, half, spec.ground.paths)), transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 })); ov.rotation.x = -Math.PI / 2; ov.position.y = 0.01; ov.receiveShadow = true; scene.add(ov);
+  const ov = new THREE.Mesh(new THREE.PlaneGeometry(half * 2, half * 2), new THREE.MeshStandardMaterial({ map: tex(paintGroundMacro(2560, spec.ground.macroSeed, half, spec.ground.paths, spec.ground.patches || [])), transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 })); ov.rotation.x = -Math.PI / 2; ov.position.y = 0.01; ov.receiveShadow = true; scene.add(ov);
 
   // plataformas (desnível): topo de terra + face de rocha pintada
-  const cliffT = tex(paintCliffFace(1400, 240, 4)), cliffM = new THREE.MeshStandardMaterial({ map: cliffT, emissiveMap: cliffT, emissive: '#ffffff', emissiveIntensity: 0.5, roughness: 0.95 });
+  const cliffT = tex(paintCliffFace(1400, 240, 4)), cliffM = new THREE.MeshStandardMaterial({ map: cliffT, emissiveMap: cliffT, emissive: '#ffffff', emissiveIntensity: 0.9, roughness: 0.95 });
   for (const pl of spec.platforms || []) { const top = gT.clone(); top.needsUpdate = true; top.repeat.set(pl.w / 14, pl.d / 14);
     const m = new THREE.Mesh(new THREE.BoxGeometry(pl.w, pl.h, pl.d), [cliffM, cliffM, new THREE.MeshStandardMaterial({ map: top, roughness: 0.95 }), cliffM, cliffM, cliffM]); m.position.set(pl.x, pl.h / 2, pl.z); m.castShadow = m.receiveShadow = true; scene.add(m); }
 
@@ -36,7 +36,7 @@ export function buildMap3D(spec, { W = 1280, H = 720, paint = true } = {}) {
     if (e.kind === 'decal') { const w = e.h * ar * 0.9, g = new THREE.PlaneGeometry(w, w / ar), mesh = new THREE.Mesh(g, m); mesh.rotation.x = -Math.PI / 2; mesh.position.set(p.x, y0 + 0.03, p.z); mesh.receiveShadow = true; scene.add(mesh); }
     else { const h = e.h * (p.s || 1) * 1.2, w = h * ar, [th, n] = e.thick || [0.3, 3], g = new THREE.PlaneGeometry(w, h); g.translate(0, h / 2, 0);
       for (let k = 0; k < n; k++) { const mesh = new THREE.Mesh(g, m), off = (k / Math.max(1, n - 1)) * th; mesh.position.set(p.x, y0, p.z - off); mesh.castShadow = k % 2 === 0; mesh.receiveShadow = true; scene.add(mesh); } }
-    if (e.light) autoLights.push({ x: p.x, z: p.z, color: e.light, i: 1, r: 6, y: y0 }); };
+    if (e.light) autoLights.push({ x: p.x, z: p.z, color: e.light, i: e.lightI ?? 1, r: e.lightR ?? 6, y: e.kind === 'decal' ? y0 - 1.1 : y0, glow: e.kind !== 'decal' }); };
   for (const p of spec.props) add(p); for (const p of spec.backdrop || []) add(p);
 
   // luz
@@ -44,7 +44,7 @@ export function buildMap3D(spec, { W = 1280, H = 720, paint = true } = {}) {
   const sun = new THREE.DirectionalLight('#e8c8a8', 2.2); sun.position.set(-18, 30, 10); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const sc = sun.shadow.camera; sc.left = sc.bottom = -30; sc.right = sc.top = 30; sc.near = 1; sc.far = 100; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.04; scene.add(sun);
   const glowT = (() => { const c = cv(128), x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,220,160,1)'); g.addColorStop(0.35, 'rgba(255,120,40,.5)'); g.addColorStop(1, 'rgba(255,80,20,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
   const lights = [...spec.lights, ...autoLights].map((L, i) => { const P = new THREE.PointLight(L.color, 9 * (L.i || 1), (L.r || 6) * 1.8, 1.6); P.position.set(L.x, (L.y || 0) + 1.4, L.z); P.castShadow = i === 0; if (P.castShadow) { P.shadow.mapSize.set(512, 512); P.shadow.bias = -0.002; } scene.add(P);
-    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, color: L.color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); gl.scale.set(1.9, 1.9, 1); gl.position.set(L.x, (L.y || 0) + 1.1, L.z); scene.add(gl); return P; });
+    if (L.glow !== false) { const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, color: L.color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); gl.scale.set(1.9, 1.9, 1); gl.position.set(L.x, (L.y || 0) + 1.1, L.z); scene.add(gl); } return P; });
 
   // atmosfera
   const soft = (rgb, a) => { const c = cv(128), x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(0.5, `rgba(${rgb},${a * 0.45})`); g.addColorStop(1, `rgba(${rgb},0)`); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); };

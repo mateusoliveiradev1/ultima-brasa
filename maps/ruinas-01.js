@@ -8,6 +8,11 @@ const m = createMap({
   ground: { macroSeed: 5, half: 32, paths: [
     [[-32, -1.5], [-12, 0.8], [0, -0.6], [12, 0.6], [32, 4]],     // leste-oeste
     [[0, -0.6], [-1, -4], [0.4, -9], [0.2, -14], [1, -32]],        // ramal norte
+  ], patches: [
+    { type: 'scorch', x: -10, z: -5, rx: 6, rz: 3.2 }, { type: 'scorch', x: 9, z: -6.5, rx: 5, rz: 3 },
+    { type: 'asphalt', x: -9, z: 7.5, rx: 10, rz: 2.4, rot: 0.08 }, { type: 'asphalt', x: 9, z: 9.5, rx: 6, rz: 2.2, rot: -0.1 },
+    { type: 'rock', x: 17, z: -14, rx: 5.5, rz: 3.2 }, { type: 'rock', x: -20, z: 1.5, rx: 3, rz: 2.2, rot: 0.3 },
+    { type: 'ash', x: 19, z: -2, rx: 4.5, rz: 2.6 }, { type: 'ash', x: -17, z: -8, rx: 4, rz: 2.4 }, { type: 'ash', x: 3, z: 5.5, rx: 4, rz: 1.8 },
   ] },
   spawn: { x: 0, z: 1.2, r: 2.6 },
   platforms: [{ x: -15, z: -15, w: 14, d: 7, h: 2.4 }],
