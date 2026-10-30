@@ -78,6 +78,7 @@ for (const [k] of propKinds) propMats[k] = P[k].map((p) => propMat(p.canvas));
 const paintedKinds = { ruin: [1, 2, 3].map((i) => paintRuinWall(i)), tree: [1, 2, 3].map((i) => paintDeadTree(i)), barrel: [1, 2].map((i) => paintBarrel(i)), pillar: [paintSpire(1), paintSpire(2)], sign: [paintSign(1), paintSign(2)], house: [1, 2, 3].map((i) => paintHouse(i)), tower: [1, 2, 3].map((i) => paintTower(i)) };
 const pMat = (r) => { const m = new THREE.MeshStandardMaterial({ map: propTex(r.albedo), normalMap: new THREE.CanvasTexture(r.normal), normalScale: new THREE.Vector2(1.2, 1.2), alphaTest: 0.4, roughness: 0.8, metalness: 0.02, side: THREE.DoubleSide }); return m; };
 for (const k of Object.keys(paintedKinds)) propMats[k] = paintedKinds[k].map(pMat);
+for (const m of propMats.tower) { m.emissiveMap = m.map; m.emissive = new THREE.Color('#ffffff'); m.emissiveIntensity = 0.5; m.color = new THREE.Color('#d8c0b0'); }
 const T0 = performance.now(); window.__paintMs = 0;
 const placed = [];
 // composição em núcleos: cada grupo tem uma peça-âncora e detritos ao redor; entre eles ficam clareiras/caminho
@@ -86,6 +87,8 @@ const clusters = [
   { x: 8, z: -9, core: 'ruin', items: ['house', 'ruin', 'rubble', 'wreck', 'barrel'] },
   { x: 10, z: 6, core: 'tree', items: ['tree', 'tree', 'tree', 'rubble', 'rubble'] },
   { x: -10, z: 8, core: 'wreck', items: ['house', 'wreck', 'barrel', 'barrel', 'rubble'] },
+  { x: 17, z: -3, core: 'house', items: ['house', 'tree', 'rubble', 'barrel', 'wreck'] },
+  { x: 14, z: -13, core: 'ruin', items: ['ruin', 'pillar', 'rubble', 'rubble', 'tree'] },
   { x: 0, z: -13, core: 'pillar', items: ['pillar', 'rubble', 'rubble', 'tree'] },
   { x: -1, z: 12, core: 'tree', items: ['tree', 'tree', 'rubble', 'barrel'] },
 ];
@@ -98,13 +101,13 @@ for (const c of clusters) for (const kind of c.items) {
   }
 }
 const THICK = { ruin: [0.9, 9], pillar: [0.5, 6], barrel: [0.6, 6], wreck: [0.5, 4], tree: [0.3, 3], rubble: [0.4, 3], sign: [0.12, 2], house: [1.2, 10], tower: [1.3, 10] };
-const HEIGHT = { ruin: 4.6, tree: 5.8, pillar: 3.8, barrel: 1.6, wreck: 1.7, rubble: 1.1, sign: 3.2, house: 3.8, tower: 12 };
+const HEIGHT = { ruin: 5.2, tree: 6.6, pillar: 3.8, barrel: 1.6, wreck: 1.7, rubble: 1.1, sign: 3.2, house: 4.5, tower: 12 };
 function addProp(p) {
   const list = propMats[p.kind], ix = (rnd() * list.length) | 0, mat = list[ix], src = paintedKinds[p.kind] ? paintedKinds[p.kind][ix] : P[p.kind][0];
   const h = HEIGHT[p.kind] * 1.2, sc_ = src.albedo || src.canvas, w = h * (sc_.width / sc_.height) * (0.9 + rnd() * 0.2), [th, n] = THICK[p.kind] || [0.3, 3];
   const geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0); const y0 = p.y || 0;
   for (let k = 0; k < n; k++) {
-    const m = new THREE.Mesh(geo, k === 0 ? mat : mat); const off = (k / Math.max(1, n - 1)) * th;
+    const m = new THREE.Mesh(geo, mat); const off = (k / Math.max(1, n - 1)) * th;
     m.position.set(p.x - nDir.x * off, y0, p.z - nDir.z * off); m.rotation.y = yaw; m.castShadow = k % 2 === 0; m.receiveShadow = true; scene.add(m);
   }
 }

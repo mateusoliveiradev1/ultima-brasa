@@ -240,11 +240,11 @@ export function paintHouse(seed = 1) {
 /** Torre de cidade perdida: esqueleto de arranha-céu com andares vazados, topo quebrado e vergalhões. */
 export function paintTower(seed = 1) {
   const rnd = mulberry32(seed * 23);
-  return paintProp({ w: 260, h: 640, seed, palette: ['#120e10', '#3a3236', '#6a5e5e', '#a89488'], strokes: 1400, size: 18, rim: '#ff7a2a', inkAmt: 0.9, ao: false,
+  return paintProp({ w: 260, h: 640, seed, palette: ['#120e10', '#3a3236', '#6a5e5e', '#a89488'], strokes: 1400, size: 18, rim: '#ff7a2a', inkAmt: 0.45, ao: false,
     shape(c, w, h) { const j = (x, y) => c.lineTo(x, y);
       c.beginPath(); c.moveTo(30, h - 6); j(26, 96); j(52, 80); j(70, 120); j(98, 58); j(128, 98); j(150, 30); j(176, 84); j(206, 64); j(232, 110); j(228, h - 6); c.closePath(); c.fill();
       c.globalCompositeOperation = 'destination-out';
-      for (let row = 0; row < 15; row++) for (let col = 0; col < 5; col++) { if (rnd() < 0.18) continue; const x = 40 + col * 38, y = 130 + row * 34; if (y < 70 + Math.abs(col - 2) * 14) continue; c.fillRect(x, y, 24, 22); }
+      for (let row = 0; row < 15; row++) for (let col = 0; col < 5; col++) { if (rnd() < 0.45) continue; const x = 40 + col * 38, y = 130 + row * 34; if (y < 70 + Math.abs(col - 2) * 14) continue; c.fillRect(x, y, 24, 22); }
       for (let k = 0; k < 3; k++) c.fillRect(34 + rnd() * 160, 150 + rnd() * 340, 70 + rnd() * 40, 34 + rnd() * 30);
       c.globalCompositeOperation = 'source-over'; },
     details(c, w, h, r) {
