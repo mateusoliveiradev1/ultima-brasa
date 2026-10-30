@@ -5,7 +5,8 @@ import { normalizeDef } from './core.js';
 let cache = null;
 export function defaultDefs() {
   if (cache) return cache;
-  const tx = { slash: T.texSlash(), flame: T.texFlame(), spark: T.texSpark(), smoke: T.texSmoke(), bolt: T.texBolt(), ring: T.texRing(), lance: T.texLance(), meteor: T.texMeteor(), impact: T.texImpact(), tspark: T.texToxicSpark() };
+  const tx = { slash: T.texSlash(), flame: T.texFlame(), spark: T.texSpark(), smoke: T.texSmoke(), bolt: T.texBolt(), ring: T.texRing(), lance: T.texLance(), meteor: T.texMeteor(), impact: T.texImpact(), tspark: T.texToxicSpark(), fire: T.texFireSheetTall(), fireBig: T.texFireSheetBig(), fireToxic: T.texFireSheetToxic(), fire2: T.texFireV2(), fire2Big: T.texFireV2Big(), fire2Toxic: T.texFireV2Toxic(), ember: T.texEmber(), smokeS: T.texSmokeSheet() };
+  const sm = (c) => (c && c.__sheet) || null;
   const mk = (o) => normalizeDef(o);
   const D = {};
   D.lamina = mk({
@@ -20,7 +21,36 @@ export function defaultDefs() {
     colors: ['#fff2c8', '#ffb347', '#c2562a'],
     body: { size0: 1.5, size1: 1.5, y: 0.95, alpha: 'hold', flat: false },
     part: { burst: 0, rate: 16, life: 0.55, speed: 1.2, spread: 360, gravity: -1.5, drag: 1.2, size0: 0.4, size1: 0, y: 0.95, lift: 0.4 },
-    args: { orbitRadius: 2.6, orbitSpeed: 190, count: 3 }, tex: { body: tx.flame, part: tx.spark },
+    args: { orbitRadius: 2.6, orbitSpeed: 190, count: 3 }, tex: { body: tx.fire2, part: tx.ember }, texMeta: { body: sm(tx.fire2) },
+  });
+  D.brasas.part.stretch = 0.7; D.brasas.part.size0 = 0.7;
+  D.brasas.body.fps = 18; D.brasas.body.flicker = 1; D.brasas.body.size0 = 1.9; D.brasas.part.lift = 1.4; D.brasas.part.gravity = -2.2; D.brasas.part.rate = 22;
+  D.labareda = mk({
+    id: 'labareda', name: 'Bola de Fogo', kind: 'projectile', life: 1.2, glow: 1.6, tint: 0.35,
+    colors: ['#fff2c8', '#ffa23a', '#a8300c'],
+    body: { size0: 2.7, size1: 2.7, y: 0.95, alpha: 'hold', flat: false, fps: 22, flicker: 0.5, rot0: 90 },
+    part: { burst: 14, rate: 80, life: 0.7, speed: 2.2, spread: 360, gravity: -2.4, drag: 1.4, size0: 0.42, size1: 0, y: 0.95, lift: 0.9 },
+    hit: { on: true, size0: 1.2, size1: 3.6, life: 0.3, flat: false, y: 0.9 },
+    args: { speed: 13 }, tex: { body: tx.fire2Big, part: tx.ember, hit: tx.impact, smoke: tx.smokeS }, texMeta: { body: sm(tx.fire2Big), smoke: sm(tx.smokeS) },
+    smoke: { on: true, rate: 16, life: 1.3, size0: 0.7, size1: 2.0, rise: 0.6, drift: 0.3, y: 0.95, alpha: 0.26 },
+  });
+  D.labareda.part.stretch = 0.8; D.labareda.part.size0 = 0.7;
+  D.fogueira = mk({
+    id: 'fogueira', name: 'Fogueira', kind: 'orbit', life: 0, glow: 1.7, tint: 0.3,
+    colors: ['#fff2c8', '#ff9a3a', '#b8340e'],
+    body: { size0: 3.2, size1: 3.2, y: 1.15, alpha: 'hold', flat: false, fps: 16, flicker: 0.45 },
+    part: { burst: 0, rate: 26, life: 1.5, speed: 0.9, spread: 360, gravity: -1.6, drag: 0.9, size0: 0.34, size1: 0, y: 0.6, lift: 1.7, anim: 'life' },
+    args: { orbitRadius: 0.8, orbitSpeed: 0, count: 1 }, tex: { body: tx.fire2Big, part: tx.ember, smoke: tx.smokeS }, texMeta: { body: sm(tx.fire2Big), smoke: sm(tx.smokeS) },
+    smoke: { on: true, rate: 6, life: 2.8, size0: 1.0, size1: 3.2, rise: 1.2, drift: 0.6, y: 2.2, alpha: 0.34 },
+  });
+  D.fogueira.part.stretch = 0.55; D.fogueira.part.size0 = 0.75;
+  D.fogoToxico = mk({
+    id: 'fogoToxico', name: 'Chama Tóxica', kind: 'orbit', life: 0, glow: 1.7, tint: 0.2,
+    colors: ['#e8fff8', '#42e0b4', '#0b5a48'],
+    body: { size0: 2.8, size1: 2.8, y: 1.05, alpha: 'hold', flat: false, fps: 18, flicker: 1 },
+    part: { burst: 0, rate: 24, life: 1.3, speed: 0.8, spread: 360, gravity: -1.6, drag: 0.9, size0: 0.3, size1: 0, y: 0.6, lift: 1.5 },
+    args: { orbitRadius: 0.8, orbitSpeed: 0, count: 1 }, tex: { body: tx.fire2Toxic, part: tx.tspark, smoke: tx.smokeS }, texMeta: { body: sm(tx.fire2Toxic), smoke: sm(tx.smokeS) },
+    smoke: { on: true, rate: 5, life: 2.4, size0: 0.8, size1: 2.6, rise: 1.0, drift: 0.5, y: 1.8, alpha: 0.2 },
   });
   D.arco = mk({
     id: 'arco', name: 'Arco Tóxico', kind: 'chain', life: 0.24, glow: 1.6, tint: 0.55,

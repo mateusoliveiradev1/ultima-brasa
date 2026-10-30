@@ -12,8 +12,8 @@ import { Painter } from './painter.js';
 import { KENNEY_BASES, kenneyCanvas } from '../assets/kenney-tex.js';
 
 const SKILL_NAMES = { lamina: 'Lâmina de Ferrugem', brasas: 'Brasas Orbitais', arco: 'Arco Tóxico', nova: 'Nova de Cinzas', chuva: 'Chuva de Sucata', lanca: 'Lança de Brasa', impacto: 'Impacto (acerto)' };
-const BASES = { 'Corte (crescente)': T.texSlash, 'Chama': T.texFlame, 'Faísca': T.texSpark, 'Faísca tóxica': T.texToxicSpark, 'Fumaça': T.texSmoke, 'Raio': T.texBolt, 'Anel de choque': T.texRing, 'Lança': T.texLance, 'Meteoro': T.texMeteor, 'Explosão': T.texImpact };
-const WHICH = { body: 'Corpo', part: 'Partícula', hit: 'Impacto' };
+const BASES = { 'Corte (crescente)': T.texSlash, 'Chama': T.texFlame, 'Faísca': T.texSpark, 'Faísca tóxica': T.texToxicSpark, 'Fumaça': T.texSmoke, 'Raio': T.texBolt, 'Anel de choque': T.texRing, 'Lança': T.texLance, 'Meteoro': T.texMeteor, 'Explosão': T.texImpact, 'Fogo animado — alto': T.texFireSheetTall, 'Fogo animado — grande': T.texFireSheetBig, 'Fogo tóxico animado': T.texFireSheetToxic, 'Fogo animado v2 — alto': T.texFireV2, 'Fogo animado v2 — grande': T.texFireV2Big, 'Fogo animado v2 — tóxico': T.texFireV2Toxic, 'Fogo animado v2 — violeta': T.texFireV2Violet, 'Brasa voadora': T.texEmber, 'Fumaça de brasa (animada)': T.texSmokeSheet };
+const WHICH = { body: 'Corpo', part: 'Partícula', hit: 'Impacto', smoke: 'Fumaça' };
 
 const el = (tag, props = {}, ...kids) => {
   const e = document.createElement(tag);
@@ -48,6 +48,8 @@ const SCHEMA = [
     R('body.sweep', 'Varredura (°)', -180, 180, 1, { show: (d) => d.kind === 'slash' }),
     R('body.rot0', 'Rotação (°)', -180, 180, 1),
     R('body.spin', 'Giro (rad/s)', -12, 12, 0.1, { show: (d) => ['orbit', 'projectile', 'nova'].includes(d.kind) }),
+    R('body.fps', 'Animação do fogo (quadros/s)', 0, 40, 1),
+    R('body.flicker', 'Tremulação da chama', 0, 1.5, 0.01),
     R('body.y', 'Altura', 0, 3, 0.05, { hide: (d) => d.body.flat }),
     S_('body.alpha', 'Curva de opacidade', Object.fromEntries(ALPHA_CURVES.map((k) => [k, { fade: 'Surge e some', flash: 'Clarão (some rápido)', hold: 'Mantém e some', pulse: 'Pulso' }[k]]))),
     S_('body.ease', 'Curva de tamanho', { out: 'Rápido → lento', lin: 'Linear', in: 'Lento → rápido' }),
@@ -67,6 +69,18 @@ const SCHEMA = [
     R('part.stretch', 'Alongar na velocidade', 0, 2, 0.01),
     R('part.spin', 'Giro', 0, 12, 0.1),
     R('part.y', 'Altura de nascimento', 0, 3, 0.05),
+    S_('part.anim', 'Animação da partícula', { life: 'Percorre os quadros na vida', loop: 'Repete em laço' }),
+    R('part.fps', 'Quadros/s (em laço)', 2, 40, 1, { show: (d) => d.part.anim === 'loop' }),
+  ] },
+  { title: 'Fumaça (sobe do fogo)', toggle: 'smoke.on', fields: [
+    R('smoke.rate', 'Baforadas por segundo', 0.5, 30, 0.5),
+    R('smoke.life', 'Vida (s)', 0.5, 6, 0.1),
+    R('smoke.size0', 'Tamanho inicial', 0.2, 4, 0.05),
+    R('smoke.size1', 'Tamanho final', 0.4, 8, 0.05),
+    R('smoke.rise', 'Velocidade de subida', 0.2, 4, 0.05),
+    R('smoke.drift', 'Deriva (vento)', -2, 2, 0.05),
+    R('smoke.y', 'Altura de nascimento', 0, 3, 0.05),
+    R('smoke.alpha', 'Opacidade', 0.05, 1, 0.01),
   ] },
   { title: 'Impacto (flash no alvo)', toggle: 'hit.on', fields: [
     R('hit.size0', 'Tamanho inicial', 0.1, 8, 0.05),
@@ -153,7 +167,7 @@ export function mountForja(root, opts = {}) {
     ui.mirror = el('button', { class: 'sm', onclick: () => { painter.mirror = !painter.mirror; ui.mirror.classList.toggle('on', painter.mirror); painter.render(); } }, '⇋ Espelho'),
     ui.grid = el('button', { class: 'sm on', onclick: () => { painter.showGrid = !painter.showGrid; ui.grid.classList.toggle('on', painter.showGrid); painter.render(); } }, 'Guias'),
     el('button', { class: 'sm', onclick: () => { painter.bg = { dark: 'mid', mid: 'light', light: 'dark' }[painter.bg]; painter.render(); } }, 'Fundo')));
-  const baseSel = el('select', { style: 'flex:1', onchange: async () => { const v = baseSel.value; baseSel.value = ''; if (!v) return; painter.replaceWith(BASES[v] ? BASES[v]() : await kenneyCanvas(KENNEY_BASES[v])); } }, el('option', { value: '' }, 'Carregar base pintada…'), el('optgroup', { label: 'Pintadas à mão (tema)' }, ...Object.keys(BASES).map((k) => el('option', { value: k }, k))), el('optgroup', { label: 'Kenney.nl (CC0)' }, ...Object.keys(KENNEY_BASES).map((k) => el('option', { value: k }, k))));
+  const baseSel = el('select', { style: 'flex:1', onchange: async () => { const v = baseSel.value; baseSel.value = ''; if (!v) return; const cvs = BASES[v] ? BASES[v]() : await kenneyCanvas(KENNEY_BASES[v]); painter.replaceWith(cvs); def.texMeta = def.texMeta || {}; def.texMeta[which] = cvs.__sheet || null; if (cvs.__sheet && which === 'body' && !def.body.fps) { def.body.fps = 16; def.body.flicker = 0.8; } buildInspector(); scheduleSave(); } }, el('option', { value: '' }, 'Carregar base pintada…'), el('optgroup', { label: 'Pintadas à mão (tema)' }, ...Object.keys(BASES).map((k) => el('option', { value: k }, k))), el('optgroup', { label: 'Kenney.nl (CC0)' }, ...Object.keys(KENNEY_BASES).map((k) => el('option', { value: k }, k))));
   const pngIn = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: () => { const f = pngIn.files[0]; if (!f) return; const im = new Image(); im.onload = () => painter.replaceWith(im); im.src = URL.createObjectURL(f); pngIn.value = ''; } });
   left.append(el('div', { class: 'fj-row' }, baseSel, el('button', { class: 'sm', onclick: () => pngIn.click() }, 'PNG…'), pngIn));
   left.append(el('div', { class: 'fj-row' },
@@ -193,9 +207,11 @@ export function mountForja(root, opts = {}) {
   async function decodeTextures(d) {
     for (const w of Object.keys(WHICH)) {
       const t = d.tex[w];
+      const isSheet = !!d.texMeta?.[w];
       if (typeof t === 'string') {
-        await new Promise((res) => { const im = new Image(); im.onload = () => { const c = cv(256); c.getContext('2d').drawImage(im, 0, 0, 256, 256); d.tex[w] = c; res(); }; im.onerror = res; im.src = t; });
-      } else if (t && (t.width !== 256)) { const c = cv(256); c.getContext('2d').drawImage(t, 0, 0, 256, 256); d.tex[w] = c; }
+        await new Promise((res) => { const im = new Image(); im.onload = () => { const c = isSheet ? cv(im.naturalWidth, im.naturalHeight) : cv(256); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); d.tex[w] = c; res(); }; im.onerror = res; im.src = t; });
+      } else if (t && isSheet) { /* folha de quadros: mantém a resolução */ }
+      else if (t && (t.width !== 256)) { const c = cv(256); c.getContext('2d').drawImage(t, 0, 0, 256, 256); d.tex[w] = c; }
       else if (t) { const c = cv(256); c.getContext('2d').drawImage(t, 0, 0); d.tex[w] = c; } // copia p/ não mutar o padrão
       if (!d.tex[w]) d.tex[w] = cv(256);
     }
@@ -240,7 +256,7 @@ export function mountForja(root, opts = {}) {
     [...tabs.children].forEach((b) => b.classList.toggle('on', b.dataset.w === w));
     painter.attach(def.tex[w]);
     painter.onChange = () => { scheduleSave(); };
-    const notes = { body: 'Forma principal do efeito (lâmina, chama, raio, ring, meteoro…).', part: 'Partícula emitida (faíscas, brasas, fumaça). Pequena e brilhante funciona melhor.', hit: 'Flash que aparece onde o efeito acerta (ative “Impacto” no inspetor).' };
+    const notes = { body: 'Forma principal do efeito (lâmina, chama, raio, ring, meteoro…).', part: 'Partícula emitida (faíscas, brasas, fumaça). Pequena e brilhante funciona melhor.', hit: 'Flash que aparece onde o efeito acerta (ative “Impacto” no inspetor).', smoke: 'Fumaça que sobe do fogo (ative “Fumaça” no inspetor). Use a base “Fumaça de brasa (animada)”.' };
     left.querySelector('#texNote').textContent = notes[w];
     syncTools(); syncSw();
   }

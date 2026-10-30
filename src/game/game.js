@@ -8,7 +8,7 @@ import { buildAllProps } from '../shared/art-props.js';
 import { buildBiomeProps, tintGround, recolor } from '../shared/art-biomes.js';
 import { BIOMES } from './biomes.js';
 import { FxSystem, getTex } from '../fx/core.js';
-import { drawFx } from '../fx/canvas-renderer.js';
+import { drawFx, drawTexFrame } from '../fx/canvas-renderer.js';
 import * as store from '../fx/store.js';
 import { KENNEY_TEX } from '../assets/kenney.js';
 import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed } from './data.js';
@@ -77,7 +77,7 @@ export function skillIcon(id, size = 56) {
   const sk = SKILLS[id], def = store.resolveFx(sk.fx), c = cv(size), x = c.getContext('2d'), col = sk.color;
   const g = x.createRadialGradient(size / 2, size / 2, 2, size / 2, size / 2, size * 0.62); g.addColorStop(0, rgba(col, 0.38)); g.addColorStop(1, 'rgba(10,7,8,0)'); x.fillStyle = g; x.fillRect(0, 0, size, size);
   const tex = getTex(def?.tex?.body);
-  if (tex) { x.globalCompositeOperation = 'lighter'; const s = size * 0.92; x.drawImage(tex, (size - s) / 2, (size - s) / 2, s, s); x.drawImage(tex, (size - s) / 2, (size - s) / 2, s, s); }
+  if (tex) { x.globalCompositeOperation = 'lighter'; const s = size * 0.92, mt = def.texMeta?.body; drawTexFrame(x, tex, mt, 5, (size - s) / 2, (size - s) / 2, s, s); drawTexFrame(x, tex, mt, 5, (size - s) / 2, (size - s) / 2, s, s); }
   return c;
 }
 

@@ -15,11 +15,12 @@ export const DEFAULT_DEF = () => ({
   v: 1, id: 'novo', name: 'Novo efeito', kind: 'slash',
   life: 0.4, glow: 1.3, blend: 'add', tint: 0.6,
   colors: ['#fff2c8', '#ff7a2a', '#3a1208'],
-  body: { on: true, size0: 2.4, size1: 3.2, stretch: 1, rot0: 0, sweep: 0, spin: 0, alpha: 'fade', ease: 'out', offset: 1.3, y: 0.9, flat: false },
-  part: { on: true, burst: 10, rate: 0, life: 0.5, speed: 3.5, spread: 360, gravity: 0, drag: 1.5, size0: 0.5, size1: 0, spin: 2, lift: 0, stretch: 0, y: 0.9 },
+  body: { on: true, size0: 2.4, size1: 3.2, stretch: 1, rot0: 0, sweep: 0, spin: 0, alpha: 'fade', ease: 'out', offset: 1.3, y: 0.9, flat: false, fps: 0, flicker: 0 },
+  part: { on: true, burst: 10, rate: 0, life: 0.5, speed: 3.5, spread: 360, gravity: 0, drag: 1.5, size0: 0.5, size1: 0, spin: 2, lift: 0, stretch: 0, y: 0.9, anim: 'life', fps: 14 },
   hit: { on: false, size0: 0.8, size1: 2.4, life: 0.25, flat: false, y: 0.8 },
+  smoke: { on: false, rate: 5, life: 2.4, size0: 0.9, size1: 2.8, rise: 1.1, drift: 0.5, y: 1.4, alpha: 0.5 },
   args: { arc: 100, speed: 14, radius: 4.5, count: 3, orbitRadius: 2.6, orbitSpeed: 190, chains: 4, thick: 1, fall: 0.35, spread: 3.5 },
-  tex: { body: null, part: null, hit: null },
+  tex: { body: null, part: null, hit: null, smoke: null }, texMeta: { body: null, part: null, hit: null, smoke: null },
 });
 
 function fill(dst, src) {
@@ -73,6 +74,10 @@ function gradient(def, u, out) {
   out[1] = lerp(1, lerp(a[1], b[1], t), k);
   out[2] = lerp(1, lerp(a[2], b[2], t), k);
 }
+
+// tremulação de chama: altura e largura variam em oposição (conserva a "energia"), com base em senos incomensuráveis
+const flick = (t, seed, amt) => amt ? 1 + amt * (0.5 * Math.sin(t * 23 + seed) + 0.3 * Math.sin(t * 37 + seed * 1.7) + 0.2 * Math.sin(t * 11 + seed * 0.3)) * 0.5 : 1;
+const sway = (t, seed, amt) => amt ? amt * (Math.sin(t * 7 + seed) * 0.6 + Math.sin(t * 13 + seed * 2.1) * 0.4) * 0.12 : 0;
 
 export class FxSystem {
   constructor(o = {}) {
@@ -148,9 +153,15 @@ export class FxSystem {
         def: inst.def, layer: 'part', x, y, z, vx: Math.cos(a) * sp, vz: Math.sin(a) * sp,
         vy: p.lift + (spread >= 360 ? (Math.random() - 0.3) * sp * 0.35 : Math.random() * sp * 0.2),
         age: 0, life, s0: p.size0 * sc * (0.7 + Math.random() * 0.6), s1: p.size1 * sc,
-        rot: Math.random() * TAU, spin: p.spin * (Math.random() * 2 - 1), fixed: false,
+        rot: Math.random() * TAU, spin: p.spin * (Math.random() * 2 - 1), fixed: false, ph: Math.random() * 16,
       });
     }
+  }
+  // fumaça de brasa: sobe, alarga e some; é desenhada atrás do fogo e em mistura normal (não brilha)
+  emitSmoke(inst, x, y, z) {
+    const s = inst.def.smoke, sc = inst.sc; if (this.parts.length >= this.maxParts) return;
+    this.parts.push({ def: inst.def, layer: 'smoke', x: x + (Math.random() - 0.5) * 0.35 * sc, y, z: z + (Math.random() - 0.5) * 0.2 * sc, vx: (Math.random() - 0.5) * 0.35, vz: (Math.random() - 0.5) * 0.2, vy: s.rise * (0.7 + Math.random() * 0.6) * sc,
+      age: 0, life: s.life * (0.75 + Math.random() * 0.5), s0: s.size0 * sc * (0.8 + Math.random() * 0.4), s1: s.size1 * sc * (0.8 + Math.random() * 0.4), rot: Math.random() * TAU, spin: (Math.random() - 0.5) * 0.7, fixed: false, ph: Math.random() * 16 });
   }
   hit(inst, x, z, k = 1) {
     const h = inst.def.hit, sc = inst.sc;
@@ -181,12 +192,14 @@ export class FxSystem {
           if (!it.follow) { it.x += it.vx * dt; it.z += it.vz * dt; }
           const maxT = it.maxT ?? def.life;
           const over = it.follow ? (it.follow.dead || it.dead) : it.t >= maxT;
+          if (def.smoke.on && def.smoke.rate > 0 && !over) { it.sacc = (it.sacc || 0) + def.smoke.rate * dt; while (it.sacc >= 1) { it.sacc -= 1; this.emitSmoke(it, it.x - it.dx * 0.5, def.smoke.y, it.z - it.dz * 0.5); } }
           if (p.on && p.rate > 0 && !over) { it.acc += p.rate * dt; while (it.acc >= 1) { it.acc -= 1; this.emit(it, it.x - it.dx * 0.3, p.y, it.z - it.dz * 0.3, 1, null, 360, p.speed * 0.4); } }
           if (over) { if (p.on) this.emit(it, it.x, p.y, it.z, p.burst, null, 360); if (def.hit.on) this.hit(it, it.x, it.z, 1); it.ended = true; }
           break;
         }
         case 'orbit': {
           if (!it.loop && it.t >= def.life) { it.ended = true; break; }
+          if (def.smoke.on && def.smoke.rate > 0) { it.sacc = (it.sacc || 0) + def.smoke.rate * dt * it.count; const pts2 = this.orbitPoints(it, (it._pts ||= [])); while (it.sacc >= 1) { it.sacc -= 1; const q = pts2[(Math.random() * pts2.length) | 0]; if (q) this.emitSmoke(it, q.x, def.smoke.y, q.z); } }
           if (p.on && p.rate > 0) {
             it.acc += p.rate * dt * it.count;
             const pts = this.orbitPoints(it, (it._pts ||= []));
@@ -226,6 +239,7 @@ export class FxSystem {
       q.age += dt;
       if (q.age >= q.life) { ps.splice(i, 1); continue; }
       if (q.fixed) continue;
+      if (q.layer === 'smoke') { const sm = q.def.smoke; q.vx += sm.drift * dt * (0.6 + 0.4 * Math.sin(q.age * 1.7 + q.ph)); q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vy *= Math.exp(-0.45 * dt); q.rot += q.spin * dt; continue; }
       const p = q.def.part, k = Math.exp(-p.drag * dt);
       q.vx *= k; q.vz *= k; q.vy = q.vy * k - p.gravity * dt;
       q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
@@ -237,13 +251,13 @@ export class FxSystem {
 
   _item() {
     let o = this._pool[this._n];
-    if (!o) { o = { def: null, layer: '', x: 0, y: 0, z: 0, sx: 1, sy: 1, rot: 0, flat: false, r: 1, g: 1, b: 1, a: 1, add: true }; this._pool[this._n] = o; }
+    if (!o) { o = { fr: 0, def: null, layer: '', x: 0, y: 0, z: 0, sx: 1, sy: 1, rot: 0, flat: false, r: 1, g: 1, b: 1, a: 1, add: true }; this._pool[this._n] = o; }
     this._n++;
     return o;
   }
-  _push(def, layer, x, y, z, sx, sy, rot, flat, u, alpha) {
+  _push(def, layer, x, y, z, sx, sy, rot, flat, u, alpha, fr = 0) {
     if (alpha <= 0.002) return;
-    const o = this._item(), c = this._c;
+    const o = this._item(), c = this._c; o.fr = fr;
     gradient(def, clamp(u, 0, 1), c);
     const g = def.glow;
     o.def = def; o.layer = layer; o.x = x; o.y = y; o.z = z; o.sx = sx; o.sy = sy; o.rot = rot; o.flat = flat;
@@ -252,6 +266,13 @@ export class FxSystem {
 
   build() {
     this._n = 0;
+    // fumaça primeiro: fica atrás de tudo
+    for (const q of this.parts) {
+      if (q.layer !== 'smoke') continue;
+      const u = q.age / q.life, sm = q.def.smoke, s = lerp(q.s0, q.s1, easeOut(u)), al = sm.alpha * Math.min(1, u * 7) * Math.pow(1 - u, 1.5);
+      this._push(q.def, 'smoke', q.x, q.y, q.z, s, s * 0.95, q.rot, false, u, al, u * 15.9);
+      const o = this._pool[this._n - 1]; if (o && o.layer === 'smoke' && o.x === q.x) { o.add = false; o.r = 1; o.g = 0.84 + 0.16 * u; o.b = 0.7 + 0.3 * u; }
+    }
     for (const it of this.insts) {
       const def = it.def, b = def.body, sc = it.sc;
       if (!b.on) continue;
@@ -261,21 +282,21 @@ export class FxSystem {
           const u = clamp(it.t / def.life, 0, 1), s = lerp(b.size0, b.size1, ease(u)) * sc;
           const base = b.flat ? this.groundAngle(it.dx, it.dz) : this.screenAngle(it.dx, it.dz);
           const rot = base + ((b.rot0 + b.sweep * (u - 0.5)) * Math.PI) / 180 * (b.flat ? 1 : 1);
-          this._push(def, 'body', it.x + it.dx * b.offset * sc, b.y, it.z + it.dz * b.offset * sc, s * b.stretch, s, rot, b.flat, u, curve(u));
+          this._push(def, 'body', it.x + it.dx * b.offset * sc, b.y, it.z + it.dz * b.offset * sc, s * b.stretch, s, rot, b.flat, u, curve(u), b.fps ? it.t * b.fps : 0);
           break;
         }
         case 'nova': {
           const u = clamp(it.t / def.life, 0, 1);
           const s1 = def.args.useRadius === false ? b.size1 * sc : it.radius * 2;
           const s = lerp(b.size0 * sc, s1, ease(u));
-          this._push(def, 'body', it.x, b.flat ? 0.04 : b.y, it.z, s * b.stretch, s, (b.rot0 * Math.PI) / 180 + (b.spin * it.t), b.flat, u, curve(u));
+          this._push(def, 'body', it.x, b.flat ? 0.04 : b.y, it.z, s * b.stretch, s, (b.rot0 * Math.PI) / 180 + (b.spin * it.t), b.flat, u, curve(u), b.fps ? it.t * b.fps : 0);
           break;
         }
         case 'projectile': {
           const u = it.follow ? clamp((it.t % 1) , 0, 1) : clamp(it.t / (it.maxT ?? def.life), 0, 1);
           const s = (it.follow ? b.size0 : lerp(b.size0, b.size1, u)) * sc;
           const rot = this.screenAngle(it.dx, it.dz) + (b.rot0 * Math.PI) / 180 + b.spin * it.t;
-          this._push(def, 'body', it.x, b.y, it.z, s * b.stretch, s, b.flat ? this.groundAngle(it.dx, it.dz) : rot, b.flat, 0.25, Math.min(1, it.t * 14));
+          { const fl = flick(it.t, it.seed, b.flicker); this._push(def, 'body', it.x, b.y, it.z, s * b.stretch * (b.flicker ? 2 - fl : 1), s * fl, b.flat ? this.groundAngle(it.dx, it.dz) : rot, b.flat, 0.25, Math.min(1, it.t * 14), b.fps ? it.t * b.fps : 0); }
           break;
         }
         case 'chain': {
@@ -293,8 +314,8 @@ export class FxSystem {
           const pts = this.orbitPoints(it, (it._pts ||= []));
           const fadeIn = Math.min(1, it.t / 0.25), fadeOut = it.loop ? 1 : Math.min(1, (def.life - it.t) / 0.25);
           pts.forEach((q, i) => {
-            const bob = 1 + 0.08 * Math.sin(it.t * 9 + i * 2);
-            this._push(def, 'body', q.x, b.y, q.z, b.size0 * sc * bob * b.stretch, b.size0 * sc * bob, (b.rot0 * Math.PI) / 180 + b.spin * it.t, b.flat, 0.3 + 0.2 * Math.sin(it.t * 5 + i), Math.min(fadeIn, fadeOut));
+            const bob = 1 + 0.08 * Math.sin(it.t * 9 + i * 2), fl = flick(it.t, it.seed + i * 3.1, b.flicker), s0 = b.size0 * sc * bob;
+            this._push(def, 'body', q.x + sway(it.t, it.seed + i, b.flicker) * s0, b.y + (fl - 1) * 0.15 * s0, q.z, s0 * b.stretch * (2 - fl) * (b.flicker ? 1 : 1 / (2 - fl)), s0 * fl, (b.rot0 * Math.PI) / 180 + b.spin * it.t, b.flat, 0.3 + 0.2 * Math.sin(it.t * 5 + i), Math.min(fadeIn, fadeOut), b.fps ? it.t * b.fps + i * 5.3 : 0);
           });
           break;
         }
@@ -304,7 +325,7 @@ export class FxSystem {
             const u = clamp((it.t - d.d) / def.args.fall, 0, 1);
             if (it.t < d.d) continue;
             const y = lerp(9, 0.7, u * u), s = lerp(b.size0, b.size1, u) * sc;
-            this._push(def, 'body', d.x + (1 - u) * 1.8, y, d.z, s * b.stretch, s, (b.rot0 * Math.PI) / 180 + 0.2, false, u, Math.min(1, u * 6));
+            this._push(def, 'body', d.x + (1 - u) * 1.8, y, d.z, s * b.stretch, s, (b.rot0 * Math.PI) / 180 + 0.2, false, u, Math.min(1, u * 6), b.fps ? it.t * b.fps : 0);
           }
           break;
         }
@@ -312,10 +333,11 @@ export class FxSystem {
     }
     // partículas
     for (const q of this.parts) {
+      if (q.layer === 'smoke') continue;
       const def = q.def, u = q.age / q.life;
       if (q.layer === 'hit') {
         const s = lerp(q.s0, q.s1, easeOut(u));
-        this._push(def, 'hit', q.x, q.flat ? 0.05 : q.y, q.z, s, s, q.rot, q.flat, u, A.flash(u));
+        this._push(def, 'hit', q.x, q.flat ? 0.05 : q.y, q.z, s, s, q.rot, q.flat, u, A.flash(u), u * 16);
         continue;
       }
       const p = def.part;
@@ -325,7 +347,7 @@ export class FxSystem {
         const vsx = q.vx, vsy = q.vy * this.cosTilt - q.vz * this.sinTilt;
         rot = Math.atan2(vsy, vsx); sx = s * (1 + p.stretch * Math.hypot(vsx, vsy) * 0.6);
       }
-      this._push(def, 'part', q.x, q.y, q.z, sx, s, rot, false, u, A.fade(u));
+      this._push(def, 'part', q.x, q.y, q.z, sx, s, rot, false, u, A.fade(u), p.anim === 'loop' ? q.age * (p.fps || 14) + q.ph : u * 16);
     }
     this.items.length = this._n;
     for (let i = 0; i < this._n; i++) this.items[i] = this._pool[i];
@@ -343,7 +365,8 @@ function texUrl(t) {
 }
 export function serializeDef(def) {
   const o = JSON.parse(JSON.stringify(def, (k, v) => (k.startsWith('_') || k === 'tex' ? undefined : v)));
-  o.tex = { body: texUrl(def.tex?.body), part: texUrl(def.tex?.part), hit: texUrl(def.tex?.hit) };
+  o.tex = { body: texUrl(def.tex?.body), part: texUrl(def.tex?.part), hit: texUrl(def.tex?.hit), smoke: texUrl(def.tex?.smoke) };
+  o.texMeta = { body: def.texMeta?.body || null, part: def.texMeta?.part || null, hit: def.texMeta?.hit || null, smoke: def.texMeta?.smoke || null };
   return o;
 }
 export function cloneDef(def) {
