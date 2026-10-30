@@ -10,6 +10,8 @@ const m = createMap({
     [[0, -0.6], [-1, -4], [0.4, -9], [0.2, -14], [1, -32]],        // ramal norte
   ] },
   spawn: { x: 0, z: 1.2, r: 2.6 },
+  platforms: [{ x: -15, z: -15, w: 14, d: 7, h: 2.4 }],
+  backdrop: [],
 });
 const { cluster, line, scatter, place, light, spec } = m;
 
@@ -30,5 +32,8 @@ scatter(['puddle', 'crater'], 3, [-18, 18, -16, 10]);
 // luzes: brasas e fogueira
 light(14, 5, '#ff8a3a', 1.2, 7); light(-10, -6, '#ff7a30', 0.9, 6); light(9, -7, '#ff7a30', 0.9, 6); light(0, 1.2, '#ffb060', 0.7, 5); light(-5, -11, '#ff6a28', 0.7, 6);
 spec.smoke.push([-10, -6, 2.5], [9, -7, 3]);
+
+// cidade perdida ao fundo (só render; fora da área jogável)
+for (let i = 0; i < 9; i++) spec.backdrop.push({ id: 'tower', x: -24 + i * 6 + (m.rnd() - 0.5) * 2.5, z: -22 - m.rnd() * 2, v: i });
 
 export default spec;
