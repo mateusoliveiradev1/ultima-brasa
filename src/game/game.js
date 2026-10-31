@@ -127,7 +127,7 @@ export class Game {
     if (id === 'brasas') this.skillLv = { brasas: 4 };
   }
   startRun({ skill, depth, meta, biome, mul, diff }) {
-    this.reset(); this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; const D = DIFF[diff] || DIFF.normal; this.diff = D.id; this.D = D; this.dm = { hp: dm.hp * b.hp * D.hp, dmg: dm.dmg * b.dmg * D.dmg, scrap: dm.scrap * b.scrap * D.scrap }; this.rerolls = meta.reroll || 0;
+    this.reset(); this.subDone = {}; this.miniKills = 0; this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; const D = DIFF[diff] || DIFF.normal; this.diff = D.id; this.D = D; this.bossFlip = D.id !== 'normal' && rnd() < 0.5; this.dm = { hp: dm.hp * b.hp * D.hp, dmg: dm.dmg * b.dmg * D.dmg, scrap: dm.scrap * b.scrap * D.scrap }; this.rerolls = meta.reroll || 0;
     this.skillLv[skill] = 1 + (meta.maestria || 0); this.sk[skill] = { cd: 0.3, inst: null };
     this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive; this.shield = this.stats.t.shield || 0; this.evo = {}; this.cursed = {}; this.painT = 0; this.frenzyN = 0; this.frenzyT = 0;
     if (meta.impulso) { this.pending = meta.impulso; this.timers.push({ t: 0.7, fn: () => { if (this.pending > 0 && !this.paused) this.openLevelUp(); } }); }
@@ -231,7 +231,8 @@ export class Game {
     for (let i = 0; i < (d.heavy ? 8 : 3); i++) this.addSpark({ tex: 'spark', x: e.x, y: 0.8, z: e.z, vx: (rnd() - 0.5) * 7, vy: 2 + rnd() * 4, vz: (rnd() - 0.5) * 7, life: 0.5, s0: 0.5, s1: 0.1, a: 1, add: true, g: 12, rot: rnd() * TAU, stretch: true });
     if (this.decals.length < 90) this.decals.push({ x: e.x, z: e.z, r: 0.9 * big * (0.8 + rnd() * 0.5), rot: rnd() * TAU, a: 0.6 });
     if (this.deathSfx < 2) { this.deathSfx++; A.sfx(d.heavy ? 'thud' : 'punch', { vol: d.heavy ? 0.6 : 0.22, rate: d.heavy ? 0.8 : 1.15 }); }
-    if (d.boss) { this.cam.shake = 1.2; A.synth('boom', { vol: 0.6 }); this.bossDead = true; this.timers.push({ t: 2.2, fn: () => this.finish(true) }); this.slow = 0.35; }
+    if (d.mini) { this.cam.shake = 0.7; A.synth('boom', { vol: 0.4 }); this.ring(e.x, e.z, 7, '#ffc24a', 0.8, 0.2); this.hooks.onWarn?.(d.name + ' derrotado!'); this.gems.push({ x: e.x, z: e.z, v: 1, tier: 'chest', vx: 0, vz: 0, pull: false, t: 0, bob: 0 }); this.gems.push({ x: e.x + 1, z: e.z, v: 0.5, tier: 'heart', vx: 1, vz: 0, pull: false, t: 0, bob: 0 }); this.miniKills = (this.miniKills || 0) + 1; }
+    else if (d.boss) { this.cam.shake = 1.2; A.synth('boom', { vol: 0.6 }); this.bossDead = true; this.timers.push({ t: 2.2, fn: () => this.finish(true) }); this.slow = 0.35; }
     else if (d.heavy) { this.cam.shake = Math.max(this.cam.shake, 0.3); }
   }
   addSpark(s) { if (this.sparks.length < 260) { s.age = 0; this.sparks.push(s); } }
@@ -447,9 +448,12 @@ export class Game {
     if (!this.bossSpawned) { this.eventT -= dt; if (this.eventT <= 0 && t > 20) this.runEvent(); }
     if (this.tideT > 0) this.tideT -= dt;
     if (!this.bossSpawned && t >= this.bossAt) {
-      this.bossSpawned = true; const [x, z] = this.ringPos(1), b = this.spawnEnemy(B.boss, x, z); b.hp *= (1 + this.bossN * 0.7) * (this.D?.boss || 1); b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
+      this.bossSpawned = true; const [x, z] = this.ringPos(1), b = this.spawnEnemy((this.bossN + (this.bossFlip ? 1 : 0)) % 2 === 0 ? B.boss : (B.boss2 || B.boss), x, z); b.hp *= (1 + this.bossN * 0.7) * (this.D?.boss || 1); b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
       this.hooks.onBoss?.(b); A.sfx('bell', { vol: 0.8, rate: 0.5 }); this.cam.shake = 0.8; this.ring(this.hero.x, this.hero.z, 13, '#ff4a2a', 1.2, 0.3); this.ring(this.hero.x, this.hero.z, 8, '#ffb347', 0.9, 0.18); this.flashA = 0.35; this.flashCol = '#ff3a1a';
       for (const e of this.enemies) if (!e.d.boss && rnd() < 0.5) e.dead = true;
+    }
+    if (!this.bossSpawned && B.subs) for (let k = 0; k < B.subs.length; k++) {
+      const at = (this.bossAt - 300) + 95 + k * 105 + this.bossN * 0; if (t >= at && !(this.subDone ||= {})[this.bossN + ':' + k]) { this.subDone[this.bossN + ':' + k] = true; const [x, z] = this.ringPos(1), sb = this.spawnEnemy(B.subs[k], x, z), hm = (1 + this.bossN * 0.6) * (this.D?.boss || 1); sb.hp *= hm; sb.maxHp = sb.hp; sb.dmg *= 1 + this.bossN * 0.2; this.hooks.onWarn?.(sb.d.name + ' surge!'); A.sfx('bell', { vol: 0.6, rate: 0.6 }); this.ring(sb.x, sb.z, 6, '#ffc24a', 0.8, 0.2); this.cam.shake = 0.5; }
     }
     const alive = this.enemies.length, cap = Math.min(150, 42 + t * 0.34) * (this.bossSpawned && !this.bossDead ? 0.5 : 1);
     const rate = (1.5 + t * 0.021) * (this.bossSpawned ? 0.5 : 1) * (this.D?.spawn || 1);
@@ -603,6 +607,9 @@ export class Game {
           if (m === 'summon') { mv.sum = T('sum', 8) - dt; if (mv.sum <= 0 && rdy) { mv.sum = enr ? 7 : 10; for (let i = 0; i < 7; i++) { const a = rnd() * TAU; this.spawnEnemy(d.summon, e.x + Math.cos(a) * 2.5, e.z + Math.sin(a) * 2); } this.hooks.onWarn?.(d.name + ' invoca aliados'); } }
           if (m === 'volley') { mv.vol = T('vol', 5) - dt; if (mv.vol <= 0 && rdy) { mv.vol = enr ? 4 : 5.6; const n = enr ? 16 : 11, a0 = rnd() * TAU; for (let i = 0; i < n; i++) this.shootBolt(e, a0 + (i / n) * TAU, 6, 4.5); A.sfx('hitHeavy', { vol: 0.5, rate: 1.2 }); } }
           if (m === 'pools') { mv.pool = T('pool', 5) - dt; if (mv.pool <= 0 && rdy) { mv.pool = enr ? 5 : 7; for (let i = 0; i < (enr ? 5 : 3); i++) { const a = rnd() * TAU, r = 1 + rnd() * 5, px = h.x + Math.cos(a) * r, pz = h.z + Math.sin(a) * r * 0.8; this.telegraph(px, pz, 2.4, 1.0, () => { this.pools.push({ x: px, z: pz, r: 2.4, life: 8, tick: 0.2, dmg: 9 * this.dm.dmg, slow: true, col: d.bolt }); }); } } }
+          if (m === 'barrage') { mv.bar = T('bar', 4) - dt; if (mv.bar <= 0 && rdy) { mv.bar = enr ? 5 : 7; const L = Math.hypot(h.x - e.x, h.z - e.z) || 1, ux = (h.x - e.x) / L, uz = (h.z - e.z) / L, n = enr ? 8 : 6; this.hooks.onWarn?.(d.name + ' ataca em linha!'); for (let i = 1; i <= n; i++) { const tx = e.x + ux * i * 2.3 + (rnd() - 0.5) * 1.2, tz = e.z + uz * i * 2.3 + (rnd() - 0.5) * 1.2, dl = 0.7 + i * 0.22; this.timers.push({ t: dl - 0.7, fn: () => { if (!this.over) this.telegraph(tx, tz, 2.3, 0.7, () => this.slamAt(tx, tz, 2.3, e.dmg * 0.7, d.slow)); } }); } } }
+          if (m === 'ring') { mv.rg = T('rg', 6) - dt; if (mv.rg <= 0 && rdy) { mv.rg = enr ? 6 : 8; const cx = e.x, cz = e.z; this.hooks.onWarn?.(d.name + ' libera uma onda!'); this.telegraph(cx, cz, 7.5, 1.3, () => { this.slamAt(cx, cz, 7.5, e.dmg * 0.8, d.slow); this.ring(cx, cz, 7.5, d.bolt || '#ff7a2a', 0.7, 0.3); }); } }
+          if (m === 'leap') { mv.lp = T('lp', 5) - dt; if (mv.lp <= 0 && rdy && !e.leaping) { mv.lp = enr ? 6 : 8; e.leaping = 1; const tx = h.x, tz = h.z; this.hooks.onWarn?.(d.name + ' salta!'); this.telegraph(tx, tz, 4.6, 1.2, () => { e.x = tx; e.z = tz; e.leaping = 0; this.cam.shake = Math.max(this.cam.shake, 0.7); this.slamAt(tx, tz, 4.6, e.dmg * 1.1, d.slow); }); } if (e.leaping) sp *= 0.2; }
           if (m === 'charge') {
             mv.chg = T('chg', 6) - dt;
             if (mv.chg <= 0 && rdy && !e.chging) { e.chging = -0.9; mv.chg = enr ? 5 : 7; e.cdx = dx; e.cdz = dz; this.hooks.onWarn?.(d.name + ' investe!'); }
@@ -766,7 +773,7 @@ export class Game {
     const fl = Math.max(e.flash > 0 ? Math.min(1, e.flash * 9) : 0, fuse * 0.7);
     if (fl > 0) { ctx.globalAlpha = fl * e.spawn; ctx.drawImage(F, fr * S.fw, 0, S.fw, S.fh, -w / 2, -h, w, h); }
     ctx.restore(); ctx.globalAlpha = 1;
-    if ((e.d.heavy || e.elite) && !e.d.boss && (e.hp < e.maxHp || e.elite) && !e.dummy) { const bw = Math.max(w * 0.5, 34), col = e.affixCol || (e.elite ? '#ffc24a' : '#c2562a'); ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(sx - bw / 2, sy - h - 8, bw, 5); ctx.fillStyle = col; ctx.fillRect(sx - bw / 2, sy - h - 8, bw * clamp(e.hp / e.maxHp, 0, 1), 5);
+    if ((e.d.heavy || e.elite) && (!e.d.boss || e.d.mini) && (e.hp < e.maxHp || e.elite || e.d.mini) && !e.dummy) { const bw = Math.max(w * 0.5, 34), col = e.affixCol || (e.elite ? '#ffc24a' : '#c2562a'); ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(sx - bw / 2, sy - h - 8, bw, 5); ctx.fillStyle = col; ctx.fillRect(sx - bw / 2, sy - h - 8, bw * clamp(e.hp / e.maxHp, 0, 1), 5);
       if (e.affixName) { ctx.font = `700 ${Math.round(13 * (ppu / 52))}px Rajdhani, sans-serif`; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,4,4,.9)'; ctx.strokeText(e.affixName.toUpperCase(), sx, sy - h - 12); ctx.fillStyle = col; ctx.fillText(e.affixName.toUpperCase(), sx, sy - h - 12); } }
   }
   drawCorpse(ctx, c) {

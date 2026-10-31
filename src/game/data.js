@@ -109,6 +109,20 @@ export const ENEMIES = {
   matriarca: { id: 'matriarca', sheet: 'boss', tint: '#42e0b4', name: 'A Matriarca', hp: 3400, speed: 1.25, dmg: 30, r: 2.1, xp: 160, scrap: 90, heavy: true, boss: true, moves: ['pools', 'volley', 'summon'], summon: 'spitter', bolt: '#42e0b4' },
   titan: { id: 'titan', sheet: 'boss', tint: '#e0a050', name: 'Titã das Dunas', hp: 4100, speed: 1.4, dmg: 38, r: 2.2, xp: 170, scrap: 100, heavy: true, boss: true, moves: ['charge', 'slam', 'summon'], summon: 'crawler' },
   gigante: { id: 'gigante', sheet: 'boss', tint: '#9fd0ff', name: 'Gigante de Gelo', hp: 4300, speed: 1.3, dmg: 36, r: 2.2, xp: 180, scrap: 110, heavy: true, boss: true, moves: ['slam', 'volley', 'summon'], summon: 'frozen', bolt: '#aee0ff', slow: true },
+  // ── segundos chefes (alternam com o principal) ──
+  ceifeira: { id: 'ceifeira', sheet: 'boss', tint: '#ff3a5a', name: 'A Ceifeira', hp: 3900, speed: 1.5, dmg: 36, r: 2.1, xp: 170, scrap: 100, heavy: true, boss: true, moves: ['barrage', 'ring', 'summon'], summon: 'drone', bolt: '#ff5a6a' },
+  hidra: { id: 'hidra', sheet: 'boss', tint: '#7dff6a', name: 'A Hidra do Brejo', hp: 3800, speed: 1.3, dmg: 32, r: 2.2, xp: 180, scrap: 105, heavy: true, boss: true, moves: ['pools', 'barrage', 'ring'], bolt: '#7dff6a', slow: true },
+  ferreo: { id: 'ferreo', sheet: 'boss', tint: '#b8c0c8', name: 'Colosso de Ferro', hp: 4500, speed: 1.45, dmg: 40, r: 2.3, xp: 190, scrap: 115, heavy: true, boss: true, moves: ['leap', 'barrage', 'charge'] },
+  invernal: { id: 'invernal', sheet: 'boss', tint: '#dff2ff', name: 'Rei do Inverno', hp: 4700, speed: 1.35, dmg: 38, r: 2.2, xp: 200, scrap: 120, heavy: true, boss: true, moves: ['ring', 'volley', 'leap', 'summon'], summon: 'frost', bolt: '#cfeaff', slow: true },
+  // ── sub-chefes (não encerram a expedição) ──
+  carcereiro: { id: 'carcereiro', sheet: 'brute', tint: '#ff6a3a', name: 'Carcereiro', hp: 1100, speed: 1.6, dmg: 28, r: 1.4, scale: 1.45, xp: 60, scrap: 30, heavy: true, boss: true, mini: true, moves: ['slam'] },
+  sargento: { id: 'sargento', sheet: 'raider', tint: '#ffb347', name: 'Sargento Brasa', hp: 1300, speed: 2.4, dmg: 24, r: 1.1, scale: 2.2, xp: 70, scrap: 35, heavy: true, boss: true, mini: true, moves: ['charge', 'summon'], summon: 'raider' },
+  sapoRei: { id: 'sapoRei', sheet: 'brute', tint: '#3a9a50', name: 'Sapo-Rei', hp: 1200, speed: 1.7, dmg: 26, r: 1.4, scale: 1.5, xp: 65, scrap: 32, heavy: true, boss: true, mini: true, moves: ['pools', 'leap'], bolt: '#42e0b4', slow: true },
+  ancestral: { id: 'ancestral', sheet: 'shaman', tint: '#42e0b4', name: 'Xamã Ancestral', hp: 1000, speed: 1.9, dmg: 22, r: 1.1, scale: 2.4, xp: 70, scrap: 34, heavy: true, boss: true, mini: true, moves: ['volley', 'pools'], bolt: '#42e0b4' },
+  verme: { id: 'verme', sheet: 'brute', tint: '#d09050', name: 'Golem Ancestral', hp: 1500, speed: 1.6, dmg: 32, r: 1.5, scale: 1.55, xp: 70, scrap: 35, heavy: true, boss: true, mini: true, moves: ['charge', 'slam'] },
+  escorpiaoRei: { id: 'escorpiaoRei', sheet: 'scorpion', tint: '#ffd070', name: 'Escorpião-Rei', hp: 1200, speed: 2.5, dmg: 24, r: 1.2, scale: 2.6, xp: 65, scrap: 32, heavy: true, boss: true, mini: true, moves: ['volley', 'leap'], bolt: '#ffb347' },
+  ursa: { id: 'ursa', sheet: 'brute', tint: '#f0f8ff', name: 'Ursa Branca', hp: 1500, speed: 1.9, dmg: 30, r: 1.5, scale: 1.55, xp: 70, scrap: 35, heavy: true, boss: true, mini: true, moves: ['leap', 'slam'], slow: true },
+  bruxaGelo: { id: 'bruxaGelo', sheet: 'shaman', tint: '#8ac0ff', name: 'Bruxa do Gelo', hp: 1100, speed: 1.9, dmg: 24, r: 1.1, scale: 2.4, xp: 70, scrap: 34, heavy: true, boss: true, mini: true, moves: ['volley', 'ring'], bolt: '#aee0ff', slow: true },
 };
 export const BOSS_TIME = 300; // segundos até o chefe do mapa
 
