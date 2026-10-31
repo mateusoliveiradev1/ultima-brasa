@@ -345,3 +345,10 @@
 .h-diff{padding:9px 4px;border-radius:9px;background:#1a1311;border:1px solid #3a2a24;color:var(--ash);font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1.5px;cursor:pointer;transition:.15s}
 .h-diff:hover{border-color:var(--c);color:var(--bone)}.h-diff.on{background:color-mix(in srgb,var(--c) 22%,#1a1311);border-color:var(--c);color:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 40%,transparent)}
 .h-diff.lock{opacity:.45;cursor:not-allowed}
+
+.ms-card.msbox{overflow:hidden;max-height:88vh;padding-top:0}
+.ms-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;padding:18px 0 8px;background:linear-gradient(180deg,#241a16 80%,transparent)}
+.ms-head h2{margin:0}
+.x-btn{width:38px;height:38px;border-radius:50%;border:1px solid #5a3a2c;background:#1a1311;color:var(--bone);font-size:16px;cursor:pointer;flex:none;transition:.15s}
+.x-btn:hover{border-color:var(--flame);color:var(--flame);background:#2a1c16}
+.ms-card.msbox .ms-list{overflow-y:auto;min-height:0;flex:1;padding-right:6px;scrollbar-width:thin;scrollbar-color:#5a3a2c transparent}

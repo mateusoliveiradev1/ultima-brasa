@@ -57,10 +57,10 @@ export async function mountGame(root) {
   function banner(t, ms = 2000, sub = '') { bannerEl.innerHTML = ''; bannerEl.append(el('b', {}, t), sub ? el('small', {}, sub) : null); bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show'); clearTimeout(banT); banT = setTimeout(() => bannerEl.classList.remove('show'), ms); }
 
   // ───────── MENU INICIAL ─────────
-  const VERSION = 'v0.3';
+  const VERSION = 'v0.6';
   const applyOpts = () => { game.opts.shake = save.opts.shake; game.opts.numbers = save.opts.numbers; game.bloom = save.opts.bloom; };
   applyOpts();
-  const dlgCard = el('div', { class: 'ms-card dlg' }), dlg = el('div', { class: 'g-overlay ms' }, dlgCard);
+  const dlgCard = el('div', { class: 'ms-card dlg' }), dlg = el('div', { class: 'g-overlay ms', onclick: (e) => { if (e.target === dlg) closeDlg(); } }, dlgCard);
   ui.append(dlg);
   const openDlg = (title, ...kids) => { dlgCard.innerHTML = ''; dlgCard.append(el('h2', {}, title), ...kids, el('div', { class: 'dlg-foot' }, btn('sm pri', 'Fechar', closeDlg))); dlg.classList.add('show'); };
   const closeDlg = () => { dlg.classList.remove('show'); SV.save(); };
@@ -88,10 +88,11 @@ export async function mountGame(root) {
   }
   function openCredits() {
     openDlg('Créditos',
-      el('p', { class: 'hp-p' }, el('b', {}, 'Última Brasa'), ' — ', VERSION),
-      el('p', { class: 'hp-p' }, 'Arte, código e efeitos: feitos com Claude (Anthropic) e Mateus. Os efeitos das habilidades foram pintados na Forja de Efeitos.'),
-      el('p', { class: 'hp-p' }, 'Texturas de partículas e efeitos sonoros: Kenney.nl (CC0). Fontes: Bebas Neue e Rajdhani (SIL OFL).'),
-      el('p', { class: 'dim' }, 'Licenças completas no repositório, pasta licenses/.'));
+      el('p', { class: 'hp-p' }, el('b', {}, 'Última Brasa'), ' — ', VERSION, el('br'), el('span', { class: 'dim' }, 'Roguelike incremental 2.5D pós-apocalíptico')),
+      el('p', { class: 'hp-p' }, el('b', {}, 'Criação e direção: '), 'Mateus (FORJA). ', el('b', {}, 'Código, arte procedural e efeitos: '), 'feitos em parceria com Claude (Anthropic). Os efeitos das habilidades foram pintados na Forja de Efeitos, ferramenta própria do jogo.'),
+      el('p', { class: 'hp-p' }, el('b', {}, 'Nesta versão: '), 'Árvore da Brasa com mais de 100 nós, 40 cartas com raridades e evoluções, 70 marcos, quatro dificuldades, sub-chefes e novos chefes por mapa.'),
+      el('p', { class: 'hp-p' }, el('b', {}, 'Sons e partículas: '), 'Kenney.nl (CC0) — Impact Sounds, RPG Audio, UI Audio e Particle Pack. ', el('b', {}, 'Fontes: '), 'Bebas Neue e Rajdhani (SIL OFL).'),
+      el('p', { class: 'dim' }, 'Feito com Canvas 2D e Web Audio, sem dependências em tempo de execução. Licenças completas no repositório, pasta licenses/.'));
   }
 
   const embers = el('canvas', { class: 'tt-embers' });
@@ -132,6 +133,7 @@ export async function mountGame(root) {
   function goHub() { title.classList.remove('show'); embRun = false; hub.classList.remove('off'); screen = 'hub'; game.camHub = { x: 2.4, z: 0.5 }; renderAll(); A.init(); }
   function titleKey(k) {
     if (dlg.classList.contains('show')) { if (k === 'escape') closeDlg(); return; }
+    if (msModal.classList.contains('show')) { if (k === 'escape' || k === 'enter') closeMs(); return; }
     if (k === 'arrowdown' || k === 's') focusIx = (focusIx + 1) % allItems.length; else if (k === 'arrowup' || k === 'w') focusIx = (focusIx - 1 + allItems.length) % allItems.length;
     else if (k === 'arrowright' && focusIx >= 3) focusIx = 3 + ((focusIx - 3 + 1) % 3); else if (k === 'arrowleft' && focusIx >= 3) focusIx = 3 + ((focusIx - 3 + 2) % 3);
     else if (k === 'enter' || k === ' ') { sfxClick(); allItems[focusIx].click(); return; } else return;
@@ -223,7 +225,8 @@ export async function mountGame(root) {
 
   // ───────── Marcos ─────────
   const msList = el('div', { class: 'ms-list' }), msTitle = el('h2', {}, 'Marcos');
-  const msModal = el('div', { class: 'g-overlay ms' }, el('div', { class: 'ms-card' }, msTitle, el('p', { class: 'dim' }, 'Metas permanentes. Cada marco concluído paga sucata na hora.'), msList, btn('sm', 'Fechar', () => msModal.classList.remove('show'))));
+  const closeMs = () => msModal.classList.remove('show');
+  const msModal = el('div', { class: 'g-overlay ms', onclick: (e) => { if (e.target === msModal) closeMs(); } }, el('div', { class: 'ms-card msbox' }, el('div', { class: 'ms-head' }, msTitle, el('button', { class: 'x-btn', title: 'Fechar (Esc)', onclick: closeMs }, '✕')), el('p', { class: 'dim' }, 'Metas permanentes. Cada marco concluído paga sucata na hora.'), msList));
   ui.append(msModal);
   function openMilestones() { renderMilestones(); msModal.classList.add('show'); }
   function renderMilestones() {
