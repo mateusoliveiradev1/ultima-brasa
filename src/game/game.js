@@ -11,7 +11,7 @@ import { FxSystem, getTex } from '../fx/core.js';
 import { drawFx, drawTexFrame } from '../fx/canvas-renderer.js';
 import * as store from '../fx/store.js';
 import { KENNEY_TEX } from '../assets/kenney.js';
-import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed, treeFx } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed, treeFx, EVOS } from './data.js';
 import { World } from './world.js';
 import * as A from './audio.js';
 
@@ -129,19 +129,20 @@ export class Game {
   startRun({ skill, depth, meta, biome, mul }) {
     this.reset(); this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; this.dm = { hp: dm.hp * b.hp, dmg: dm.dmg * b.dmg, scrap: dm.scrap * b.scrap }; this.rerolls = meta.reroll || 0;
     this.skillLv[skill] = 1 + (meta.maestria || 0); this.sk[skill] = { cd: 0.3, inst: null };
-    this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive; this.shield = this.stats.t.shield || 0; this.painT = 0; this.frenzyN = 0; this.frenzyT = 0;
+    this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive; this.shield = this.stats.t.shield || 0; this.evo = {}; this.cursed = {}; this.painT = 0; this.frenzyN = 0; this.frenzyT = 0;
     if (meta.impulso) { this.pending = meta.impulso; this.timers.push({ t: 0.7, fn: () => { if (this.pending > 0 && !this.paused) this.openLevelUp(); } }); }
     this.hooks.onStart?.();
   }
   computeStats(m, p, hub = false, mul = { dmg: 1, scrap: 1 }) {
     const g = (o, k) => o[k] || 0, t = treeFx(m), T = (k) => t[k] || 0;
+    for (const id in p) { const lv = p[id], fx = PASSIVES[id]?.fx; if (lv && fx) for (const k in fx) t[k] = (t[k] || 0) + fx[k] * lv; }
     return {
       t,
       maxHp: (100 + g(m, 'vida') * 12 + g(p, 'hp') * 25) * (1 + T('hpPct')), dmg: (1 + g(m, 'dano') * 0.06 + T('dmgP')) * (1 + g(p, 'dmg') * 0.12) * mul.dmg, cd: Math.max(0.25, (1 - g(m, 'recarga') * 0.025 - T('cdrFlat')) * (1 - g(p, 'cdr') * 0.08)),
       speed: 5.4 * (1 + g(m, 'vel') * 0.025 + T('speedP')) * (1 + g(p, 'spd') * 0.08), magnet: 2.7 * (1 + g(m, 'ima') * 0.08 + T('magP')) * (1 + g(p, 'magnet') * 0.3), regen: g(m, 'regen') * 0.15 + T('regenFlat') + g(p, 'regen') * 0.7,
-      armor: g(m, 'chapa') * 0.5 + T('armorFlat') + g(p, 'armor'), crit: 0.05 + g(m, 'crit') * 0.02 + T('critFlat') + g(p, 'crit') * 0.08 + g(p, 'luck') * 0.05, critMul: 2 + g(m, 'critd') * 0.1, area: 1 + g(p, 'area') * 0.1 + g(m, 'area') * 0.03 + T('areaP'),
-      luck: (1 + g(m, 'sorte') * 0.08 + g(p, 'luck') * 0.15) * (1 + T('luckP')) * mul.scrap, xp: (1 + g(m, 'xpg') * 0.06) * (1 + T('xpP')), cards: 3 + g(m, 'cartas'), slots: 4 + g(m, 'slots'), dashCd: 1.4 * (1 - g(m, 'dash') * 0.06),
-      revive: g(m, 'revive'), thorns: g(m, 'espinhos') * 9 * (1 + T('thornsMul')) * (T('thornsX2') ? 2 : 1), exec: g(m, 'exec') * 0.2, execT: 0.25 + T('execT'),
+      armor: g(m, 'chapa') * 0.5 + T('armorFlat') + g(p, 'armor'), crit: 0.05 + g(m, 'crit') * 0.02 + T('critFlat') + g(p, 'crit') * 0.08 + g(p, 'luck') * 0.05, critMul: 2 + g(m, 'critd') * 0.1 + T('critMulP'), area: 1 + g(p, 'area') * 0.1 + g(m, 'area') * 0.03 + T('areaP'),
+      luck: (1 + g(m, 'sorte') * 0.08 + g(p, 'luck') * 0.15) * (1 + T('luckP')) * mul.scrap, xp: (1 + g(m, 'xpg') * 0.06) * (1 + T('xpP')), cards: 3 + g(m, 'cartas'), slots: 4 + g(m, 'slots'), dashCd: 1.4 * Math.max(0.2, 1 - g(m, 'dash') * 0.06 - T('dashCdP')),
+      revive: g(m, 'revive'), thorns: (g(m, 'espinhos') * 9 + T('thornsFlat')) * (1 + T('thornsMul')) * (T('thornsX2') ? 2 : 1), exec: g(m, 'exec') * 0.2 + T('execP'), execT: 0.25 + T('execT'),
     };
   }
 
@@ -244,7 +245,7 @@ export class Game {
     const h = this.hero; if (h.iframes > 0 || h.dashT > 0 || this.over || this.mode !== 'run' || this.dying > 0) return;
     const T = this.stats.t;
     if (T.dodge && rnd() < Math.min(0.5, T.dodge)) { h.iframes = 0.3; this.floatText(h.x, 2.3, h.z, 'Esquivou!', '#7dffcf', false); A.synth('whoosh', { vol: 0.2 }); return; }
-    dmg = Math.max(1, dmg - this.stats.armor); if (T.dmgRed) dmg = Math.max(1, dmg * (1 - Math.min(0.5, T.dmgRed))); if (T.capHit) dmg = Math.min(dmg, h.maxHp * 0.25);
+    dmg = Math.max(1, dmg - this.stats.armor); if (T.dmgRed) dmg = Math.max(1, dmg * (1 - Math.min(0.5, T.dmgRed))); if (T.dmgTaken) dmg *= 1 + T.dmgTaken; if (T.capHit) dmg = Math.min(dmg, h.maxHp * 0.25);
     if (this.shield > 0) { const ab = Math.min(this.shield, dmg); this.shield -= ab; dmg -= ab; this.floatText(h.x, 2.6, h.z, '🛡' + Math.round(ab), '#9fd6ff', false); if (dmg <= 0) { h.iframes = 0.45; this.ring(h.x, h.z, 2.6, '#9fd6ff', 0.4, 0.12); return; } }
     this.painT = 4; h.hp -= dmg; h.iframes = 0.55; h.hurt = 0.25; this.hurtFlash = 1; this.hitStop = Math.max(this.hitStop, 0.06); this.ring(h.x, h.z, 3, '#ff4a3a', 0.45, 0.14); this.burst(h.x, h.z, 8, 1, 6); this.cam.shake = Math.max(this.cam.shake, 0.45); this.combo = Math.floor(this.combo * 0.5);
     if (o.slow) h.slowT = 1.6 * (1 - Math.min(0.8, T.slowRes || 0));
@@ -263,6 +264,7 @@ export class Game {
     const P = SKILLS[id].p(this.skillLv[id] || 1), t = this.stats?.t; if (!t) return P;
     const dm = 1 + (t['s_' + id + '_dmg'] || 0) + (t.sAll || 0), cd = Math.max(0.3, 1 - (t['s_' + id + '_cd'] || 0) - (t.sAllCd || 0)), n = t['s_' + id + '_n'] || 0;
     P.dmg *= dm; if (P.cd) P.cd *= cd;
+    if (this.evo?.[id]) { P.dmg *= 1.7; if (P.cd) P.cd *= id === 'nova' ? 0.85 : 1; if (id === 'arco') P.chains += 4; else if (id === 'brasas') { P.count += 3; P.radius *= 1.2; } else if (id === 'lanca') { P.count += 2; P.pierce += 3; } else if (id === 'chuva') P.count += 6; else if (id === 'nova') P.radius *= 1.25; else if (id === 'lamina') P.hits += 1; }
     if (id === 'arco') P.chains += n; else if (id === 'brasas') P.count += n; else if (id === 'lanca') P.count += n; else if (id === 'chuva') P.count += 2 * n;
     else if (id === 'nova') P.radius *= 1 + 0.06 * n; else if (id === 'lamina') { P.range *= 1 + 0.05 * n; P.arc += 3 * n; }
     return P;
@@ -368,7 +370,9 @@ export class Game {
       if (lv > 0 && lv < MAX_SKILL) opts.push({ kind: 'skill', id, lv: lv + 1, w: 3 * (1 + (this.stats.t.skillBias || 0)) });
       else if (lv === 0 && owned.length < this.stats.slots) opts.push({ kind: 'skill', id, lv: 1, w: 2.4 * (1 + (this.stats.t.skillBias || 0)), isNew: true });
     }
-    for (const id of PASSIVE_IDS) { const lv = this.pass[id] || 0; if (lv < PASSIVES[id].max) opts.push({ kind: 'pass', id, lv: lv + 1, w: 1.5 }); }
+    const owns = (id) => (this.pass[id] || 0) > 0;
+    for (const id of PASSIVE_IDS) { const d = PASSIVES[id], lv = this.pass[id] || 0; if (lv >= d.max || (d.minLv && this.level < d.minLv)) continue; if (d.rar === 'maldita' && Object.values(this.cursed || {}).filter(Boolean).length >= 3) continue; opts.push({ kind: 'pass', id, lv: lv + 1, w: d.rar === 'rara' ? 0.7 : d.rar === 'maldita' ? 0.45 : 1.5, rar: d.rar }); }
+    for (const id in EVOS) if ((this.skillLv[id] || 0) >= 5 && !this.evo?.[id] && (this.pass[EVOS[id].need] || 0) >= 2) opts.push({ kind: 'evo', id, lv: 1, w: 6, rar: 'evo' });
     const out = [], n = this.stats.cards;
     while (out.length < n && opts.length) {
       let tot = opts.reduce((a, o) => a + o.w, 0), r = rnd() * tot, i = 0;
@@ -387,7 +391,8 @@ export class Game {
   choose(i) {
     const c = this.choicesNow?.[i]; if (!c || !this.paused) return;
     if (c.kind === 'skill') { this.skillLv[c.id] = c.lv; if (!this.sk[c.id]) this.sk[c.id] = { cd: 0.2, inst: null }; }
-    else { this.pass[c.id] = c.lv; const old = this.stats.maxHp; this.stats = this.computeStats(this.meta, this.pass, false, this.mul); if (this.stats.maxHp > old) { this.hero.hp += this.stats.maxHp - old; } this.hero.maxHp = this.stats.maxHp; }
+    else if (c.kind === 'evo') { (this.evo ||= {})[c.id] = true; this.ring(this.hero.x, this.hero.z, 8, '#ff5a2a', 0.9, 0.24); this.hooks.onWarn?.(EVOS[c.id].name + '!'); A.synth('chime', { vol: 0.5 }); }
+    else { const pd = PASSIVES[c.id]; this.pass[c.id] = c.lv; if (pd.rar === 'maldita') (this.cursed ||= {})[c.id] = true; if (pd.pick) { if (pd.pick.shield) this.shield = (this.shield || 0) + pd.pick.shield; if (pd.pick.revive) this.revives++; if (pd.pick.foeHp) this.dm.hp *= pd.pick.foeHp; } const old = this.stats.maxHp; this.stats = this.computeStats(this.meta, this.pass, false, this.mul); if (this.stats.maxHp > old) { this.hero.hp += this.stats.maxHp - old; } this.hero.maxHp = this.stats.maxHp; }
     this.pending = Math.max(0, this.pending - 1); this.paused = false; this.choicesNow = null; A.sfx('latch', { vol: 0.5 }); this.hooks.onChosen?.();
     if (this.pending > 0) this.queueLevel(0.3);
   }

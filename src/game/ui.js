@@ -1,7 +1,7 @@
 // Interface do jogo: abrigo (hub) com Árvore da Brasa, HUD da expedição, cartas de nível, resultado e a Forja embutida.
 import { fmt, fmtTime, cv } from '../shared/util.js';
 import { GAME_TITLE } from '../shared/theme.js';
-import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, EVOS, RARITY, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
 import { BIOMES, BIOME_ORDER, biomeUnlocked } from './biomes.js';
 import * as SV from './save.js';
 import * as A from './audio.js';
@@ -370,11 +370,11 @@ export async function mountGame(root) {
   function showLevelUp(choices, rerolls) {
     lvTitle.innerHTML = `Subiu de nível <b>${game.level}</b>`; cardsBox.innerHTML = '';
     choices.forEach((c, i) => {
-      const isSkill = c.kind === 'skill', def = isSkill ? SKILLS[c.id] : PASSIVES[c.id], col = isSkill ? def.color : '#ffb347', max = isSkill ? 6 : def.max;
-      let icon; if (isSkill) { icon = skillIcon(c.id, 96); icon.className = 'ic'; } else icon = el('div', { class: 'ic glyph' }, PASSIVE_ICO[c.id]);
+      const isSkill = c.kind === 'skill', isEvo = c.kind === 'evo', def = isSkill ? SKILLS[c.id] : isEvo ? EVOS[c.id] : PASSIVES[c.id], R = RARITY[isEvo ? 'evo' : def.rar || 'comum'], col = isSkill ? def.color : R.c, max = isSkill ? 6 : isEvo ? 1 : def.max;
+      let icon; if (isSkill) { icon = skillIcon(c.id, 96); icon.className = 'ic'; } else icon = el('div', { class: 'ic glyph' }, isEvo ? def.ico : (def.ico || PASSIVE_ICO[c.id]));
       const pips = el('div', { class: 'pips' }); for (let k = 1; k <= max; k++) pips.append(el('i', { class: k < c.lv ? 'on' : k === c.lv ? 'new' : '' }));
       cardsBox.append(el('button', { class: 'lv-card' + (c.isNew ? ' fresh' : ''), style: `--c:${col}`, onmouseenter: sfxOver, onclick: () => { sfxClick(); game.choose(i); } },
-        el('div', { class: 'k' }, i + 1), c.isNew ? el('div', { class: 'tag' }, 'NOVA') : isSkill ? el('div', { class: 'tag u' }, `NV ${c.lv}`) : el('div', { class: 'tag p' }, 'PASSIVA'),
+        el('div', { class: 'k' }, i + 1), c.isNew ? el('div', { class: 'tag' }, 'NOVA') : isSkill ? el('div', { class: 'tag u' }, `NV ${c.lv}`) : el('div', { class: 'tag p' + (R.n !== 'PASSIVA' ? ' x' : '') }, R.n),
         icon, el('h3', {}, def.name), pips, el('p', {}, isSkill ? def.desc(c.lv) : def.desc)));
     });
     rerollBtn.disabled = rerolls <= 0; rerollBtn.textContent = `Trocar cartas (${rerolls})`;

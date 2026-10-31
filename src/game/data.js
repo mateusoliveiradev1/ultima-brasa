@@ -36,7 +36,53 @@ export const PASSIVES = {
   armor: { id: 'armor', name: 'Chapa Grossa', max: 5, desc: '-1 de dano recebido por golpe.', ico: '▣' },
   crit: { id: 'crit', name: 'Olho de Brasa', max: 5, desc: '+8% de chance de crítico (x2).', ico: '✺' },
 };
+// ── cartas expandidas ──
+// rar: comum | rara | maldita | evo.  fx: efeito por nível (mesmas chaves da árvore).  pick: efeito imediato.  minLv: nível de personagem mínimo para aparecer.
+const C = (id, name, ico, max, desc, fx, o = {}) => (PASSIVES[id] = { id, name, ico, max, desc, fx, rar: 'comum', ...o });
+C('vamp', 'Sede Rubra', '☩', 4, '+1,5% do dano causado vira vida.', { leech: 0.015 });
+C('killheal', 'Fôlego de Guerra', '❦', 4, 'Recupera 0,3 de vida a cada abate.', { killHeal: 0.3 });
+C('dashcd', 'Pés de Brasa', '≫', 3, 'Dash recarrega 12% mais rápido.', { dashCdP: 0.12 });
+C('thornp', 'Espinhos Vivos', '✸', 4, '+10 de dano de retaliação por nível (ativa a retaliação).', { thornsFlat: 10 });
+C('mind', 'Mente Afiada', '✎', 4, '+10% de experiência.', { xpP: 0.1 });
+C('hunter', 'Caçador', '♞', 4, '+10% de dano em elites e chefes.', { eliteDmg: 0.1 });
+C('close', 'Corpo a Corpo', '⚔', 4, '+12% de dano em inimigos próximos.', { nearDmg: 0.12 });
+C('sniper', 'Atirador', '⌖', 4, '+12% de dano em inimigos distantes.', { farDmg: 0.12 });
+C('coup', 'Golpe de Misericórdia', '☠', 3, '+15% de dano em inimigos quase mortos.', { execP: 0.15 });
+C('savage', 'Golpe Selvagem', '✹', 4, '+25% de dano crítico.', { critMulP: 0.25 });
+C('scrapshield', 'Escudo de Sucata', '◈', 3, 'Ganha um escudo de 20 que absorve dano.', {}, { pick: { shield: 20 } });
+C('cat', 'Reflexo Felino', '◐', 4, '+4% de chance de esquivar de um golpe.', { dodge: 0.04 });
+C('coin', 'Moeda Dupla', '◇', 4, '+6% de chance de a sucata valer o dobro.', { lootDouble: 0.06 });
+C('blastp', 'Brasa Final', '✺', 4, '+5% de chance de inimigos explodirem ao morrer.', { killBlast: 0.05 });
+C('lvheal', 'Renovação', '✿', 3, 'Cura 6% da vida ao subir de nível.', { lvlHeal: 0.06 });
+C('ironhide', 'Pele de Ferro', '◍', 4, '+6% de vida máxima.', { hpPct: 0.06 });
+C('combo', 'Cadeia de Golpes', '♪', 4, '+2% de dano a cada 10 de combo.', { comboDmg: 0.02 });
+C('heartc', 'Coração Sortudo', '♡', 3, 'Corações caem mais e curam mais.', { heartChance: 0.005, heartBonus: 0.25 });
+// raras
+C('secondheart', 'Segundo Coração', '☥', 1, 'Revive mais uma vez com 50% de vida.', {}, { rar: 'rara', minLv: 5, pick: { revive: 1 } });
+C('rain', 'Chuva de Brasas', '☄', 2, '+12% de chance de explosão ao morrer; explosões maiores.', { killBlast: 0.12, blastX: 1 }, { rar: 'rara', minLv: 5 });
+C('resso', 'Ressonância', '◎', 2, '+15% de área e -8% de recarga.', { areaP: 0.15, cdrFlat: 0.08 }, { rar: 'rara', minLv: 4 });
+C('thirst', 'Sede Sem Fim', '☄', 2, 'Cada abate acumula dano (até 50 acúmulos).', { frenzy: 0.002, frenzyCap: 1 }, { rar: 'rara', minLv: 6 });
+C('gambler', 'Sorte Grande', '☘', 2, '+30% de sucata e +10% de chance de dobrar.', { luckP: 0.3, lootDouble: 0.1 }, { rar: 'rara', minLv: 4 });
+C('dance', 'Dança das Cinzas', '✵', 1, 'O dash explode em chamas.', { dashBlast: 1 }, { rar: 'rara', minLv: 5 });
+// malditas: poder com preço
+C('pact', 'Pacto de Sangue', '☩', 2, '+40% de dano, mas -25% de vida máxima.', { dmgP: 0.4, hpPct: -0.25 }, { rar: 'maldita', minLv: 6 });
+C('glass', 'Vidro e Fúria', '❖', 2, '+60% de dano crítico, mas -2 de armadura.', { critMulP: 0.6, armorFlat: -2 }, { rar: 'maldita', minLv: 6 });
+C('blind', 'Maré Cega', '≈', 1, '+50% de sucata, mas -20% de velocidade.', { luckP: 0.5, speedP: -0.2 }, { rar: 'maldita', minLv: 6 });
+C('hunger', 'Fome Eterna', '☢', 1, 'Inimigos têm +25% de vida, mas você ganha +50% de experiência.', { xpP: 0.5 }, { rar: 'maldita', minLv: 6, pick: { foeHp: 1.25 } });
+C('overclock', 'Sobrecarga', '⚡', 2, '-15% de recarga em tudo, mas recebe +15% de dano.', { cdrFlat: 0.15, dmgTaken: 0.15 }, { rar: 'maldita', minLv: 6 });
+C('ashpact', 'Pacto de Cinzas', '☗', 1, '+30% de experiência e +25% de dano de habilidades, mas recebe +25% de dano.', { xpP: 0.3, sAll: 0.25, dmgTaken: 0.25 }, { rar: 'maldita', minLv: 8 });
 export const PASSIVE_IDS = Object.keys(PASSIVES);
+// evoluções: uma habilidade no nível 5+ junto de uma passiva vira outra coisa
+export const EVOS = {
+  lamina: { name: 'Lâmina Calcinada', need: 'dmg', ico: '⚔', desc: 'Golpe extra e +70% de dano. Corte incandescente.' },
+  brasas: { name: 'Coroa de Brasas', need: 'area', ico: '●', desc: '+3 brasas, órbita maior e +70% de dano.' },
+  arco: { name: 'Tempestade Tóxica', need: 'crit', ico: '〰', desc: '+4 encadeamentos e +70% de dano.' },
+  nova: { name: 'Supernova de Cinzas', need: 'cdr', ico: '◯', desc: 'Raio +25%, +70% de dano e recarga menor.' },
+  chuva: { name: 'Chuva Apocalíptica', need: 'luck', ico: '☄', desc: '+6 fragmentos e +70% de dano.' },
+  lanca: { name: 'Lança Solar', need: 'spd', ico: '➤', desc: '+2 lanças perfurantes e +70% de dano.' },
+};
+export const RARITY = { comum: { c: '#ffb347', n: 'PASSIVA' }, rara: { c: '#6fb8ff', n: 'RARA' }, maldita: { c: '#d94bff', n: 'MALDITA' }, evo: { c: '#ff5a2a', n: 'EVOLUÇÃO' } };
+
 
 export const ENEMIES = {
   ghoul: { id: 'ghoul', sheet: 'ghoul', name: 'Carniçal', hp: 14, speed: 3.5, dmg: 6, r: 0.42, xp: 1, scrap: 0.07, wob: 1 },
