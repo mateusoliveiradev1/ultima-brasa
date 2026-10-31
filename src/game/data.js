@@ -264,10 +264,10 @@ export const xpNeed = (lvl) => Math.floor(4 + lvl * 5 + Math.pow(lvl, 1.7));
 // Prestígio ("Renascer") e patente da conta
 // ── dificuldades (camada sobre a profundidade) ──
 export const DIFFS = [
-  { id: 'normal', name: 'Normal', color: '#ffb347', hp: 1, dmg: 1, scrap: 1, spd: 1, spawn: 1, elite: 1, hearts: 1, boss: 1, desc: 'A experiência padrão.' },
-  { id: 'pesadelo', name: 'Pesadelo', color: '#ff7a2a', hp: 1.6, dmg: 1.35, scrap: 1.7, spd: 1.04, spawn: 1.25, elite: 1.5, hearts: 0.8, boss: 1.3, desc: 'Mais inimigos e elites mais frequentes.' },
-  { id: 'calamidade', name: 'Calamidade', color: '#e0432a', hp: 2.7, dmg: 1.9, scrap: 3.2, spd: 1.08, spawn: 1.5, elite: 2.2, hearts: 0.5, boss: 1.8, desc: 'Hordas pesadas, poucos corações, chefes brutais.' },
-  { id: 'abissal', name: 'Abissal', color: '#b04bff', hp: 4.8, dmg: 2.8, scrap: 6, spd: 1.14, spawn: 1.85, elite: 3, hearts: 0.2, boss: 2.6, desc: 'Quase sem cura. Só para quem domina a Árvore.' },
+  { id: 'normal', name: 'Normal', color: '#ffb347', hp: 1, dmg: 1, scrap: 1, spd: 1, spawn: 1, elite: 1, hearts: 1, boss: 1, ramp: 0, desc: 'A experiência padrão.' },
+  { id: 'pesadelo', name: 'Pesadelo', color: '#ff7a2a', hp: 2, dmg: 1.5, scrap: 1.8, spd: 1.05, spawn: 1.35, elite: 1.6, hearts: 0.7, boss: 1.5, ramp: 0.5, desc: 'Mais inimigos e elites mais frequentes.' },
+  { id: 'calamidade', name: 'Calamidade', color: '#e0432a', hp: 4.5, dmg: 2.4, scrap: 3.4, spd: 1.1, spawn: 1.7, elite: 2.4, hearts: 0.4, boss: 2.6, ramp: 1.4, desc: 'Hordas pesadas, poucos corações, chefes brutais.' },
+  { id: 'abissal', name: 'Abissal', color: '#b04bff', hp: 11, dmg: 4, scrap: 7, spd: 1.18, spawn: 2.1, elite: 3.4, hearts: 0.15, boss: 4.5, ramp: 3, desc: 'Quase sem cura. Só para quem domina a Árvore.' },
 ];
 export const DIFF = Object.fromEntries(DIFFS.map((d) => [d.id, d]));
 /** libera cada dificuldade vencendo um chefe na anterior */

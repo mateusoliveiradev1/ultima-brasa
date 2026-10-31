@@ -149,7 +149,7 @@ export class Game {
   // ─────────── entidades ───────────
   makeEnemy(id, x, z, o = {}) {
     const d = ENEMIES[id], t = this.time || 0, dm = this.dm || { hp: 1, dmg: 1 };
-    const hpMul = (1 + (t / 60) * 0.3 + Math.pow(t / 60, 2) * 0.012) * dm.hp * (o.elite ? 7 : 1), dmgMul = (1 + (t / 60) * 0.1) * dm.dmg * (o.elite ? 1.3 : 1);
+    const rp = (t / 300) * (this.D?.ramp || 0), hpMul = (1 + (t / 60) * 0.3 + Math.pow(t / 60, 2) * 0.012) * (1 + rp) * dm.hp * (o.elite ? 7 : 1), dmgMul = (1 + (t / 60) * 0.1) * (1 + rp * 0.5) * dm.dmg * (o.elite ? 1.3 : 1);
     const hp = d.hp * hpMul, sc = (d.scale || 1) * (o.elite ? 1.3 : 1);
     const e = { d, id, x, z, hp, maxHp: hp, r: d.r * sc, sc, elite: !!o.elite, speed: d.speed * (this.D?.spd || 1) * (0.92 + rnd() * 0.16) * (d.wob ? 1.05 : 1) * (o.elite ? 1.1 : 1), dmg: dmgMul * d.dmg, face: -1, anim: rnd() * 6, flash: 0, kx: 0, kz: 0, atk: 0.3, spawn: o.dummy ? 1 : 0, orbCd: 0, t: rnd() * 10, dummy: !!o.dummy, shoot: 1 + rnd() * 1.5, chargeT: 3 + rnd() * 3, charging: 0, fuse: 0, enr: false, hover: d.fly ? 1.15 : 0, mv: {}, fl: rnd() * 2 - 1, lg: 0, lgCd: 1 + rnd() * 2, cast: 3 + rnd() * 3, buff: 0, lx: x, lz: z, stT: 0, slideT: 0, slideS: 1, affix: null, afT: 2 + rnd() * 2 };
     if (o.elite && !d.boss) this.applyAffix(e);
