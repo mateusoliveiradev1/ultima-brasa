@@ -54,7 +54,7 @@ export async function mountGame(root) {
   const toast = el('div', { class: 'g-toast' }); ui.append(toast);
   function showToast(t, ms = 3200) { toast.textContent = t; toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), ms); }
   const bannerEl = el('div', { class: 'g-banner' }); ui.append(bannerEl); let banT = 0;
-  function banner(t, ms = 2000, sub = '') { bannerEl.innerHTML = ''; bannerEl.append(el('b', {}, t), sub ? el('small', {}, sub) : null); bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show'); clearTimeout(banT); banT = setTimeout(() => bannerEl.classList.remove('show'), ms); }
+  function banner(t, ms = 2000, sub = '') { bannerEl.innerHTML = ''; bannerEl.append(...[el('b', {}, t), sub ? el('small', {}, sub) : null].filter(Boolean)); bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show'); clearTimeout(banT); banT = setTimeout(() => bannerEl.classList.remove('show'), ms); }
 
   // ───────── MENU INICIAL ─────────
   const VERSION = 'v0.6';
