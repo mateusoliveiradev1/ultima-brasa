@@ -216,13 +216,15 @@ export async function mountGame(root) {
   function ENEMIES_NAME(id) { return ({ colosso: 'O Colosso', matriarca: 'A Matriarca', titan: 'Titã das Dunas', gigante: 'Gigante de Gelo' })[id]; }
 
   // ───────── Marcos ─────────
-  const msList = el('div', { class: 'ms-list' });
-  const msModal = el('div', { class: 'g-overlay ms' }, el('div', { class: 'ms-card' }, el('h2', {}, 'Marcos'), el('p', { class: 'dim' }, 'Metas permanentes. Cada marco concluído paga sucata na hora.'), msList, btn('sm', 'Fechar', () => msModal.classList.remove('show'))));
+  const msList = el('div', { class: 'ms-list' }), msTitle = el('h2', {}, 'Marcos');
+  const msModal = el('div', { class: 'g-overlay ms' }, el('div', { class: 'ms-card' }, msTitle, el('p', { class: 'dim' }, 'Metas permanentes. Cada marco concluído paga sucata na hora.'), msList, btn('sm', 'Fechar', () => msModal.classList.remove('show'))));
   ui.append(msModal);
   function openMilestones() { renderMilestones(); msModal.classList.add('show'); }
   function renderMilestones() {
     msList.innerHTML = '';
-    for (const m of MILESTONES) { const v = Math.min(m.goal, m.get(save)), done = !!save.milestones[m.id];
+    const done0 = MILESTONES.filter((m) => save.milestones[m.id]).length; msTitle.textContent = `Marcos · ${done0}/${MILESTONES.length}`;
+    const order = [...MILESTONES].sort((x, y) => { const dx = save.milestones[x.id] ? 1 : 0, dy = save.milestones[y.id] ? 1 : 0; return dx - dy || Math.min(1, y.get(save) / y.goal) - Math.min(1, x.get(save) / x.goal); });
+    for (const m of order) { const v = Math.min(m.goal, m.get(save)), done = !!save.milestones[m.id];
       msList.append(el('div', { class: 'ms-row' + (done ? ' done' : '') }, el('div', { class: 'ms-i' }, el('b', {}, m.name), el('span', {}, m.desc), el('div', { class: 'g-bar' }, el('i', { style: `width:${(v / m.goal) * 100}%` }))), el('div', { class: 'ms-r' }, done ? '✓' : `⬢ ${fmt(m.reward)}`, el('small', {}, `${fmt(v)}/${fmt(m.goal)}`)))); }
   }
   function checkMilestones() {
