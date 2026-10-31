@@ -1,7 +1,7 @@
 // Interface do jogo: abrigo (hub) com Árvore da Brasa, HUD da expedição, cartas de nível, resultado e a Forja embutida.
 import { fmt, fmtTime, cv } from '../shared/util.js';
 import { GAME_TITLE } from '../shared/theme.js';
-import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
 import { BIOMES, BIOME_ORDER, biomeUnlocked } from './biomes.js';
 import * as SV from './save.js';
 import * as A from './audio.js';
@@ -211,7 +211,7 @@ export async function mountGame(root) {
     save.depth = Math.min(save.depth, save.depthMax); depthVal.textContent = save.depth; const m = DEPTH_MULT(save.depth), b = BIOMES[save.biome];
     depthInfo.innerHTML = `Inimigos <b>×${(m.hp * b.hp).toFixed(2)}</b> vida · <b>×${(m.dmg * b.dmg).toFixed(2)}</b> dano &nbsp;|&nbsp; Sucata <b class="g">×${(m.scrap * b.scrap).toFixed(2)}</b>` + (save.depthMax === save.depth && save.depthMax < 30 ? '<div class="dim">Vença um chefe para liberar a próxima profundidade.</div>' : '');
   }
-  function renderHubTop() { scrapVal.textContent = fmt(Math.floor(save.scrap)); const r = catadorRate(save.meta.catador) * SV.prestigeMul(); scrapRate.textContent = r > 0 ? `+${r.toFixed(2)}/s` : ''; }
+  function renderHubTop() { scrapVal.textContent = fmt(Math.floor(save.scrap)); const r = catadorRate(save.meta.catador) * catadorMul(save.meta) * SV.prestigeMul(); scrapRate.textContent = r > 0 ? `+${r.toFixed(2)}/s` : ''; }
   function renderAll() { renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); syncSound(); if (treeOpen) refreshTree(); }
   function ENEMIES_NAME(id) { return ({ colosso: 'O Colosso', matriarca: 'A Matriarca', titan: 'Titã das Dunas', gigante: 'Gigante de Gelo' })[id]; }
 
@@ -231,32 +231,34 @@ export async function mountGame(root) {
   }
 
   // ───────── Árvore da Brasa ─────────
-  const U = 134, NS = 66; let treeOpen = false, selNode = null, view = { x: 0, y: 0, k: 1 };
+  const U = 134, NS = 66, WW = 3200, WH = 2800, OX = 1600, OY = 1400; let treeOpen = false, selNode = null, view = { x: 0, y: 0, k: 1 };
   const nodeEls = {}, edgeEls = [];
   const svgNS = 'http://www.w3.org/2000/svg';
-  const edgeSvg = document.createElementNS(svgNS, 'svg'); edgeSvg.setAttribute('class', 't-edges'); edgeSvg.setAttribute('width', 2400); edgeSvg.setAttribute('height', 2000); edgeSvg.setAttribute('viewBox', '-1200 -1000 2400 2000');
+  const edgeSvg = document.createElementNS(svgNS, 'svg'); edgeSvg.setAttribute('class', 't-edges'); edgeSvg.setAttribute('width', WW); edgeSvg.setAttribute('height', WH); edgeSvg.setAttribute('viewBox', `${-OX} ${-OY} ${WW} ${WH}`);
   const world = el('div', { class: 't-world' }, edgeSvg);
   const px = (n) => n.x * U, py = (n) => n.y * U;
   // ligações
   for (const n of TREE) { const parents = n.req.length ? n.req.map(([r]) => NODE[r]) : [{ id: 'root', x: 0, y: 0 }];
     for (const p of parents) { const ln = document.createElementNS(svgNS, 'line'); ln.setAttribute('x1', px(p)); ln.setAttribute('y1', py(p)); ln.setAttribute('x2', px(n)); ln.setAttribute('y2', py(n)); edgeSvg.append(ln); edgeEls.push({ ln, from: p.id, to: n.id, color: BRANCH[n.branch].color }); } }
-  const rootEl = el('div', { class: 't-root', style: 'left:1200px;top:1000px' }, el('b', {}, '🔥'), el('span', {}, 'Brasa')); world.append(rootEl);
+  const rootEl = el('div', { class: 't-root', style: `left:${OX}px;top:${OY}px` }, el('b', {}, '🔥'), el('span', {}, 'Brasa')); world.append(rootEl);
   for (const n of TREE) {
-    const b = BRANCH[n.branch], e = el('button', { class: 't-node', style: `left:${1200 + px(n)}px;top:${1000 + py(n)}px;--c:${b.color}`, onclick: (ev) => { ev.stopPropagation(); selectNode(n.id); } }, el('span', { class: 'g' }, n.ico), el('i', { class: 'lv' }), el('span', { class: 'nm' }, n.name));
+    const b = BRANCH[n.branch], e = el('button', { class: 't-node', style: `left:${OX + px(n)}px;top:${OY + py(n)}px;--c:${b.color}`, onclick: (ev) => { ev.stopPropagation(); selectNode(n.id); } }, el('span', { class: 'g' }, n.ico), el('i', { class: 'lv' }), el('span', { class: 'nm' }, n.name));
+    if (n.key) e.classList.add('key');
     nodeEls[n.id] = e; world.append(e);
   }
-  for (const [k, t, x, y] of [['off', 'FÚRIA', 0, -4.5], ['def', 'CASCO', 0, 5.2], ['eco', 'ENGENHO', -5.2, -1.2], ['hab', 'FORJA', 4.9, 1.5]]) world.append(el('div', { class: 't-label', style: `left:${1200 + x * U}px;top:${1000 + y * U}px;color:${BRANCH[k].color}` }, t));
+  const axis = { off: (n) => -n.y, def: (n) => n.y, eco: (n) => -n.x, hab: (n) => n.x }, dir = { off: [0, -1], def: [0, 1], eco: [-1, 0], hab: [1, 0] };
+  for (const [k, t] of [['off', 'FÚRIA'], ['def', 'CASCO'], ['eco', 'ENGENHO'], ['hab', 'FORJA']]) { const far = Math.max(...TREE.filter((n) => n.branch === k).map(axis[k])) + 1.4; world.append(el('div', { class: 't-label', style: `left:${OX + dir[k][0] * far * U}px;top:${OY + dir[k][1] * far * U}px;color:${BRANCH[k].color}` }, t)); }
   const viewport = el('div', { class: 't-view' }, world);
   const tScrap = el('b'), detail = el('div', { class: 't-detail' });
   const rebirthBox = el('div', { class: 't-rebirth' });
   const tree = el('div', { class: 'g-tree' },
-    el('div', { class: 't-head' }, el('div', { class: 'g-logo' }, 'Árvore da Brasa', el('small', {}, 'arraste para mover · role para ampliar')), el('div', { class: 'h-sp' }), el('div', { class: 'h-scrap' }, el('span', { class: 'ic' }, '⬢'), tScrap), btn('sm', 'Renascer', () => toggleRebirth()), btn('sm', 'Centralizar', () => fitTree()), btn('sm pri', 'Fechar', () => closeTree())),
+    el('div', { class: 't-head' }, el('div', { class: 'g-logo' }, 'Árvore da Brasa', el('small', {}, 'arraste para mover · role para ampliar')), el('div', { class: 'h-sp' }), el('div', { class: 'h-scrap' }, el('span', { class: 'ic' }, '⬢'), tScrap), btn('sm', 'Renascer', () => toggleRebirth()), btn('sm', 'Centralizar', () => fitTree()), btn('sm', 'Ver tudo', () => fitTree(null, true)), btn('sm pri', 'Fechar', () => closeTree())),
     viewport, detail, rebirthBox);
   ui.append(tree);
   const applyView = () => { world.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.k})`; };
-  function fitTree(focus) {
-    const r = viewport.getBoundingClientRect(); const k = Math.max(0.42, Math.min(1, Math.min(r.width / (11.5 * U), r.height / (10.5 * U)))); view.k = k;
-    const fx = focus ? 1200 + px(focus) : 1200, fy = focus ? 1000 + py(focus) : 1000; view.x = r.width / 2 - fx * k; view.y = r.height / 2 - fy * k; applyView();
+  function fitTree(focus, all) {
+    const r = viewport.getBoundingClientRect(); const k = Math.max(0.2, Math.min(1, Math.min(r.width / (21 * U), r.height / (20 * U)))); view.k = all ? k : Math.max(k, 0.62);
+    const fx = focus ? OX + px(focus) : OX, fy = focus ? OY + py(focus) : OY; view.x = r.width / 2 - fx * view.k; view.y = r.height / 2 - fy * view.k; applyView();
   }
   // pan / zoom
   const ptrs = new Map(); let pinch = 0, moved = false;
@@ -269,7 +271,7 @@ export async function mountGame(root) {
   });
   const endP = (e) => { ptrs.delete(e.pointerId); pinch = 0; }; viewport.addEventListener('pointerup', endP); viewport.addEventListener('pointercancel', endP);
   viewport.addEventListener('click', () => { if (!moved) selectNode(null); });
-  function zoomAt(cx, cy, f) { const r = viewport.getBoundingClientRect(), k2 = Math.max(0.35, Math.min(1.8, view.k * f)), ff = k2 / view.k, ox = cx - r.left, oy = cy - r.top; view.x = ox - (ox - view.x) * ff; view.y = oy - (oy - view.y) * ff; view.k = k2; applyView(); }
+  function zoomAt(cx, cy, f) { const r = viewport.getBoundingClientRect(), k2 = Math.max(0.16, Math.min(1.8, view.k * f)), ff = k2 / view.k, ox = cx - r.left, oy = cy - r.top; view.x = ox - (ox - view.x) * ff; view.y = oy - (oy - view.y) * ff; view.k = k2; applyView(); }
   viewport.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
 
   function lvlOf(id) { return save.meta[id] || 0; }
@@ -277,7 +279,9 @@ export async function mountGame(root) {
     tScrap.textContent = fmt(Math.floor(save.scrap));
     for (const n of TREE) {
       const lvl = lvlOf(n.id), open = nodeOpen(n.id, save.meta), max = lvl >= n.max, can = open && !max && save.scrap >= nodeCost(n.id, lvl), e = nodeEls[n.id];
-      e.className = 't-node' + (open ? '' : ' locked') + (lvl > 0 ? ' bought' : '') + (max ? ' max' : '') + (can ? ' can' : '') + (selNode === n.id ? ' sel' : '');
+      const seen = open || !n.req.length || n.req.some(([r]) => lvlOf(r) > 0) || lvl > 0;
+      e.querySelector('.g').textContent = seen ? n.ico : '?'; e.querySelector('.nm').textContent = seen ? n.name : '???';
+      e.className = 't-node' + (n.key ? ' key' : '') + (seen ? '' : ' hidden') + (open ? '' : ' locked') + (lvl > 0 ? ' bought' : '') + (max ? ' max' : '') + (can ? ' can' : '') + (selNode === n.id ? ' sel' : '');
       e.querySelector('.lv').textContent = n.max > 1 ? `${lvl}/${n.max}` : lvl ? '✓' : ''; e.style.setProperty('--p', (lvl / n.max) * 360 + 'deg');
     }
     for (const ed of edgeEls) { const fromOk = ed.from === 'root' || lvlOf(ed.from) >= (NODE[ed.to].req.find(([r]) => r === ed.from)?.[1] || 1), toLvl = lvlOf(ed.to) > 0; ed.ln.setAttribute('class', toLvl ? 'lit' : fromOk ? 'open' : ''); ed.ln.style.setProperty('--c', ed.color); }
@@ -293,11 +297,11 @@ export async function mountGame(root) {
   function maxAffordable(id) { let l = lvlOf(id), s = save.scrap, n = 0; while (l < NODE[id].max && s >= nodeCost(id, l)) { s -= nodeCost(id, l); l++; n++; } return n; }
   function renderDetail() {
     detail.innerHTML = ''; detail.classList.toggle('show', !!selNode); if (!selNode) return;
-    const n = NODE[selNode], lvl = lvlOf(n.id), max = lvl >= n.max, open = nodeOpen(n.id, save.meta), cost = nodeCost(n.id, lvl), b = BRANCH[n.branch];
+    const n = NODE[selNode], lvl = lvlOf(n.id), max = lvl >= n.max, open = nodeOpen(n.id, save.meta), cost = nodeCost(n.id, lvl), b = BRANCH[n.branch], seen = open || !n.req.length || n.req.some(([r]) => lvlOf(r) > 0) || lvl > 0;
     const reqs = n.req.filter(([r, l]) => lvlOf(r) < l).map(([r, l]) => `${NODE[r].name} nv ${l}`);
     detail.style.setProperty('--c', b.color);
-    detail.append(...[el('div', { class: 'd-top' }, el('div', { class: 'd-ico' }, n.ico), el('div', { class: 'd-name' }, el('b', {}, n.name), el('small', {}, `${b.name} · nível ${lvl}/${n.max}`)), btn('sm', '✕', () => selectNode(null))),
-      el('p', {}, n.desc), el('div', { class: 'd-eff' }, el('span', {}, 'Agora ', el('b', {}, lvl ? n.fmt(lvl) : '—')), !max ? el('span', {}, 'Próximo ', el('b', { class: 'nx' }, n.fmt(lvl + 1))) : el('span', { class: 'g' }, 'Nível máximo')),
+    detail.append(...[el('div', { class: 'd-top' }, el('div', { class: 'd-ico' }, seen ? n.ico : '?'), el('div', { class: 'd-name' }, el('b', {}, seen ? n.name : '???'), el('small', {}, `${b.name} · ${n.key ? 'pedra-angular' : `nível ${lvl}/${n.max}`}`)), btn('sm', '✕', () => selectNode(null))),
+      el('p', {}, seen ? n.desc : 'Um poder ainda oculto. Avance pelo ramo para revelá-lo.'), seen ? el('div', { class: 'd-eff' }, el('span', {}, 'Agora ', el('b', {}, lvl ? n.fmt(lvl) : '—')), !max ? el('span', {}, 'Próximo ', el('b', { class: 'nx' }, n.fmt(lvl + 1))) : el('span', { class: 'g' }, 'Nível máximo')) : null,
       !open ? el('div', { class: 'd-req' }, 'Requer: ' + reqs.join(', ')) : null,
       !max ? el('div', { class: 'd-buy' }, btn('go sm2', ['Comprar  ⬢ ' + fmt(cost)], () => buy(n.id, 1), { disabled: !open || save.scrap < cost }), btn('sm', '+10', () => buy(n.id, 10), { disabled: !open || maxAffordable(n.id) < 2 }), btn('sm', 'Máx', () => buy(n.id, 999), { disabled: !open || maxAffordable(n.id) < 2 })) : null].filter(Boolean));
   }
@@ -322,7 +326,7 @@ export async function mountGame(root) {
 
   // renda passiva dos Catadores
   let acc = 0; setInterval(() => {
-    const r = catadorRate(save.meta.catador) * SV.prestigeMul(); if (r <= 0) return; acc += r * 0.5; if (acc >= 1) { const n = Math.floor(acc); acc -= n; save.scrap += n; save.lifetime += n; save.earnedLife += n; if (screen === 'hub') { renderHubTop(); if (treeOpen) refreshTree(); else if (Math.random() < 0.2) renderSurvivor(); } }
+    const r = catadorRate(save.meta.catador) * catadorMul(save.meta) * SV.prestigeMul(); if (r <= 0) return; acc += r * 0.5; if (acc >= 1) { const n = Math.floor(acc); acc -= n; save.scrap += n; save.lifetime += n; save.earnedLife += n; if (screen === 'hub') { renderHubTop(); if (treeOpen) refreshTree(); else if (Math.random() < 0.2) renderSurvivor(); } }
   }, 500);
   setInterval(() => SV.save(), 5000);
   window.addEventListener('beforeunload', () => SV.save());

@@ -71,44 +71,130 @@ export const BOSS_TIME = 300; // segundos até o chefe do mapa
 export const BRANCH = {
   def: { name: 'Casco', color: '#e0432a' }, off: { name: 'Fúria', color: '#ff8a2e' }, eco: { name: 'Engenho', color: '#42e0b4' }, hab: { name: 'Forja', color: '#ffc24a' },
 };
-const N = (id, name, branch, x, y, max, base, grow, req, desc, fmt, ico) => ({ id, name, branch, x, y, max, base, grow, req: req || [], desc, fmt, ico });
+const N = (id, name, branch, x, y, max, base, grow, req, desc, fmt, ico, fx) => ({ id, name, branch, x, y, max, base, grow, req: req || [], desc, fmt, ico, fx: fx || {}, tier: 0 });
 export const catadorRate = (l) => (l > 0 ? 0.06 * l * (1 + 0.06 * l) : 0);
-export const TREE = [
-  N('vida', 'Casco', 'def', 0, 1, 25, 22, 1.42, [], '+12 vida máxima', (l) => `+${l * 12}`, '♥'),
-  N('regen', 'Brasa Viva', 'def', -1, 2, 12, 75, 1.6, [['vida', 2]], '+0,15 vida por segundo', (l) => `+${(l * 0.15).toFixed(2)}/s`, '✚'),
-  N('chapa', 'Chapa', 'def', 1, 2, 10, 140, 1.7, [['vida', 2]], '-0,5 de dano por golpe recebido', (l) => `-${(l * 0.5).toFixed(1)}`, '▣'),
-  N('dash', 'Esquiva', 'def', -1, 3, 8, 220, 1.6, [['regen', 2]], 'Dash recarrega 6% mais rápido', (l) => `-${l * 6}%`, '»'),
-  N('espinhos', 'Retaliação', 'def', 1, 3, 10, 260, 1.65, [['chapa', 2]], 'Ao ser ferido, explode em volta e causa dano', (l) => `${l * 9} dano`, '✸'),
-  N('revive', 'Segundo Fôlego', 'def', 0, 4, 2, 700, 3.2, [['dash', 2], ['espinhos', 2]], 'Revive uma vez por expedição com 50% de vida', (l) => `${l}x`, '☥'),
-
-  N('dano', 'Fúria', 'off', 0, -1, 25, 38, 1.5, [], '+6% de dano', (l) => `+${l * 6}%`, '✦'),
-  N('recarga', 'Ritmo', 'off', -1, -2, 12, 110, 1.65, [['dano', 2]], '-2,5% de recarga das habilidades', (l) => `-${(l * 2.5).toFixed(1)}%`, '⟳'),
-  N('crit', 'Olho de Brasa', 'off', 1, -2, 15, 130, 1.55, [['dano', 2]], '+2% de chance de crítico', (l) => `+${l * 2}%`, '✺'),
-  N('area', 'Onda Expandida', 'off', 0, -2, 12, 160, 1.6, [['dano', 3]], '+3% de área e alcance', (l) => `+${l * 3}%`, '◌'),
-  N('critd', 'Golpe Brutal', 'off', 2, -3, 10, 320, 1.7, [['crit', 4]], '+10% de dano crítico', (l) => `+${l * 10}%`, '✹'),
-  N('exec', 'Executor', 'off', 0, -3, 8, 380, 1.75, [['recarga', 3], ['crit', 3]], '+20% de dano em inimigos com menos de 25% de vida', (l) => `+${l * 20}%`, '☠'),
-
-  N('ima', 'Ímã', 'eco', -1, 0, 12, 28, 1.5, [], '+8% de alcance de coleta', (l) => `+${l * 8}%`, '◎'),
-  N('sorte', 'Faro', 'eco', -2, 0, 18, 85, 1.6, [['ima', 2]], '+8% de sucata ganha', (l) => `+${l * 8}%`, '☘'),
-  N('catador', 'Catadores', 'eco', -3, 0, 40, 90, 1.46, [['sorte', 3]], 'Drones coletam sucata sozinhos, até offline', (l) => `${catadorRate(l).toFixed(2)}/s`, '⚙'),
-  N('xpg', 'Aprendizado', 'eco', -2, -1, 15, 120, 1.55, [['ima', 2]], '+6% de experiência', (l) => `+${l * 6}%`, '✎'),
-  N('cartas', 'Olhar Aguçado', 'eco', -3, -2, 1, 1500, 2, [['xpg', 5]], '+1 carta nas escolhas de nível', (l) => `+${l}`, '❖'),
-  N('vel', 'Pés Leves', 'eco', -1, 1, 12, 55, 1.55, [['ima', 2]], '+2,5% de velocidade de movimento', (l) => `+${(l * 2.5).toFixed(1)}%`, '≫'),
-  N('reroll', 'Segunda Chance', 'eco', -2, 1, 5, 280, 2.3, [['sorte', 2]], '+1 troca de cartas por expedição', (l) => `+${l}`, '↻'),
-  N('impulso', 'Impulso', 'eco', -4, 0, 3, 800, 2.6, [['catador', 4]], 'Começa a expedição com níveis extras', (l) => `+${l} nv`, '⇧'),
-
-  N('slots', 'Mente de Forja', 'hab', 1, 0, 2, 400, 3, [], '+1 espaço de habilidade por expedição', (l) => `+${l}`, '▤'),
-  N('r_arco', 'Relíquia: Arco Tóxico', 'hab', 2, -1, 1, 160, 1, [['slots', 1]], 'Libera o Arco Tóxico como habilidade inicial', () => 'liberado', '〰'),
-  N('r_brasas', 'Relíquia: Brasas', 'hab', 2, 0, 1, 300, 1, [['slots', 1]], 'Libera as Brasas Orbitais como habilidade inicial', () => 'liberado', '●'),
-  N('r_nova', 'Relíquia: Nova', 'hab', 2, 1, 1, 650, 1, [['slots', 1]], 'Libera a Nova de Cinzas como habilidade inicial', () => 'liberado', '◯'),
-  N('r_lanca', 'Relíquia: Lança', 'hab', 3, -0.5, 1, 1100, 1, [['r_arco', 1], ['r_brasas', 1]], 'Libera a Lança de Brasa como habilidade inicial', () => 'liberado', '➤'),
-  N('r_chuva', 'Relíquia: Chuva', 'hab', 3, 0.5, 1, 1900, 1, [['r_brasas', 1], ['r_nova', 1]], 'Libera a Chuva de Sucata como habilidade inicial', () => 'liberado', '☄'),
-  N('maestria', 'Maestria', 'hab', 4, 0, 3, 2600, 2.6, [['r_lanca', 1], ['r_chuva', 1]], 'A habilidade inicial começa com nível extra', (l) => `+${l} nv`, '★'),
+// posição local (profundidade d para fora, lateral l) → grade; cada ramo irradia numa direção
+const OFS = 1.6; // cada ramo começa afastado do centro para não invadir o vizinho
+const POS = { off: (d, l) => [l, -(d + OFS)], def: (d, l) => [l, d + OFS], eco: (d, l) => [-(d + OFS), l], hab: (d, l) => [d + OFS, l] };
+const mk = (b, d, l, id, name, ico, max, req, desc, fmt, fx, o = {}) => { const [x, y] = POS[b](d, l), n = N(id, name, b, x, y, max, o.base ?? Math.round(28 * Math.pow(1.8, d - 1) * (o.k || 1)), o.grow ?? (1.46 + 0.02 * d), req, desc, fmt, ico, fx); n.tier = d; if (o.key) n.key = true; return n; };
+// nó de atributo: +per por nível em `stat`
+const S = (b, d, l, id, name, ico, max, req, stat, per, unit, desc, o) => mk(b, d, l, id, name, ico, max, req, desc, (lv) => `${per < 0 ? '-' : '+'}${+Math.abs(lv * per).toFixed(2)}${unit}`, { [stat]: Math.abs(per) }, o);
+// pedra-angular: nível único, efeito marcante
+const K = (b, d, l, id, name, ico, req, desc, fx, o = {}) => mk(b, d, l, id, name, ico, 1, req, desc, () => 'ativa', fx, { base: Math.round(28 * Math.pow(1.8, d - 1) * 5), grow: 1, key: true, ...o });
+const sk = (b, lane, d0, sid, nm, parent, ico, nDesc, nUnit, nMax = 4) => [
+  S(b, d0, lane, `${sid}_a`, `${nm}: Afiado`, ico, 8, [[parent, 1]], `s_${sid}_dmg`, 0.06, '% dano', `+6% de dano de ${nm}`),
+  S(b, d0 + 1, lane, `${sid}_b`, `${nm}: Cadência`, ico, 6, [[`${sid}_a`, 3]], `s_${sid}_cd`, 0.03, '% recarga', `-3% de recarga de ${nm}`),
+  S(b, d0 + 2, lane, `${sid}_c`, `${nm}: ${nUnit[0]}`, ico, nMax, [[`${sid}_b`, 3]], `s_${sid}_n`, 1, nUnit[1], nDesc),
+  S(b, d0 + 3, lane, `${sid}_d`, `${nm}: Domínio`, ico, 6, [[`${sid}_c`, 2]], `s_${sid}_dmg`, 0.08, '% dano', `+8% de dano de ${nm}`),
 ];
+export const TREE = [
+  // ───────── CASCO (resistir) ─────────
+  mk('def', 1, 0, 'vida', 'Casco', '♥', 25, [], '+12 vida máxima', (l) => `+${l * 12}`, {}, { base: 22, grow: 1.42 }),
+  mk('def', 2, -1, 'regen', 'Brasa Viva', '✚', 12, [['vida', 2]], '+0,15 vida por segundo', (l) => `+${(l * 0.15).toFixed(2)}/s`, {}, { base: 75, grow: 1.6 }),
+  mk('def', 2, 1, 'chapa', 'Chapa', '▣', 10, [['vida', 2]], '-0,5 de dano por golpe recebido', (l) => `-${(l * 0.5).toFixed(1)}`, {}, { base: 140, grow: 1.7 }),
+  mk('def', 3, -1, 'dash', 'Esquiva', '»', 8, [['regen', 2]], 'Dash recarrega 6% mais rápido', (l) => `-${l * 6}%`, {}, { base: 220, grow: 1.6 }),
+  mk('def', 3, 1, 'espinhos', 'Retaliação', '✸', 10, [['chapa', 2]], 'Ao ser ferido, explode em volta e causa dano', (l) => `${l * 9} dano`, {}, { base: 260, grow: 1.65 }),
+  mk('def', 4, 0, 'revive', 'Segundo Fôlego', '☥', 2, [['dash', 2], ['espinhos', 2]], 'Revive uma vez por expedição com 50% de vida', (l) => `${l}x`, {}, { base: 700, grow: 3.2 }),
+  S('def', 3, 0, 'pele', 'Pele Grossa', '◍', 10, [['vida', 4]], 'hpPct', 0.03, '% vida', '+3% de vida máxima'),
+  S('def', 3, -2, 'seiva', 'Seiva', '❦', 10, [['regen', 3]], 'killHeal', 0.15, ' vida', 'Recupera vida a cada inimigo morto'),
+  S('def', 4, -2, 'coracao', 'Coração Voraz', '♡', 5, [['seiva', 3]], 'heartBonus', 0.2, '%', 'Corações curam mais'),
+  S('def', 5, -2, 'fonte', 'Fonte Viva', '❂', 8, [['coracao', 2]], 'regenFlat', 0.2, '/s', 'Regeneração extra por segundo'),
+  K('def', 6, -2, 'k_fenix', 'Pira Eterna', '♨', [['fonte', 4]], 'Abaixo de 30% de vida, a regeneração triplica', { lowRegen: 1 }),
+  S('def', 4, -1, 'reflexo', 'Reflexo', '◐', 10, [['dash', 3]], 'dodge', 0.02, '% esquiva', 'Chance de ignorar um golpe por completo'),
+  S('def', 5, -1, 'fantasma', 'Passo Fantasma', '≋', 6, [['reflexo', 3]], 'dashI', 0.06, 's', 'Fica invulnerável por mais tempo ao usar o dash'),
+  K('def', 6, -1, 'k_danca', 'Dança das Cinzas', '✵', [['fantasma', 3]], 'O dash explode em chamas e fere quem estiver perto', { dashBlast: 1 }),
+  S('def', 3, 2, 'couraca', 'Couraça', '▤', 10, [['chapa', 3]], 'armorFlat', 0.4, '', 'Reduz dano de cada golpe'),
+  S('def', 4, 2, 'bloqueio', 'Bloqueio', '▦', 10, [['couraca', 3]], 'dmgRed', 0.015, '% dano recebido', 'Reduz todo dano recebido', { }),
+  S('def', 5, 2, 'barreira', 'Barreira de Cinzas', '◈', 10, [['bloqueio', 3]], 'shield', 10, ' escudo', 'Começa a expedição com um escudo que absorve dano'),
+  K('def', 6, 2, 'k_muralha', 'Inabalável', '▮', [['barreira', 4]], 'Nenhum golpe tira mais que 25% da sua vida máxima', { capHit: 1 }),
+  S('def', 4, 3, 'toxina', 'Resistência Tóxica', '☣', 5, [['couraca', 4]], 'slowRes', 0.15, '% lentidão', 'Reduz o tempo de lentidão sofrido'),
+  S('def', 5, 3, 'casco2', 'Casco Reforçado', '◉', 8, [['toxina', 3]], 'hpPct', 0.02, '% vida', '+2% de vida máxima'),
+  S('def', 6, 3, 'vigor', 'Vigor Final', '▩', 6, [['casco2', 4]], 'armorFlat', 0.5, '', 'Reduz dano de cada golpe'),
+  S('def', 4, 1, 'farpas', 'Farpas', '⌖', 10, [['espinhos', 3]], 'thornsMul', 0.1, '% espinhos', 'Retaliação causa mais dano'),
+  S('def', 5, 1, 'ecodor', 'Eco da Dor', '⚡', 8, [['farpas', 3]], 'painDmg', 0.03, '% dano', 'Ao ser ferido, causa mais dano por 4 segundos'),
+  K('def', 6, 1, 'k_coroa', 'Coroa de Espinhos', '♛', [['ecodor', 3]], 'A Retaliação causa o dobro de dano', { thornsX2: 1 }),
+  S('def', 5, 0, 'vontade', 'Vontade de Ferro', '☥', 5, [['revive', 1]], 'reviveHp', 0.1, '% vida ao reviver', 'Revive com mais vida'),
+  K('def', 6, 0, 'k_cinza', 'Cinza Renascida', '☀', [['vontade', 3]], 'Ao reviver, uma explosão enorme e 4s de invulnerabilidade', { reviveNova: 1 }),
+
+  // ───────── FÚRIA (destruir) ─────────
+  mk('off', 1, 0, 'dano', 'Fúria', '✦', 25, [], '+6% de dano', (l) => `+${l * 6}%`, {}, { base: 38, grow: 1.5 }),
+  mk('off', 2, -1, 'recarga', 'Ritmo', '⟳', 12, [['dano', 2]], '-2,5% de recarga das habilidades', (l) => `-${(l * 2.5).toFixed(1)}%`, {}, { base: 110, grow: 1.65 }),
+  mk('off', 2, 0, 'area', 'Onda Expandida', '◌', 12, [['dano', 3]], '+3% de área e alcance', (l) => `+${l * 3}%`, {}, { base: 160, grow: 1.6 }),
+  mk('off', 2, 1, 'crit', 'Olho de Brasa', '✺', 15, [['dano', 2]], '+2% de chance de crítico', (l) => `+${l * 2}%`, {}, { base: 130, grow: 1.55 }),
+  mk('off', 3, 0, 'exec', 'Executor', '☠', 8, [['recarga', 3], ['crit', 3]], '+20% de dano em inimigos com menos de 25% de vida', (l) => `+${l * 20}%`, {}, { base: 380, grow: 1.75 }),
+  mk('off', 3, 2, 'critd', 'Golpe Brutal', '✹', 10, [['crit', 4]], '+10% de dano crítico', (l) => `+${l * 10}%`, {}, { base: 320, grow: 1.7 }),
+  S('off', 3, -1, 'sangria', 'Sede de Sangue', '☩', 10, [['recarga', 3]], 'leech', 0.004, '% roubo de vida', 'Recupera vida com o dano causado'),
+  S('off', 4, -1, 'frenesi', 'Frenesi', '⚔', 10, [['sangria', 3]], 'frenzy', 0.0015, '% por abate', 'Cada abate seguido acumula dano (até 20 acúmulos)'),
+  K('off', 5, -1, 'k_sede', 'Sede Sem Fim', '☄', [['frenesi', 5]], 'O Frenesi acumula até 50 vezes', { frenzyCap: 1 }),
+  S('off', 3, -2, 'pavio', 'Pavio Curto', '✧', 10, [['recarga', 4]], 'nearDmg', 0.04, '% dano de perto', 'Mais dano em inimigos próximos'),
+  S('off', 4, -2, 'combustao', 'Combustão', '✺', 10, [['pavio', 3]], 'killBlast', 0.05, '% explosão', 'Chance de inimigos explodirem ao morrer'),
+  K('off', 5, -2, 'k_pira', 'Pira de Guerra', '♨', [['combustao', 4]], 'As explosões ao morrer ficam maiores e três vezes mais fortes', { blastX: 1 }),
+  S('off', 3, -3, 'cadencia', 'Cadência', '⟲', 10, [['recarga', 5]], 'cdrFlat', 0.015, '% recarga', 'Reduz a recarga das habilidades'),
+  S('off', 4, -3, 'sintonia', 'Sintonia', '♪', 10, [['cadencia', 3]], 'comboDmg', 0.02, '% a cada 10 de combo', 'Mais dano conforme o combo'),
+  K('off', 5, -3, 'k_resso', 'Ressonância', '◎', [['sintonia', 5]], 'Recarga -10% e área +10%, sempre', { cdrFlat: 0.10, areaP: 0.10 }),
+  S('off', 3, -4, 'brasa_a', 'Brasa Ardente', '◆', 10, [['cadencia', 3]], 'dmgP', 0.03, '% dano', 'Mais dano em tudo'),
+  S('off', 4, -4, 'inferno', 'Inferno', '◈', 8, [['brasa_a', 5]], 'dmgP', 0.04, '% dano', 'Mais dano em tudo'),
+  S('off', 3, 1, 'mira', 'Mira Certeira', '⌖', 10, [['crit', 3]], 'farDmg', 0.04, '% dano de longe', 'Mais dano em inimigos distantes'),
+  S('off', 4, 1, 'predador', 'Olho do Predador', '◉', 10, [['mira', 3]], 'eliteDmg', 0.05, '% vs elites e chefes', 'Mais dano em elites e chefes'),
+  S('off', 5, 1, 'cacador', 'Caçador de Chefes', '♞', 8, [['predador', 3]], 'bossDmg', 0.06, '% vs chefes', 'Mais dano contra chefes'),
+  K('off', 6, 1, 'k_veredito', 'Veredito', '⚖', [['cacador', 4]], 'Críticos contra elites e chefes causam +50% de dano crítico', { verdict: 1 }),
+  S('off', 4, 2, 'lamina_af', 'Lâmina Afiada', '✂', 10, [['critd', 4]], 'critFlat', 0.015, '% crítico', 'Mais chance de crítico'),
+  K('off', 5, 2, 'k_gume', 'Gume Duplo', '⚔', [['lamina_af', 5]], 'Críticos também explodem em volta do alvo', { gume: 1 }),
+  S('off', 4, 0, 'carrasco', 'Carrasco', '☠', 10, [['exec', 3]], 'execT', 0.02, '% limiar', 'Executor passa a valer em inimigos com mais vida'),
+  S('off', 5, 0, 'desespero', 'Desespero', '☢', 8, [['carrasco', 3]], 'lowHpDmg', 0.05, '% dano com vida baixa', 'Mais dano abaixo de 50% de vida'),
+  K('off', 6, 0, 'k_ultimo', 'Último Suspiro', '☗', [['desespero', 4]], 'Abaixo de 25% de vida, causa 50% a mais de dano', { lastBreath: 1 }),
+
+  // ───────── ENGENHO (acumular) ─────────
+  mk('eco', 1, 0, 'ima', 'Ímã', '◎', 12, [], '+8% de alcance de coleta', (l) => `+${l * 8}%`, {}, { base: 28, grow: 1.5 }),
+  mk('eco', 2, -1, 'sorte', 'Faro', '☘', 18, [['ima', 2]], '+8% de sucata ganha', (l) => `+${l * 8}%`, {}, { base: 85, grow: 1.6 }),
+  mk('eco', 2, 0, 'vel', 'Pés Leves', '≫', 12, [['ima', 2]], '+2,5% de velocidade de movimento', (l) => `+${(l * 2.5).toFixed(1)}%`, {}, { base: 55, grow: 1.55 }),
+  mk('eco', 2, 1, 'xpg', 'Aprendizado', '✎', 15, [['ima', 2]], '+6% de experiência', (l) => `+${l * 6}%`, {}, { base: 120, grow: 1.55 }),
+  mk('eco', 3, -1, 'catador', 'Catadores', '⚙', 40, [['sorte', 3]], 'Drones coletam sucata sozinhos, até offline', (l) => `${catadorRate(l).toFixed(2)}/s`, {}, { base: 90, grow: 1.46 }),
+  mk('eco', 3, -2, 'reroll', 'Segunda Chance', '↻', 5, [['sorte', 2]], '+1 troca de cartas por expedição', (l) => `+${l}`, {}, { base: 280, grow: 2.3 }),
+  mk('eco', 3, 1, 'cartas', 'Olhar Aguçado', '❖', 1, [['xpg', 5]], '+1 carta nas escolhas de nível', (l) => `+${l}`, {}, { base: 1500, grow: 2 }),
+  mk('eco', 5, -1, 'impulso', 'Impulso', '⇧', 3, [['catador', 4]], 'Começa a expedição com níveis extras', (l) => `+${l} nv`, {}, { base: 800, grow: 2.6 }),
+  S('eco', 4, -1, 'drones', 'Drones Velozes', '⚙', 10, [['catador', 5]], 'catMul', 0.05, '% catadores', 'Catadores trabalham mais rápido'),
+  S('eco', 5, -2, 'fundicao', 'Fundição Noturna', '☾', 8, [['drones', 3]], 'offMul', 0.1, '% offline', 'Catadores rendem mais enquanto você está fora'),
+  K('eco', 6, -2, 'k_linha', 'Linha de Montagem', '⛭', [['fundicao', 4]], 'Catadores trabalham 50% mais rápido', { catX: 1 }),
+  S('eco', 3, -3, 'garimpo', 'Garimpeiro', '⛏', 8, [['sorte', 4]], 'eliteScrap', 0.1, '% sucata de elites', 'Elites e chefes soltam mais sucata'),
+  S('eco', 4, -3, 'veio', 'Veio Rico', '◇', 10, [['garimpo', 3]], 'lootDouble', 0.03, '% dobra', 'Chance de cada sucata valer o dobro'),
+  K('eco', 5, -3, 'k_rei', 'Rei do Lixão', '♚', [['veio', 5]], 'Sucata +30% e +15% de chance de dobrar', { luckP: 0.3, lootDouble: 0.15 }),
+  S('eco', 3, 2, 'renov', 'Renovação', '✿', 8, [['xpg', 4]], 'lvlHeal', 0.04, '% vida por nível', 'Cura ao subir de nível'),
+  S('eco', 4, 2, 'estudo', 'Estudo Dirigido', '✐', 5, [['renov', 3]], 'xpEarly', 0.1, '% xp nos 2 min iniciais', 'Mais experiência no começo da expedição'),
+  K('eco', 5, 2, 'k_mestre', 'Mestre das Cinzas', '☯', [['estudo', 3]], 'Ganha 15% a mais de experiência, sempre', { xpP: 0.15 }),
+  S('eco', 3, 0, 'sortudo', 'Coração Sortudo', '♡', 10, [['vel', 3]], 'heartChance', 0.004, '% de drop de coração', 'Mais chance de corações caírem'),
+  S('eco', 4, 0, 'magx', 'Ímã Veloz', '◎', 8, [['sortudo', 3]], 'magP', 0.06, '% coleta', 'Aumenta o alcance de coleta'),
+  K('eco', 5, 0, 'k_vento', 'Ventania', '≈', [['magx', 4]], 'Velocidade +10% e alcance de coleta +25%', { speedP: 0.10, magP: 0.25 }),
+
+  // ───────── FORJA (habilidades) ─────────
+  mk('hab', 1, 0, 'slots', 'Mente de Forja', '▤', 2, [], '+1 espaço de habilidade por expedição', (l) => `+${l}`, {}, { base: 400, grow: 3 }),
+  mk('hab', 2, -3, 'r_arco', 'Relíquia: Arco Tóxico', '〰', 1, [['slots', 1]], 'Libera o Arco Tóxico como habilidade inicial', () => 'liberado', {}, { base: 160, grow: 1 }),
+  mk('hab', 2, 0, 'r_brasas', 'Relíquia: Brasas', '●', 1, [['slots', 1]], 'Libera as Brasas Orbitais como habilidade inicial', () => 'liberado', {}, { base: 300, grow: 1 }),
+  mk('hab', 2, 3, 'r_nova', 'Relíquia: Nova', '◯', 1, [['slots', 1]], 'Libera a Nova de Cinzas como habilidade inicial', () => 'liberado', {}, { base: 650, grow: 1 }),
+  mk('hab', 3, -1.5, 'r_lanca', 'Relíquia: Lança', '➤', 1, [['r_arco', 1], ['r_brasas', 1]], 'Libera a Lança de Brasa como habilidade inicial', () => 'liberado', {}, { base: 1100, grow: 1 }),
+  mk('hab', 3, 1.5, 'r_chuva', 'Relíquia: Chuva', '☄', 1, [['r_brasas', 1], ['r_nova', 1]], 'Libera a Chuva de Sucata como habilidade inicial', () => 'liberado', {}, { base: 1900, grow: 1 }),
+  mk('hab', 5, 0, 'maestria', 'Maestria', '★', 3, [['r_lanca', 1], ['r_chuva', 1]], 'A habilidade inicial começa com nível extra', (l) => `+${l} nv`, {}, { base: 2600, grow: 2.6 }),
+  // Lâmina (habilidade inicial) — entradas baratas
+  S('hab', 1, -1.5, 'lamina_a', 'Lâmina: Afiada', '⚔', 8, [], 's_lamina_dmg', 0.06, '% dano', '+6% de dano da Lâmina de Ferrugem', { base: 60, grow: 1.5 }),
+  S('hab', 1, 1.5, 'lamina_b', 'Lâmina: Alcance', '⚔', 6, [], 's_lamina_n', 1, ' alc.', 'Aumenta arco e alcance da Lâmina', { base: 90, grow: 1.55 }),
+  ...sk('hab', -3, 3, 'arco', 'Arco', 'r_arco', '〰', '+1 alvo encadeado', ['Encadeamento', ' alvos']),
+  ...sk('hab', 3, 3, 'nova', 'Nova', 'r_nova', '◯', '+6% de raio por nível', ['Raio', ' nv']),
+  ...sk('hab', -1.5, 4, 'lanca', 'Lança', 'r_lanca', '➤', '+1 lança lançada', ['Leque', ' lanças'], 3),
+  ...sk('hab', 1.5, 4, 'chuva', 'Chuva', 'r_chuva', '☄', '+2 fragmentos por nível', ['Saraivada', ' nv'], 4),
+  S('hab', 3, 0, 'brasas_a', 'Brasas: Afiadas', '●', 8, [['r_brasas', 1]], 's_brasas_dmg', 0.06, '% dano', '+6% de dano das Brasas Orbitais'),
+  S('hab', 4, 0, 'brasas_b', 'Brasas: Enxame', '●', 4, [['brasas_a', 3]], 's_brasas_n', 1, ' brasa', '+1 brasa orbitando'),
+  S('hab', 6, 0, 'estudo_rel', 'Estudo de Relíquias', '✎', 10, [['maestria', 1]], 'sAll', 0.03, '% dano de habilidades', 'Mais dano em todas as habilidades'),
+  S('hab', 7, 0, 'fornalha', 'Fornalha', '♨', 5, [['estudo_rel', 3]], 'skillBias', 0.2, '% chance de habilidades', 'Habilidades aparecem mais nas cartas'),
+  K('hab', 8, 0, 'k_chama', 'Chama Mestra', '✹', [['fornalha', 3]], 'Todas as habilidades: dano +10% e recarga -8%', { sAll: 0.10, sAllCd: 0.08 }),
+];
+// posicionamento: separa nós que caiam sobre a mesma célula
 export const NODE = Object.fromEntries(TREE.map((n) => [n.id, n]));
 export const NODE_IDS = TREE.map((n) => n.id);
 export const nodeCost = (id, lvl) => Math.floor(NODE[id].base * Math.pow(NODE[id].grow, lvl));
 export const nodeOpen = (id, meta) => NODE[id].req.every(([r, l]) => (meta[r] || 0) >= l);
+/** soma dos efeitos de cada nó comprado (chave → valor); pedras-angulares entram como 1 */
+export function treeFx(meta) { const t = {}; for (const n of TREE) { const l = meta[n.id] || 0; if (!l) continue; for (const k in n.fx) t[k] = (t[k] || 0) + n.fx[k] * l; } return t; }
+export const catadorMul = (meta) => (1 + (treeFx(meta).catMul || 0)) * (meta.k_linha ? 1.5 : 1);
 export const RELIC_NODE = { arco: 'r_arco', brasas: 'r_brasas', nova: 'r_nova', lanca: 'r_lanca', chuva: 'r_chuva' };
 export const hasRelic = (id, meta) => id === 'lamina' || (meta[RELIC_NODE[id]] || 0) > 0;
 

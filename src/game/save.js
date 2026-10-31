@@ -1,5 +1,5 @@
 // Progresso salvo (localStorage) + ganhos offline dos Catadores.
-import { NODE_IDS, catadorRate, RELIC_NODE } from './data.js';
+import { NODE_IDS, catadorRate, catadorMul, treeFx, RELIC_NODE } from './data.js';
 
 const KEY = 'ultimabrasa.save.v1';
 const fresh = () => ({ v: 2, scrap: 0, lifetime: 0, earnedLife: 0, cinzas: 0, rebirths: 0, meta: Object.fromEntries(NODE_IDS.map((k) => [k, 0])), startSkill: 'lamina', depth: 1, depthMax: 1, biome: 'ruinas', biomeWins: {}, milestones: {}, elites: 0, best: { time: 0, kills: 0, level: 0, combo: 0 }, runs: 0, wins: 0, kills: 0, sfx: true, music: true, opts: { shake: 1, numbers: true, bloom: true }, t: Date.now() });
@@ -16,7 +16,7 @@ export function data() {
 }
 export function prestigeMul() { return 1 + 0.08 * (S?.cinzas || 0); }
 export function offlineGain() {
-  const d = data(), dt = Math.min(3 * 3600, Math.max(0, (Date.now() - (d.t || Date.now())) / 1000)), r = catadorRate(d.meta.catador) * prestigeMul();
+  const d = data(), dt = Math.min(3 * 3600, Math.max(0, (Date.now() - (d.t || Date.now())) / 1000)), r = catadorRate(d.meta.catador) * catadorMul(d.meta) * (1 + (treeFx(d.meta).offMul || 0)) * prestigeMul();
   const g = Math.floor(dt * r); if (g > 0 && dt > 30) { d.scrap += g; d.lifetime += g; d.earnedLife += g; save(); return { gain: g, secs: dt }; }
   return null;
 }

@@ -11,7 +11,7 @@ import { FxSystem, getTex } from '../fx/core.js';
 import { drawFx, drawTexFrame } from '../fx/canvas-renderer.js';
 import * as store from '../fx/store.js';
 import { KENNEY_TEX } from '../assets/kenney.js';
-import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed, treeFx } from './data.js';
 import { World } from './world.js';
 import * as A from './audio.js';
 
@@ -129,18 +129,19 @@ export class Game {
   startRun({ skill, depth, meta, biome, mul }) {
     this.reset(); this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; this.dm = { hp: dm.hp * b.hp, dmg: dm.dmg * b.dmg, scrap: dm.scrap * b.scrap }; this.rerolls = meta.reroll || 0;
     this.skillLv[skill] = 1 + (meta.maestria || 0); this.sk[skill] = { cd: 0.3, inst: null };
-    this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive;
+    this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive; this.shield = this.stats.t.shield || 0; this.painT = 0; this.frenzyN = 0; this.frenzyT = 0;
     if (meta.impulso) { this.pending = meta.impulso; this.timers.push({ t: 0.7, fn: () => { if (this.pending > 0 && !this.paused) this.openLevelUp(); } }); }
     this.hooks.onStart?.();
   }
   computeStats(m, p, hub = false, mul = { dmg: 1, scrap: 1 }) {
-    const g = (o, k) => o[k] || 0;
+    const g = (o, k) => o[k] || 0, t = treeFx(m), T = (k) => t[k] || 0;
     return {
-      maxHp: 100 + g(m, 'vida') * 12 + g(p, 'hp') * 25, dmg: (1 + g(m, 'dano') * 0.06) * (1 + g(p, 'dmg') * 0.12) * mul.dmg, cd: Math.max(0.3, (1 - g(m, 'recarga') * 0.025) * (1 - g(p, 'cdr') * 0.08)),
-      speed: 5.4 * (1 + g(m, 'vel') * 0.025) * (1 + g(p, 'spd') * 0.08), magnet: 2.7 * (1 + g(m, 'ima') * 0.08) * (1 + g(p, 'magnet') * 0.3), regen: g(m, 'regen') * 0.15 + g(p, 'regen') * 0.7,
-      armor: g(m, 'chapa') * 0.5 + g(p, 'armor'), crit: 0.05 + g(m, 'crit') * 0.02 + g(p, 'crit') * 0.08 + g(p, 'luck') * 0.05, critMul: 2 + g(m, 'critd') * 0.1, area: 1 + g(p, 'area') * 0.1 + g(m, 'area') * 0.03,
-      luck: (1 + g(m, 'sorte') * 0.08 + g(p, 'luck') * 0.15) * mul.scrap, xp: 1 + g(m, 'xpg') * 0.06, cards: 3 + g(m, 'cartas'), slots: 4 + g(m, 'slots'), dashCd: 1.4 * (1 - g(m, 'dash') * 0.06),
-      revive: g(m, 'revive'), thorns: g(m, 'espinhos') * 9, exec: g(m, 'exec') * 0.2,
+      t,
+      maxHp: (100 + g(m, 'vida') * 12 + g(p, 'hp') * 25) * (1 + T('hpPct')), dmg: (1 + g(m, 'dano') * 0.06 + T('dmgP')) * (1 + g(p, 'dmg') * 0.12) * mul.dmg, cd: Math.max(0.25, (1 - g(m, 'recarga') * 0.025 - T('cdrFlat')) * (1 - g(p, 'cdr') * 0.08)),
+      speed: 5.4 * (1 + g(m, 'vel') * 0.025 + T('speedP')) * (1 + g(p, 'spd') * 0.08), magnet: 2.7 * (1 + g(m, 'ima') * 0.08 + T('magP')) * (1 + g(p, 'magnet') * 0.3), regen: g(m, 'regen') * 0.15 + T('regenFlat') + g(p, 'regen') * 0.7,
+      armor: g(m, 'chapa') * 0.5 + T('armorFlat') + g(p, 'armor'), crit: 0.05 + g(m, 'crit') * 0.02 + T('critFlat') + g(p, 'crit') * 0.08 + g(p, 'luck') * 0.05, critMul: 2 + g(m, 'critd') * 0.1, area: 1 + g(p, 'area') * 0.1 + g(m, 'area') * 0.03 + T('areaP'),
+      luck: (1 + g(m, 'sorte') * 0.08 + g(p, 'luck') * 0.15) * (1 + T('luckP')) * mul.scrap, xp: (1 + g(m, 'xpg') * 0.06) * (1 + T('xpP')), cards: 3 + g(m, 'cartas'), slots: 4 + g(m, 'slots'), dashCd: 1.4 * (1 - g(m, 'dash') * 0.06),
+      revive: g(m, 'revive'), thorns: g(m, 'espinhos') * 9 * (1 + T('thornsMul')) * (T('thornsX2') ? 2 : 1), exec: g(m, 'exec') * 0.2, execT: 0.25 + T('execT'),
     };
   }
 
@@ -180,9 +181,22 @@ export class Game {
   hurt(e, dmg, o = {}) {
     if (e.dead) return;
     if (this.mode === 'hub') { e.flash = 0.1; if (o.text !== false) this.floatText(e.x, 1.6, e.z, Math.round(dmg * this.stats.dmg), '#ffd98a', false); return; }
-    let d = dmg * this.stats.dmg, crit = false;
-    if (this.stats.exec && e.hp < e.maxHp * 0.25) d *= 1 + this.stats.exec;
-    if (rnd() < this.stats.crit) { d *= this.stats.critMul; crit = true; }
+    const T = this.stats.t, h0 = this.hero, big = e.elite || e.d.boss;
+    let d = dmg * this.stats.dmg, crit = false, bonus = 0;
+    if (this.mode === 'run') {
+      if (T.frenzy && this.frenzyN) bonus += T.frenzy * this.frenzyN;
+      if (T.nearDmg && Math.hypot(e.x - h0.x, e.z - h0.z) < 3.5) bonus += T.nearDmg;
+      if (T.farDmg && Math.hypot(e.x - h0.x, e.z - h0.z) > 7) bonus += T.farDmg;
+      if (big) bonus += (T.eliteDmg || 0) + (e.d.boss ? (T.bossDmg || 0) : 0);
+      if (T.comboDmg) bonus += T.comboDmg * Math.floor(this.combo / 10);
+      if (h0.hp < h0.maxHp * 0.5) bonus += T.lowHpDmg || 0;
+      if (this.painT > 0) bonus += T.painDmg || 0;
+      d *= 1 + bonus; if (T.lastBreath && h0.hp < h0.maxHp * 0.25) d *= 1.5;
+    }
+    if (this.stats.exec && e.hp < e.maxHp * this.stats.execT) d *= 1 + this.stats.exec;
+    if (rnd() < this.stats.crit) { d *= this.stats.critMul + (T.verdict && big ? 0.5 : 0); crit = true; }
+    if (this.mode === 'run' && T.leech) h0.hp = Math.min(h0.maxHp, h0.hp + d * T.leech);
+    if (crit && T.gume && !o.sec) this.areaDamage(e.x, e.z, 2.6, dmg * 0.5, { sec: true });
     e.hp -= d; e.flash = 0.1; e.hitT = 0.2; e.hkx = o.kdx ?? 0;
     if (o.kb && !e.d.boss) { const k = o.kb * (e.d.heavy ? 0.25 : 1); e.kx += (o.kdx ?? 0) * k; e.kz += (o.kdz ?? 0) * k; }
     if (o.text !== false) this.floatText(e.x + (rnd() - 0.5) * 0.6, (e.d.fly ? e.hover : 0) + 1.5 * (e.sc || 1) * (e.d.boss ? 2 : 1), e.z, Math.round(d), crit ? '#fff2c8' : '#ffb347', crit);
@@ -194,16 +208,22 @@ export class Game {
   comboMul() { return 1 + Math.min(0.6, Math.floor(this.combo / 10) * 0.05); }
   killEnemy(e) {
     if (this.mode === 'run' || this.mode === 'hub') this.corpses.push({ d: e.d, x: e.x, z: e.z, sc: e.sc || 1, face: e.face, anim: e.anim, hover: e.hover || 0, dir: (e.hkx ?? e.kx) >= 0 ? 1 : -1, t: 0, life: e.d.boss ? 0.7 : 0.34 });
+    if (this.mode === 'run') {
+      const T = this.stats.t, h0 = this.hero;
+      if (T.killHeal) h0.hp = Math.min(h0.maxHp, h0.hp + T.killHeal);
+      if (T.frenzy) { this.frenzyN = Math.min(T.frenzyCap ? 50 : 20, (this.frenzyN || 0) + 1); this.frenzyT = 3; }
+      if (T.killBlast && !this._blast && rnd() < T.killBlast) { this._blast = true; const ex = e.x, ez = e.z, X = T.blastX ? 1 : 0; this.areaDamage(ex, ez, X ? 4 : 2.6, X ? 42 : 14, { sec: true, kb: 3 }); this.ring(ex, ez, X ? 4 : 2.6, '#ff9a54', 0.4, 0.14); this._blast = false; }
+    }
     e.dead = true; this.kills++; this.combo++; this.comboT = 3.2; this.maxCombo = Math.max(this.maxCombo, this.combo);
     const d = e.d, tier = d.xp >= 12 ? 2 : d.xp >= 3 ? 1 : 0, cm = this.comboMul();
     this.gems.push({ x: e.x, z: e.z, v: d.xp * (e.elite ? 4 : 1), tier, vx: (rnd() - 0.5) * 3, vz: (rnd() - 0.5) * 3, pull: false, t: 0, bob: rnd() * 6 });
     const tide = this.tideT > 0 ? 3 : 1;
     if (rnd() < d.scrap * this.stats.luck * 0.5 * tide || d.boss || e.elite) {
-      const n = d.boss ? 30 : e.elite ? 8 : d.heavy ? 3 + ((rnd() * 3) | 0) : 1;
-      for (let i = 0; i < n; i++) this.gems.push({ x: e.x + (rnd() - 0.5), z: e.z + (rnd() - 0.5), v: 2 * cm, tier: 'scrap', vx: (rnd() - 0.5) * 6, vz: (rnd() - 0.5) * 6, pull: false, t: 0, bob: rnd() * 6 });
+      const T = this.stats.t, n = Math.round((d.boss ? 30 : e.elite ? 8 : d.heavy ? 3 + ((rnd() * 3) | 0) : 1) * ((d.boss || e.elite) ? 1 + (T.eliteScrap || 0) : 1));
+      for (let i = 0; i < n; i++) this.gems.push({ x: e.x + (rnd() - 0.5), z: e.z + (rnd() - 0.5), v: 2 * cm * (rnd() < (T.lootDouble || 0) ? 2 : 1), tier: 'scrap', vx: (rnd() - 0.5) * 6, vz: (rnd() - 0.5) * 6, pull: false, t: 0, bob: rnd() * 6 });
     }
     if (e.elite) { this.elitesKilled++; this.gems.push({ x: e.x, z: e.z, v: 1, tier: 'chest', vx: 0, vz: 0, pull: false, t: 0, bob: 0 }); this.hooks.onWarn?.('Elite derrotado — baú!'); A.sfx('bell', { vol: 0.35, rate: 1.4 }); }
-    if (rnd() < (d.heavy ? 0.25 : 0.006) && !d.boss) this.gems.push({ x: e.x, z: e.z, v: 0.25, tier: 'heart', vx: 0, vz: 0, pull: false, t: 0, bob: 0 });
+    if (rnd() < (d.heavy ? 0.25 : 0.006 + (this.stats.t.heartChance || 0)) && !d.boss) this.gems.push({ x: e.x, z: e.z, v: 0.25, tier: 'heart', vx: 0, vz: 0, pull: false, t: 0, bob: 0 });
     if (e.affix === 'explosivo') { const ex = e.x, ez = e.z, dm_ = e.dmg * 1.1; this.telegraph(ex, ez, 3.6, 0.9, () => this.blastAt(ex, ez, 3.6, dm_)); }
     const big = d.heavy ? 2.2 : 1; if (d.heavy && !d.boss) { this.ring(e.x, e.z, 2.6, '#ff9a54', 0.45, 0.12); this.hitStop = Math.max(this.hitStop, 0.04); } if (e.elite) this.ring(e.x, e.z, 5, '#ffc24a', 0.7, 0.16);
     this.addSpark({ tex: 'smoke', x: e.x, y: 0.6, z: e.z, vx: 0, vy: 0.8, vz: 0, life: 0.7, s0: 1.2 * big, s1: 2.6 * big, a: 0.55, add: false, rot: rnd() * TAU });
@@ -222,20 +242,31 @@ export class Game {
   }
   hurtHero(dmg, srcx, srcz, o = {}) {
     const h = this.hero; if (h.iframes > 0 || h.dashT > 0 || this.over || this.mode !== 'run' || this.dying > 0) return;
-    dmg = Math.max(1, dmg - this.stats.armor); h.hp -= dmg; h.iframes = 0.55; h.hurt = 0.25; this.hurtFlash = 1; this.hitStop = Math.max(this.hitStop, 0.06); this.ring(h.x, h.z, 3, '#ff4a3a', 0.45, 0.14); this.burst(h.x, h.z, 8, 1, 6); this.cam.shake = Math.max(this.cam.shake, 0.45); this.combo = Math.floor(this.combo * 0.5);
-    if (o.slow) h.slowT = 1.6;
+    const T = this.stats.t;
+    if (T.dodge && rnd() < Math.min(0.5, T.dodge)) { h.iframes = 0.3; this.floatText(h.x, 2.3, h.z, 'Esquivou!', '#7dffcf', false); A.synth('whoosh', { vol: 0.2 }); return; }
+    dmg = Math.max(1, dmg - this.stats.armor); if (T.dmgRed) dmg = Math.max(1, dmg * (1 - Math.min(0.5, T.dmgRed))); if (T.capHit) dmg = Math.min(dmg, h.maxHp * 0.25);
+    if (this.shield > 0) { const ab = Math.min(this.shield, dmg); this.shield -= ab; dmg -= ab; this.floatText(h.x, 2.6, h.z, '🛡' + Math.round(ab), '#9fd6ff', false); if (dmg <= 0) { h.iframes = 0.45; this.ring(h.x, h.z, 2.6, '#9fd6ff', 0.4, 0.12); return; } }
+    this.painT = 4; h.hp -= dmg; h.iframes = 0.55; h.hurt = 0.25; this.hurtFlash = 1; this.hitStop = Math.max(this.hitStop, 0.06); this.ring(h.x, h.z, 3, '#ff4a3a', 0.45, 0.14); this.burst(h.x, h.z, 8, 1, 6); this.cam.shake = Math.max(this.cam.shake, 0.45); this.combo = Math.floor(this.combo * 0.5);
+    if (o.slow) h.slowT = 1.6 * (1 - Math.min(0.8, T.slowRes || 0));
     this.addDmgInd(o.ox ?? srcx, o.oz ?? srcz, false);
     this.floatText(h.x, 2.2, h.z, '-' + Math.round(dmg), '#ff5a4a', false); A.synth('hurt', { vol: 0.5 }); A.sfx('punch', { vol: 0.5, rate: 0.8 });
     const k = Math.hypot(h.x - srcx, h.z - srcz) || 1; h.vx += ((h.x - srcx) / k) * 4; h.vz += ((h.z - srcz) / k) * 4;
     if (this.stats.thorns) { this.areaDamage(h.x, h.z, 3.2, this.stats.thorns, { kb: 5 }); this.spawnImpact(h.x, h.z, 1.7); }
     if (h.hp <= 0 && !this.dying) {
-      if (this.revives > 0) { this.revives--; h.hp = h.maxHp * 0.5; h.iframes = 2.2; this.cam.shake = 1; this.hooks.onWarn?.('Segundo Fôlego!'); A.synth('chime', { vol: 0.4 }); const nv = store.resolveFx('nova'); if (nv) this.fx.spawn(nv, { x: h.x, z: h.z, radius: 7, dx: 1, dz: 0 }); this.areaDamage(h.x, h.z, 7, 80, { kb: 9 }); return; }
+      if (this.revives > 0) { this.revives--; h.hp = h.maxHp * Math.min(1, 0.5 + (T.reviveHp || 0)); h.iframes = T.reviveNova ? 4 : 2.2; this.cam.shake = 1; this.hooks.onWarn?.('Segundo Fôlego!'); A.synth('chime', { vol: 0.4 }); const nv = store.resolveFx('nova'); if (nv) this.fx.spawn(nv, { x: h.x, z: h.z, radius: 7, dx: 1, dz: 0 }); this.areaDamage(h.x, h.z, T.reviveNova ? 11 : 7, T.reviveNova ? 320 : 80, { kb: 9 }); return; }
       this.dying = 1.3; this.slow = 0.3; A.synth('boom', { vol: 0.5 }); A.sfx('creak', { vol: 0.5 });
     }
   }
 
   // ─────────── habilidades ───────────
-  sp(id) { return SKILLS[id].p(this.skillLv[id] || 1); }
+  sp(id) {
+    const P = SKILLS[id].p(this.skillLv[id] || 1), t = this.stats?.t; if (!t) return P;
+    const dm = 1 + (t['s_' + id + '_dmg'] || 0) + (t.sAll || 0), cd = Math.max(0.3, 1 - (t['s_' + id + '_cd'] || 0) - (t.sAllCd || 0)), n = t['s_' + id + '_n'] || 0;
+    P.dmg *= dm; if (P.cd) P.cd *= cd;
+    if (id === 'arco') P.chains += n; else if (id === 'brasas') P.count += n; else if (id === 'lanca') P.count += n; else if (id === 'chuva') P.count += 2 * n;
+    else if (id === 'nova') P.radius *= 1 + 0.06 * n; else if (id === 'lamina') { P.range *= 1 + 0.05 * n; P.arc += 3 * n; }
+    return P;
+  }
   cast(id) {
     const h = this.hero, st = this.sk[id] || (this.sk[id] = { cd: 0, inst: null }), P = this.sp(id), def = store.resolveFx(SKILLS[id].fx), area = this.stats.area;
     if (!def) return true;
@@ -334,8 +365,8 @@ export class Game {
     const owned = Object.keys(this.skillLv), opts = [];
     for (const id of SKILL_IDS) {
       const lv = this.skillLv[id] || 0;
-      if (lv > 0 && lv < MAX_SKILL) opts.push({ kind: 'skill', id, lv: lv + 1, w: 3 });
-      else if (lv === 0 && owned.length < this.stats.slots) opts.push({ kind: 'skill', id, lv: 1, w: 2.4, isNew: true });
+      if (lv > 0 && lv < MAX_SKILL) opts.push({ kind: 'skill', id, lv: lv + 1, w: 3 * (1 + (this.stats.t.skillBias || 0)) });
+      else if (lv === 0 && owned.length < this.stats.slots) opts.push({ kind: 'skill', id, lv: 1, w: 2.4 * (1 + (this.stats.t.skillBias || 0)), isNew: true });
     }
     for (const id of PASSIVE_IDS) { const lv = this.pass[id] || 0; if (lv < PASSIVES[id].max) opts.push({ kind: 'pass', id, lv: lv + 1, w: 1.5 }); }
     const out = [], n = this.stats.cards;
@@ -365,8 +396,8 @@ export class Game {
     this.timers.push({ t: delay, fn: () => { this.lvlQueued = false; if (this.pending > 0 && !this.paused && !this.over) this.openLevelUp(); } });
   }
   gainXp(v) {
-    this.xp += v * this.stats.xp;
-    while (this.xp >= this.xpNext) { this.xp -= this.xpNext; this.level++; this.xpNext = xpNeed(this.level); this.pending++; this.hooks.onLevelGain?.(this.level); this.ring(this.hero.x, this.hero.z, 7.5, '#7dffcf', 0.9, 0.22); this.ring(this.hero.x, this.hero.z, 4, '#ffffff', 0.55, 0.1); this.burst(this.hero.x, this.hero.z, 18, 1, 9); this.flashA = 0.32; this.flashCol = '#7dffcf'; this.floatText(this.hero.x, 3, this.hero.z, 'NÍVEL ' + this.level, '#7dffcf', true); }
+    this.xp += v * this.stats.xp * (this.time < 120 ? 1 + (this.stats.t.xpEarly || 0) : 1);
+    while (this.xp >= this.xpNext) { this.xp -= this.xpNext; this.level++; if (this.stats.t.lvlHeal && this.mode === 'run') this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + this.hero.maxHp * this.stats.t.lvlHeal); this.xpNext = xpNeed(this.level); this.pending++; this.hooks.onLevelGain?.(this.level); this.ring(this.hero.x, this.hero.z, 7.5, '#7dffcf', 0.9, 0.22); this.ring(this.hero.x, this.hero.z, 4, '#ffffff', 0.55, 0.1); this.burst(this.hero.x, this.hero.z, 18, 1, 9); this.flashA = 0.32; this.flashCol = '#7dffcf'; this.floatText(this.hero.x, 3, this.hero.z, 'NÍVEL ' + this.level, '#7dffcf', true); }
     if (this.pending > 0 && !this.paused) this.queueLevel();
   }
   finish(victory) {
@@ -456,13 +487,14 @@ export class Game {
       const sp = this.stats.speed * (h.slowT > 0 ? 0.62 : 1); h.vx = lerp(h.vx, ix * sp, 1 - Math.exp(-14 * dt)); h.vz = lerp(h.vz, iz * sp, 1 - Math.exp(-14 * dt));
       if (h.moving) { h.dx = ix; h.dz = iz; if (Math.abs(ix) > 0.15) h.face = ix > 0 ? 1 : -1; }
     }
-    if (this.dashReq && h.dashCd <= 0 && !this.dying) { this.dashReq = false; const l = Math.hypot(ix, iz); h.ddx = l > 0.1 ? ix / l : h.face; h.ddz = l > 0.1 ? iz / l : 0; h.dashT = 0.17; h.dashCd = this.stats.dashCd; this.ghostT = 0; this.ring(h.x, h.z, 2.4, '#ffe2b0', 0.35, 0.1); h.iframes = Math.max(h.iframes, 0.25); A.synth('whoosh', { vol: 0.25 }); }
+    if (this.dashReq && h.dashCd <= 0 && !this.dying) { this.dashReq = false; const l = Math.hypot(ix, iz); h.ddx = l > 0.1 ? ix / l : h.face; h.ddz = l > 0.1 ? iz / l : 0; h.dashT = 0.17; h.dashCd = this.stats.dashCd; this.ghostT = 0; this.ring(h.x, h.z, 2.4, '#ffe2b0', 0.35, 0.1); h.iframes = Math.max(h.iframes, 0.25 + (this.stats.t.dashI || 0)); if (this.stats.t.dashBlast) { this.areaDamage(h.x, h.z, 3.4, 22, { sec: true, kb: 4 }); this.spawnImpact(h.x, h.z, 1.6); } A.synth('whoosh', { vol: 0.25 }); }
     this.dashReq = false; h.dashCd = Math.max(0, h.dashCd - dt);
     if (h.dashT > 0) { this.ghostT -= dt; if (this.ghostT <= 0) { this.ghostT = 0.028; this.ghosts.push({ x: h.x, z: h.z, face: h.face, an: h.anim, a: 0.55 }); } }
     if (h.moving && h.dashT <= 0) { this.trailT -= dt; if (this.trailT <= 0) { this.trailT = 0.09; this.addSpark({ tex: 'spark', x: h.x - h.dx * 0.2 + (rnd() - 0.5) * 0.3, y: 0.15, z: h.z - h.dz * 0.2 + (rnd() - 0.5) * 0.2, vx: -h.dx * 0.8 + (rnd() - 0.5), vy: 0.9 + rnd(), vz: -h.dz * 0.8 + (rnd() - 0.5), life: 0.55, s0: 0.28, s1: 0.04, a: 0.8, add: true, rot: rnd() * TAU }); } }
     h.x += h.vx * dt; h.z += h.vz * dt; this.world.pushOut(h, 0.42);
     h.anim += dt * (h.moving ? 1 : 0.3) * (h.dashT > 0 ? 2 : 1); h.iframes = Math.max(0, h.iframes - dt); h.hurt = Math.max(0, h.hurt - dt); h.slowT = Math.max(0, (h.slowT || 0) - dt);
-    h.hp = Math.min(h.maxHp, h.hp + this.stats.regen * dt);
+    h.hp = Math.min(h.maxHp, h.hp + this.stats.regen * (this.stats.t.lowRegen && h.hp < h.maxHp * 0.3 ? 3 : 1) * dt);
+    if (this.painT > 0) this.painT -= dt; if (this.frenzyT > 0) { this.frenzyT -= dt; if (this.frenzyT <= 0) this.frenzyN = 0; }
     if (h.moving && Math.floor(h.anim * 2.4) !== Math.floor((h.anim - dt) * 2.4)) A.sfx('step', { vol: 0.12, rate: 0.9, gap: 0.12 });
 
     this.updateSkills(dt);
@@ -608,7 +640,7 @@ export class Game {
         g.dead = true;
         if (g.tier === 'scrap') { this.scrapRun += g.v * this.dm.scrap; this.scrapPieces++; A.sfx(pick(['coin', 'coin2']), { vol: 0.25, rate: 1.2, gap: 0.06 }); }
         else if (g.tier === 'chest') { this.chests++; this.pending++; this.ring(h.x, h.z, 6, '#ffc24a', 0.8, 0.18); this.burst(h.x, h.z, 16, 1.2, 8); this.flashA = 0.2; this.flashCol = '#ffc24a'; this.floatText(h.x, 3, h.z, 'BAÚ!', '#ffd98a', true); A.sfx('coin2', { vol: 0.6, rate: 0.8 }); this.queueLevel(0.2); }
-        else if (g.tier === 'heart') { this.ring(h.x, h.z, 3.5, '#7dffcf', 0.6, 0.12); h.hp = Math.min(h.maxHp, h.hp + h.maxHp * g.v); this.floatText(h.x, 2.4, h.z, '+' + Math.round(h.maxHp * g.v), '#7dffcf', false); A.synth('tick', { f: 520, vol: 0.4 }); }
+        else if (g.tier === 'heart') { this.ring(h.x, h.z, 3.5, '#7dffcf', 0.6, 0.12); { const hv = h.maxHp * g.v * (1 + (this.stats.t.heartBonus || 0)); h.hp = Math.min(h.maxHp, h.hp + hv); this.floatText(h.x, 2.4, h.z, '+' + Math.round(hv), '#7dffcf', false); } A.synth('tick', { f: 520, vol: 0.4 }); }
         else { this.gainXp(g.v * this.comboMul()); A.synth('tick', { f: 700 + Math.min(this.gems.length, 40) * 8 + g.tier * 160, vol: 0.18 }); }
       }
     }
