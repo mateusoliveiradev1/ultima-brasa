@@ -4,6 +4,8 @@ import { GAME_TITLE } from '../shared/theme.js';
 import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, EVOS, RARITY, DIFFS, DIFF, diffUnlocked, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
 import { BIOMES, BIOME_ORDER, biomeUnlocked } from './biomes.js';
 import * as SV from './save.js';
+import * as O from './online.js';
+import { mountOnline } from './online-ui.js';
 import * as A from './audio.js';
 import { Game, buildArt, skillIcon } from './game.js';
 import { mountForja } from '../forja/forja.js';
@@ -151,6 +153,9 @@ export async function mountGame(root) {
     btn('sm', '← Menu', () => showTitle(), { title: 'Voltar ao menu inicial' }),
     btn('sm', '♪', () => { save.music = !save.music; save.sfx = save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); SV.save(); syncSound(); }, { id: 'snd', title: 'Som ligado/desligado' }),
     btn('sm', 'Forja de Efeitos', () => openForja(), { title: 'Pinte os efeitos das habilidades' }));
+  let online = null;
+  const startDailyRun = (info) => { save.biome = info.biome; save.diff = info.diff; save.depth = 1; SV.save(); renderAll(); startRun({ daily: true }); };
+  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime }); topbar.append(...online.buttons); }
   const syncSound = () => { const b = topbar.querySelector('#snd'); b.textContent = save.music ? '♪' : '✕'; b.classList.toggle('off', !save.music); };
 
   // painel esquerdo: sobrevivente
@@ -426,13 +431,13 @@ export async function mountGame(root) {
       el('div', { class: 'rs-btns' }, ...btns)));
     resEl.classList.add('show'); A.sfx(r.victory ? 'bell' : 'creak', { vol: 0.6, rate: r.victory ? 1 : 0.7 });
     const t0 = performance.now(); const tick = () => { const u = Math.min(1, (performance.now() - t0) / 1300); gainEl.textContent = '⬢ ' + fmt(Math.floor(r.gain * (1 - Math.pow(1 - u, 3)))); if (u < 1) requestAnimationFrame(tick); }; tick();
-    SV.save(); checkMilestones();
+    SV.save(); checkMilestones(); try { online?.onRunEnd(r, runFlags.daily); } catch (e) { /* online é opcional */ }
   }
 
   // ───────── fluxo ─────────
-  function startRun() {
+  function startRun(opts = {}) {
     A.init(); screen = 'run'; title.classList.remove('show'); embRun = false; hub.classList.add('off'); hud.classList.add('on'); slotKey = '';
-    runFlags = { won: false }; const mul = mulOf();
+    runFlags = { won: false, daily: !!opts.daily }; const mul = mulOf();
     game.startRun({ skill: save.startSkill, depth: save.depth, diff: save.diff, meta: { ...save.meta }, biome: save.biome, mul }); renderHubTop(); banner(BIOMES[save.biome].name, 2800, 'Sobreviva e derrube o chefe');
   }
   function toHub() { screen = 'hub'; game.camHub = { x: 2.4, z: 0.5 }; hub.classList.remove('off'); hud.classList.remove('on'); game.enterHub({ skill: save.startSkill, biome: save.biome }); renderAll(); }

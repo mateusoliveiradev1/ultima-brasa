@@ -4,7 +4,10 @@ import { NODE_IDS, catadorRate, catadorMul, treeFx, RELIC_NODE } from './data.js
 const KEY = 'ultimabrasa.save.v1';
 const fresh = () => ({ v: 2, scrap: 0, lifetime: 0, earnedLife: 0, cinzas: 0, rebirths: 0, meta: Object.fromEntries(NODE_IDS.map((k) => [k, 0])), startSkill: 'lamina', depth: 1, depthMax: 1, diff: 'normal', diffWins: {}, biome: 'ruinas', biomeWins: {}, milestones: {}, elites: 0, best: { time: 0, kills: 0, level: 0, combo: 0 }, runs: 0, wins: 0, kills: 0, sfx: true, music: true, opts: { shake: 1, numbers: true, bloom: true }, t: Date.now() });
 let S = null;
-export function save() { if (!S) return; S.t = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sem storage */ } }
+const saveSubs = new Set(); export const onSave = (f) => saveSubs.add(f);
+export function save() { if (!S) return; S.t = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sem storage */ } saveSubs.forEach((f) => f(S)); }
+/** Substitui o save local (ex.: vindo da nuvem) e recarrega a página para reinicializar tudo com segurança. */
+export function replaceFromCloud(obj) { try { localStorage.setItem(KEY, JSON.stringify(obj)); } catch (e) { /* sem storage */ } location.reload(); }
 export function data() {
   if (S) return S;
   let raw = null; try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) { raw = null; }
