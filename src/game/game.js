@@ -11,7 +11,7 @@ import { FxSystem, getTex } from '../fx/core.js';
 import { drawFx, drawTexFrame } from '../fx/canvas-renderer.js';
 import * as store from '../fx/store.js';
 import { KENNEY_TEX } from '../assets/kenney.js';
-import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed, treeFx, EVOS } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed, treeFx, EVOS, DIFF } from './data.js';
 import { World } from './world.js';
 import * as A from './audio.js';
 
@@ -126,8 +126,8 @@ export class Game {
     this.hubSkill = id; this.fx.clear(); this.sk = {}; this.skillLv = { [id]: 4 }; this.hubCast = 0.4;
     if (id === 'brasas') this.skillLv = { brasas: 4 };
   }
-  startRun({ skill, depth, meta, biome, mul }) {
-    this.reset(); this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; this.dm = { hp: dm.hp * b.hp, dmg: dm.dmg * b.dmg, scrap: dm.scrap * b.scrap }; this.rerolls = meta.reroll || 0;
+  startRun({ skill, depth, meta, biome, mul, diff }) {
+    this.reset(); this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; const D = DIFF[diff] || DIFF.normal; this.diff = D.id; this.D = D; this.dm = { hp: dm.hp * b.hp * D.hp, dmg: dm.dmg * b.dmg * D.dmg, scrap: dm.scrap * b.scrap * D.scrap }; this.rerolls = meta.reroll || 0;
     this.skillLv[skill] = 1 + (meta.maestria || 0); this.sk[skill] = { cd: 0.3, inst: null };
     this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive; this.shield = this.stats.t.shield || 0; this.evo = {}; this.cursed = {}; this.painT = 0; this.frenzyN = 0; this.frenzyT = 0;
     if (meta.impulso) { this.pending = meta.impulso; this.timers.push({ t: 0.7, fn: () => { if (this.pending > 0 && !this.paused) this.openLevelUp(); } }); }
@@ -151,7 +151,7 @@ export class Game {
     const d = ENEMIES[id], t = this.time || 0, dm = this.dm || { hp: 1, dmg: 1 };
     const hpMul = (1 + (t / 60) * 0.3 + Math.pow(t / 60, 2) * 0.012) * dm.hp * (o.elite ? 7 : 1), dmgMul = (1 + (t / 60) * 0.1) * dm.dmg * (o.elite ? 1.3 : 1);
     const hp = d.hp * hpMul, sc = (d.scale || 1) * (o.elite ? 1.3 : 1);
-    const e = { d, id, x, z, hp, maxHp: hp, r: d.r * sc, sc, elite: !!o.elite, speed: d.speed * (0.92 + rnd() * 0.16) * (d.wob ? 1.05 : 1) * (o.elite ? 1.1 : 1), dmg: dmgMul * d.dmg, face: -1, anim: rnd() * 6, flash: 0, kx: 0, kz: 0, atk: 0.3, spawn: o.dummy ? 1 : 0, orbCd: 0, t: rnd() * 10, dummy: !!o.dummy, shoot: 1 + rnd() * 1.5, chargeT: 3 + rnd() * 3, charging: 0, fuse: 0, enr: false, hover: d.fly ? 1.15 : 0, mv: {}, fl: rnd() * 2 - 1, lg: 0, lgCd: 1 + rnd() * 2, cast: 3 + rnd() * 3, buff: 0, lx: x, lz: z, stT: 0, slideT: 0, slideS: 1, affix: null, afT: 2 + rnd() * 2 };
+    const e = { d, id, x, z, hp, maxHp: hp, r: d.r * sc, sc, elite: !!o.elite, speed: d.speed * (this.D?.spd || 1) * (0.92 + rnd() * 0.16) * (d.wob ? 1.05 : 1) * (o.elite ? 1.1 : 1), dmg: dmgMul * d.dmg, face: -1, anim: rnd() * 6, flash: 0, kx: 0, kz: 0, atk: 0.3, spawn: o.dummy ? 1 : 0, orbCd: 0, t: rnd() * 10, dummy: !!o.dummy, shoot: 1 + rnd() * 1.5, chargeT: 3 + rnd() * 3, charging: 0, fuse: 0, enr: false, hover: d.fly ? 1.15 : 0, mv: {}, fl: rnd() * 2 - 1, lg: 0, lgCd: 1 + rnd() * 2, cast: 3 + rnd() * 3, buff: 0, lx: x, lz: z, stT: 0, slideT: 0, slideS: 1, affix: null, afT: 2 + rnd() * 2 };
     if (o.elite && !d.boss) this.applyAffix(e);
     return e;
   }
@@ -224,7 +224,7 @@ export class Game {
       for (let i = 0; i < n; i++) this.gems.push({ x: e.x + (rnd() - 0.5), z: e.z + (rnd() - 0.5), v: 2 * cm * (rnd() < (T.lootDouble || 0) ? 2 : 1), tier: 'scrap', vx: (rnd() - 0.5) * 6, vz: (rnd() - 0.5) * 6, pull: false, t: 0, bob: rnd() * 6 });
     }
     if (e.elite) { this.elitesKilled++; this.gems.push({ x: e.x, z: e.z, v: 1, tier: 'chest', vx: 0, vz: 0, pull: false, t: 0, bob: 0 }); this.hooks.onWarn?.('Elite derrotado — baú!'); A.sfx('bell', { vol: 0.35, rate: 1.4 }); }
-    if (rnd() < (d.heavy ? 0.25 : 0.006 + (this.stats.t.heartChance || 0)) && !d.boss) this.gems.push({ x: e.x, z: e.z, v: 0.25, tier: 'heart', vx: 0, vz: 0, pull: false, t: 0, bob: 0 });
+    if (rnd() < (d.heavy ? 0.25 : (0.006 + (this.stats.t.heartChance || 0)) * (this.D?.hearts || 1)) && !d.boss) this.gems.push({ x: e.x, z: e.z, v: 0.25, tier: 'heart', vx: 0, vz: 0, pull: false, t: 0, bob: 0 });
     if (e.affix === 'explosivo') { const ex = e.x, ez = e.z, dm_ = e.dmg * 1.1; this.telegraph(ex, ez, 3.6, 0.9, () => this.blastAt(ex, ez, 3.6, dm_)); }
     const big = d.heavy ? 2.2 : 1; if (d.heavy && !d.boss) { this.ring(e.x, e.z, 2.6, '#ff9a54', 0.45, 0.12); this.hitStop = Math.max(this.hitStop, 0.04); } if (e.elite) this.ring(e.x, e.z, 5, '#ffc24a', 0.7, 0.16);
     this.addSpark({ tex: 'smoke', x: e.x, y: 0.6, z: e.z, vx: 0, vy: 0.8, vz: 0, life: 0.7, s0: 1.2 * big, s1: 2.6 * big, a: 0.55, add: false, rot: rnd() * TAU });
@@ -410,7 +410,7 @@ export class Game {
     const luck = this.stats.luck, dm = this.dm.scrap;
     const base = this.kills * 0.35 + this.time * 0.45 + this.level * 4 + this.scrapRun + (() => { let b = 0; const n = victory ? this.bossN + 1 : this.bossN; for (let i = 0; i < n; i++) b += 300 * (1 + i * 0.5); return b; })() + this.elitesKilled * 25;
     const gain = Math.floor(base * dm * luck);
-    this.hooks.onEnd?.({ victory, time: this.time, kills: this.kills, level: this.level, scrapFound: this.scrapRun, gain, depth: this.depth, biome: this.biomeId, combo: this.maxCombo, elites: this.elitesKilled, bossN: this.bossN, skills: { ...this.skillLv }, pass: { ...this.pass } });
+    this.hooks.onEnd?.({ victory, time: this.time, kills: this.kills, level: this.level, scrapFound: this.scrapRun, gain, depth: this.depth, diff: this.diff, biome: this.biomeId, combo: this.maxCombo, elites: this.elitesKilled, bossN: this.bossN, skills: { ...this.skillLv }, pass: { ...this.pass } });
   }
   // Depois de vencer: continuar no modo infinito (outro chefe mais forte em 2:30)
   continueRun() {
@@ -447,12 +447,12 @@ export class Game {
     if (!this.bossSpawned) { this.eventT -= dt; if (this.eventT <= 0 && t > 20) this.runEvent(); }
     if (this.tideT > 0) this.tideT -= dt;
     if (!this.bossSpawned && t >= this.bossAt) {
-      this.bossSpawned = true; const [x, z] = this.ringPos(1), b = this.spawnEnemy(B.boss, x, z); b.hp *= 1 + this.bossN * 0.7; b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
+      this.bossSpawned = true; const [x, z] = this.ringPos(1), b = this.spawnEnemy(B.boss, x, z); b.hp *= (1 + this.bossN * 0.7) * (this.D?.boss || 1); b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
       this.hooks.onBoss?.(b); A.sfx('bell', { vol: 0.8, rate: 0.5 }); this.cam.shake = 0.8; this.ring(this.hero.x, this.hero.z, 13, '#ff4a2a', 1.2, 0.3); this.ring(this.hero.x, this.hero.z, 8, '#ffb347', 0.9, 0.18); this.flashA = 0.35; this.flashCol = '#ff3a1a';
       for (const e of this.enemies) if (!e.d.boss && rnd() < 0.5) e.dead = true;
     }
     const alive = this.enemies.length, cap = Math.min(150, 42 + t * 0.34) * (this.bossSpawned && !this.bossDead ? 0.5 : 1);
-    const rate = (1.5 + t * 0.021) * (this.bossSpawned ? 0.5 : 1);
+    const rate = (1.5 + t * 0.021) * (this.bossSpawned ? 0.5 : 1) * (this.D?.spawn || 1);
     this.spawnAcc += rate * dt;
     while (this.spawnAcc >= 1) { this.spawnAcc -= 1; if (alive >= cap) continue; const [x, z] = this.ringPos(); this.spawnEnemy(this.pickPool(t), x, z); }
     this.packT -= dt;
@@ -460,7 +460,7 @@ export class Game {
     this.bruteT -= dt;
     if (this.bruteT <= 0 && !this.bossSpawned) { this.bruteT = Math.max(9, 22 - t * 0.035); const [x, z] = this.ringPos(); this.spawnEnemy(B.brute, x, z); }
     this.eliteT = (this.eliteT ?? 55) - dt;
-    if (this.eliteT <= 0 && !this.bossSpawned) { this.eliteT = Math.max(28, 52 - t * 0.05); const [x, z] = this.ringPos(); const e = this.makeEnemy(this.pickPool(Math.max(t, 40)), x, z, { elite: true }); this.enemies.push(e); this.hooks.onWarn?.('Elite se aproxima'); A.sfx('bell', { vol: 0.35, rate: 0.8 }); }
+    if (this.eliteT <= 0 && !this.bossSpawned) { this.eliteT = Math.max(28, 52 - t * 0.05) / (this.D?.elite || 1); const [x, z] = this.ringPos(); const e = this.makeEnemy(this.pickPool(Math.max(t, 40)), x, z, { elite: true }); this.enemies.push(e); this.hooks.onWarn?.('Elite se aproxima'); A.sfx('bell', { vol: 0.35, rate: 0.8 }); }
   }
 
   // ─────────── atualização ───────────

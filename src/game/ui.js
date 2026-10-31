@@ -1,7 +1,7 @@
 // Interface do jogo: abrigo (hub) com Árvore da Brasa, HUD da expedição, cartas de nível, resultado e a Forja embutida.
 import { fmt, fmtTime, cv } from '../shared/util.js';
 import { GAME_TITLE } from '../shared/theme.js';
-import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, EVOS, RARITY, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, EVOS, RARITY, DIFFS, DIFF, diffUnlocked, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
 import { BIOMES, BIOME_ORDER, biomeUnlocked } from './biomes.js';
 import * as SV from './save.js';
 import * as A from './audio.js';
@@ -161,13 +161,14 @@ export async function mountGame(root) {
 
   // painel direito: expedição
   const mapsBox = el('div', { class: 'h-maps' }), relicRow = el('div', { class: 'h-relics' });
-  const depthVal = el('b', {}, '1'), depthInfo = el('div', { class: 'h-depthinfo' });
+  const depthVal = el('b', {}, '1'), depthInfo = el('div', { class: 'h-depthinfo' }), diffBox = el('div', { class: 'h-diffs' });
   const skillName = el('div', { class: 'h-skname' }), skillDesc = el('div', { class: 'h-skdesc' });
   const go = btn('go', 'PARTIR', () => startRun());
   const expedition = el('section', { class: 'g-panel h-exp' },
     el('h2', {}, 'Expedição', el('small', {}, 'sobreviva ' + fmtTime(BOSS_TIME) + ' e derrube o chefe do mapa')),
     el('div', { class: 'h-sub' }, 'Mapa'), mapsBox,
     el('div', { class: 'h-sub' }, 'Habilidade inicial'), relicRow, skillName, skillDesc,
+    el('div', { class: 'h-sub' }, 'Dificuldade'), diffBox,
     el('div', { class: 'h-sub' }, 'Profundidade'),
     el('div', { class: 'h-depth' }, btn('sm', '−', () => setDepth(-1)), el('div', { class: 'h-dv' }, 'Nível ', depthVal), btn('sm', '+', () => setDepth(1))), depthInfo, go);
   const tabs = el('div', { class: 'h-tabs' }, btn('sm', 'Sobrevivente', () => setTab('surv'), { id: 'tsurv' }), btn('sm on', 'Expedição', () => setTab('exp'), { id: 'texp' }));
@@ -207,12 +208,17 @@ export async function mountGame(root) {
     if (game.mode === 'hub') game.setHubSkill(save.startSkill);
   }
   function setDepth(d) { save.depth = Math.max(1, Math.min(save.depthMax, save.depth + d)); SV.save(); renderDepth(); }
+  function renderDiffs() {
+    diffBox.innerHTML = ''; if (!diffUnlocked(save, save.diff)) save.diff = 'normal';
+    for (const d of DIFFS) { const ok = diffUnlocked(save, d.id), prev = DIFFS[DIFFS.findIndex((x) => x.id === d.id) - 1];
+      diffBox.append(el('button', { class: 'h-diff' + (save.diff === d.id ? ' on' : '') + (ok ? '' : ' lock'), style: `--c:${d.color}`, title: ok ? d.desc : `Derrote um chefe no ${prev.name} para liberar`, onclick: () => { if (!ok) { A.synth('hurt', { vol: 0.2 }); showToast(`Derrote um chefe no ${prev.name} para liberar o ${d.name}.`, 3200); return; } save.diff = d.id; SV.save(); renderDiffs(); renderDepth(); } }, ok ? d.name : '🔒 ' + d.name)); }
+  }
   function renderDepth() {
-    save.depth = Math.min(save.depth, save.depthMax); depthVal.textContent = save.depth; const m = DEPTH_MULT(save.depth), b = BIOMES[save.biome];
-    depthInfo.innerHTML = `Inimigos <b>×${(m.hp * b.hp).toFixed(2)}</b> vida · <b>×${(m.dmg * b.dmg).toFixed(2)}</b> dano &nbsp;|&nbsp; Sucata <b class="g">×${(m.scrap * b.scrap).toFixed(2)}</b>` + (save.depthMax === save.depth && save.depthMax < 30 ? '<div class="dim">Vença um chefe para liberar a próxima profundidade.</div>' : '');
+    save.depth = Math.min(save.depth, save.depthMax); depthVal.textContent = save.depth; const D = DIFF[save.diff] || DIFF.normal, m0 = DEPTH_MULT(save.depth), m = { hp: m0.hp * D.hp, dmg: m0.dmg * D.dmg, scrap: m0.scrap * D.scrap }, b = BIOMES[save.biome];
+    depthInfo.innerHTML = `<div class="dim" style="color:${D.color}">${D.desc}</div>Inimigos <b>×${(m.hp * b.hp).toFixed(2)}</b> vida · <b>×${(m.dmg * b.dmg).toFixed(2)}</b> dano &nbsp;|&nbsp; Sucata <b class="g">×${(m.scrap * b.scrap).toFixed(2)}</b>` + (save.depthMax === save.depth && save.depthMax < 30 ? '<div class="dim">Vença um chefe para liberar a próxima profundidade.</div>' : '');
   }
   function renderHubTop() { scrapVal.textContent = fmt(Math.floor(save.scrap)); const r = catadorRate(save.meta.catador) * catadorMul(save.meta) * SV.prestigeMul(); scrapRate.textContent = r > 0 ? `+${r.toFixed(2)}/s` : ''; }
-  function renderAll() { renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); syncSound(); if (treeOpen) refreshTree(); }
+  function renderAll() { renderDiffs(); renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); syncSound(); if (treeOpen) refreshTree(); }
   function ENEMIES_NAME(id) { return ({ colosso: 'O Colosso', matriarca: 'A Matriarca', titan: 'Titã das Dunas', gigante: 'Gigante de Gelo' })[id]; }
 
   // ───────── Marcos ─────────
@@ -400,7 +406,7 @@ export async function mountGame(root) {
     const b = BIOMES[r.biome]; let unlockMsg = [];
     const rec = { time: r.time > save.best.time && save.best.time > 0, kills: r.kills > save.best.kills && save.best.kills > 0, level: r.level > save.best.level && save.best.level > 0, combo: r.combo > (save.best.combo || 0) && (save.best.combo || 0) > 0 };
     if (r.victory && !runFlags.won) {
-      runFlags.won = true; save.wins++; save.biomeWins[r.biome] = (save.biomeWins[r.biome] || 0) + 1;
+      runFlags.won = true; save.wins++; { const dn = r.diff || 'normal'; const first = !(save.diffWins[dn] > 0); save.diffWins[dn] = (save.diffWins[dn] || 0) + 1; const di = DIFFS.findIndex((x) => x.id === dn); if (first && DIFFS[di + 1]) unlockMsg.push(`Dificuldade liberada: ${DIFFS[di + 1].name}`); } save.biomeWins[r.biome] = (save.biomeWins[r.biome] || 0) + 1;
       if (r.depth >= save.depthMax && save.depthMax < 30) { save.depthMax = r.depth + 1; unlockMsg.push(`Profundidade ${save.depthMax} liberada!`); }
       const ni = BIOME_ORDER.indexOf(r.biome) + 1; if (ni < BIOME_ORDER.length && save.biomeWins[r.biome] === 1) unlockMsg.push(`Novo mapa: ${BIOMES[BIOME_ORDER[ni]].name}`);
     }
@@ -424,7 +430,7 @@ export async function mountGame(root) {
   function startRun() {
     A.init(); screen = 'run'; title.classList.remove('show'); embRun = false; hub.classList.add('off'); hud.classList.add('on'); slotKey = '';
     runFlags = { won: false }; const mul = mulOf();
-    game.startRun({ skill: save.startSkill, depth: save.depth, meta: { ...save.meta }, biome: save.biome, mul }); renderHubTop(); banner(BIOMES[save.biome].name, 2800, 'Sobreviva e derrube o chefe');
+    game.startRun({ skill: save.startSkill, depth: save.depth, diff: save.diff, meta: { ...save.meta }, biome: save.biome, mul }); renderHubTop(); banner(BIOMES[save.biome].name, 2800, 'Sobreviva e derrube o chefe');
   }
   function toHub() { screen = 'hub'; game.camHub = { x: 2.4, z: 0.5 }; hub.classList.remove('off'); hud.classList.remove('on'); game.enterHub({ skill: save.startSkill, biome: save.biome }); renderAll(); }
 

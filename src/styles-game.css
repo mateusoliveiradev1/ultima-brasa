@@ -340,3 +340,8 @@
 .t-node.key{width:80px;height:80px;border-radius:24px}
 .t-node.key:not(.locked){border-width:4px}.t-node.key.bought{box-shadow:0 0 30px color-mix(in srgb,var(--c) 75%,transparent),0 4px 14px rgba(0,0,0,.6)}
 .lv-card .tag.x{background:var(--c);color:#120c0a;font-weight:700}
+
+.h-diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 10px}
+.h-diff{padding:9px 4px;border-radius:9px;background:#1a1311;border:1px solid #3a2a24;color:var(--ash);font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1.5px;cursor:pointer;transition:.15s}
+.h-diff:hover{border-color:var(--c);color:var(--bone)}.h-diff.on{background:color-mix(in srgb,var(--c) 22%,#1a1311);border-color:var(--c);color:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 40%,transparent)}
+.h-diff.lock{opacity:.45;cursor:not-allowed}

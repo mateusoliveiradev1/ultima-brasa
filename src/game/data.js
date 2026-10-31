@@ -248,6 +248,16 @@ export const DEPTH_MULT = (d) => ({ hp: 1 + 0.4 * (d - 1), dmg: 1 + 0.22 * (d - 
 export const xpNeed = (lvl) => Math.floor(4 + lvl * 5 + Math.pow(lvl, 1.7));
 
 // Prestígio ("Renascer") e patente da conta
+// ── dificuldades (camada sobre a profundidade) ──
+export const DIFFS = [
+  { id: 'normal', name: 'Normal', color: '#ffb347', hp: 1, dmg: 1, scrap: 1, spd: 1, spawn: 1, elite: 1, hearts: 1, boss: 1, desc: 'A experiência padrão.' },
+  { id: 'pesadelo', name: 'Pesadelo', color: '#ff7a2a', hp: 1.6, dmg: 1.35, scrap: 1.7, spd: 1.04, spawn: 1.25, elite: 1.5, hearts: 0.8, boss: 1.3, desc: 'Mais inimigos e elites mais frequentes.' },
+  { id: 'calamidade', name: 'Calamidade', color: '#e0432a', hp: 2.7, dmg: 1.9, scrap: 3.2, spd: 1.08, spawn: 1.5, elite: 2.2, hearts: 0.5, boss: 1.8, desc: 'Hordas pesadas, poucos corações, chefes brutais.' },
+  { id: 'abissal', name: 'Abissal', color: '#b04bff', hp: 4.8, dmg: 2.8, scrap: 6, spd: 1.14, spawn: 1.85, elite: 3, hearts: 0.2, boss: 2.6, desc: 'Quase sem cura. Só para quem domina a Árvore.' },
+];
+export const DIFF = Object.fromEntries(DIFFS.map((d) => [d.id, d]));
+/** libera cada dificuldade vencendo um chefe na anterior */
+export const diffUnlocked = (s, id) => { const i = DIFFS.findIndex((d) => d.id === id); return i <= 0 || (s.diffWins?.[DIFFS[i - 1].id] || 0) > 0; };
 export const cinzasFor = (earned) => Math.floor(Math.sqrt(Math.max(0, earned) / 5000));
 export const REBIRTH_MIN = 20000;
 export const patenteOf = (lifetime) => Math.floor(Math.sqrt(Math.max(0, lifetime) / 60));
@@ -285,6 +295,9 @@ export const MILESTONES = [
   { id: 'b2x', name: 'Mestre do Pântano', desc: 'Vença 5 vezes no Pântano', goal: 5, get: (s) => s.biomeWins?.pantano || 0, reward: 6000 },
   { id: 'b3x', name: 'Senhor das dunas', desc: 'Vença 5 vezes no Deserto', goal: 5, get: (s) => s.biomeWins?.deserto || 0, reward: 12000 },
   { id: 'b4x', name: 'Rei do gelo', desc: 'Vença 5 vezes na Tundra', goal: 5, get: (s) => s.biomeWins?.tundra || 0, reward: 25000 },
+  { id: 'df1', name: 'Pesadelo vencido', desc: 'Derrote um chefe no Pesadelo', goal: 1, get: (s) => s.diffWins?.pesadelo || 0, reward: 6000 },
+  { id: 'df2', name: 'Calamidade vencida', desc: 'Derrote um chefe na Calamidade', goal: 1, get: (s) => s.diffWins?.calamidade || 0, reward: 30000 },
+  { id: 'df3', name: 'Abismo domado', desc: 'Derrote um chefe no Abissal', goal: 1, get: (s) => s.diffWins?.abissal || 0, reward: 150000 },
   ...[[3, 'Mais fundo', 1500], [5, 'Descida', 4000], [10, 'Abismo', 25000]].map(([g, n, r]) => ({ id: 'd' + g, name: n, desc: `Alcance a profundidade ${g}`, goal: g, get: (s) => s.depthMax || 1, reward: r })),
   ...[[10, 'Primeiros passos', 300], [25, 'Crescendo', 1500], [50, 'Árvore frondosa', 8000], [75, 'Quase completa', 30000]].map(([g, n, r]) => ({ id: 'n' + g, name: n, desc: `Compre ${g} nós diferentes da Árvore`, goal: g, get: (s) => Object.values(s.meta).filter((v) => v > 0).length, reward: r })),
   ...[[5, 'Aperfeiçoado', 1000], [15, 'Mestre de ofício', 6000], [30, 'Perfeccionista', 30000]].map(([g, n, r]) => ({ id: 'nm' + g, name: n, desc: `Leve ${g} nós ao nível máximo`, goal: g, get: (s) => TREE.filter((t) => (s.meta[t.id] || 0) >= t.max).length, reward: r })),
