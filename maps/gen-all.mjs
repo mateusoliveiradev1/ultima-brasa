@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import { MAPS, REJ } from './lib.mjs';
 import { lint } from '../src/shared/mapspec.js';
-for (const f of ['ruinas', 'pantano', 'deserto', 'tundra']) { try { await import(`./gen-${f}.mjs`); } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND' || !String(e.message).includes(`gen-${f}`)) throw e; } }
+for (const f of ['ruinas', 'pantano', 'deserto', 'tundra', 'arenas']) { try { await import(`./gen-${f}.mjs`); } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND' || !String(e.message).includes(`gen-${f}`)) throw e; } }
 const only = process.argv[2];
 fs.mkdirSync('data/maps', { recursive: true });
 for (const [key, mk] of Object.entries(MAPS)) {
