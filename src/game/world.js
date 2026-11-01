@@ -8,7 +8,10 @@ const key = (cx, cz) => cx * 65536 + cz;
 const BOX = { ruin: [2.3, 1.4, 0.2], wreck: [1.7, 0.7, 0.1], pillar: [0.75, 0.6, 0.1], tree: [0.45, 0.4, 0.1], barrel: [0.5, 0.4, 0.15], spire: [1.0, 0.6, 0.1], crystal: [0.75, 0.4, 0.1] };
 
 export class World {
-  constructor(props, cfg) { this.P = props; this.cfg = cfg; this.chunks = new Map(); this.boxIdx = new Map(); }
+  constructor(props, cfg, map = null) {
+    this.P = props; this.cfg = cfg; this.chunks = new Map(); this.boxIdx = new Map(); this.map = map; this.mapChunks = new Map();
+    if (map) for (const p of map.props) { const k = key(Math.floor(p.x / CS), Math.floor(p.z / CS)); let l = this.mapChunks.get(k); if (!l) this.mapChunks.set(k, (l = [])); l.push(p); }
+  }
 
   chunk(cx, cz) {
     const k = key(cx, cz); let c = this.chunks.get(k);
@@ -22,7 +25,9 @@ export class World {
   gen(cx, cz) {
     const rnd = mulberry32(((hash2(cx, cz, 77) * 4294967296) ^ 0x9e3779b9) >>> 0), x0 = cx * CS, z0 = cz * CS, list = [], P = this.P;
     const free = (x, z, d) => Math.hypot(x, z) > 11 && list.every((p) => Math.hypot(p.x - x, p.z - z) > d);
+    const M = this.map, inMap = (x, z) => M && x > M.bounds[0] && x < M.bounds[1] && z > M.bounds[2] && z < M.bounds[3];
     const add = (type, x, z) => {
+      if (inMap(x, z)) return; // a área do mapa desenhado substitui o procedural
       const arr = P[type], v = (rnd() * arr.length) | 0, def = arr[v], bx = BOX[type];
       const p = { type, v, x, z, def, a: 1, flip: rnd() < 0.5, fire: type === 'barrel' && rnd() < 0.75, glow: def.glow || null, box: null, ph: rnd() * 6.28 };
       if (bx) { p.box = [x - bx[0], x + bx[0], z - bx[1], z + bx[2]]; this.addBox(p.box); }
@@ -35,6 +40,7 @@ export class World {
       let r = rnd(), type = 'rubble'; for (const [t, w] of W) { if (r < w) { type = t; break; } r -= w; }
       for (let t = 0; t < 6; t++) { const x = x0 + 1 + rnd() * (CS - 2), z = z0 + 1 + rnd() * (CS - 2); if (free(x, z, 3.2)) { add(type, x, z); break; } }
     }
+    if (M) for (const p of this.mapChunks.get(key(cx, cz)) || EMPTY) { if (p.box) this.addBox(p.box); list.push(p); }
     return { cx, cz, list };
   }
   // chunks que cobrem o retângulo

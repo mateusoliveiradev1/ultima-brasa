@@ -1,12 +1,12 @@
 // Motor de pintura de props ("Pintor"): silhueta → volume → pinceladas com cerdas → contorno de tinta → normal map.
 // Tudo determinístico por seed. Usado pela Forja de Mapas para pintar props que só o nosso jogo tem.
-import { TAU, cv, mulberry32, hexToRgb } from './util.js';
+import { TAU, cv, cvR, mulberry32, hexToRgb } from './util.js';
 
 const LIGHT = (() => { const l = [-0.55, -0.75, 0.62]; const n = Math.hypot(...l); return l.map((v) => v / n); })();
 const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const css = (c, a = 1) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 
-function blurred(src, px) { const c = cv(src.width, src.height), x = c.getContext('2d'); x.filter = `blur(${px}px)`; x.drawImage(src, 0, 0); return x.getImageData(0, 0, c.width, c.height).data; }
+function blurred(src, px) { const c = cvR(src.width, src.height), x = c.getContext('2d'); x.filter = `blur(${px}px)`; x.drawImage(src, 0, 0); return x.getImageData(0, 0, c.width, c.height).data; }
 
 // rampa de 4 cores (sombra, meio, luz, brilho) → cor para valor 0..1
 function ramp(pal) { const s = pal.map((h) => hexToRgb(h)); return (v) => { v = Math.max(0, Math.min(1, v)) * 3; const i = Math.min(2, Math.floor(v)); return mix(s[i], s[i + 1], v - i); }; }
@@ -17,7 +17,7 @@ function ramp(pal) { const s = pal.map((h) => hexToRgb(h)); return (v) => { v = 
  */
 export function paintProp(o) {
   const { w, h } = o, rnd = mulberry32(o.seed || 1), col = ramp(o.palette), flow = o.flow || (() => -Math.PI / 2 + 0.25);
-  const mask = cv(w, h), mx = mask.getContext('2d'); mx.fillStyle = '#000'; o.shape(mx, w, h);
+  const mask = cvR(w, h), mx = mask.getContext('2d'); mx.fillStyle = '#000'; o.shape(mx, w, h);
   const mdata = mx.getImageData(0, 0, w, h).data, inside = (x, y) => x >= 0 && y >= 0 && x < w && y < h && mdata[((y | 0) * w + (x | 0)) * 4 + 3] > 128;
   // volume: máscara borrada em duas escalas
   const b1 = blurred(mask, Math.max(2, w * 0.02)), b2 = blurred(mask, Math.max(4, w * 0.06));
@@ -26,7 +26,7 @@ export function paintProp(o) {
   const hAt = (x, y) => H[Math.max(0, Math.min(h - 1, y | 0)) * w + Math.max(0, Math.min(w - 1, x | 0))];
   const shadeAt = (x, y) => { const gx = (hAt(x + 2, y) - hAt(x - 2, y)) * 9, gy = (hAt(x, y + 2) - hAt(x, y - 2)) * 9, l = Math.hypot(gx, gy, 1); let v = ((-gx * LIGHT[0] - gy * LIGHT[1] + LIGHT[2]) / l); v = Math.max(0, Math.min(1, (v - 0.35) * 1.5 + 0.18)); const ao = o.ao === false ? 1 : 0.55 + 0.45 * Math.min(1, (h - y) / (h * 0.2)); return Math.max(0, Math.min(1, v * ao + (1 - ao) * -0.2)); };
 
-  const albedo = cv(w, h), ax = albedo.getContext('2d'), bump = cv(w, h), bx = bump.getContext('2d');
+  const albedo = cvR(w, h), ax = albedo.getContext('2d'), bump = cvR(w, h), bx = bump.getContext('2d');
   // base: sombreamento por volume, em blocos suaves
   const img = ax.createImageData(w, h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const k = (y * w + x) * 4; if (mdata[k + 3] < 8) continue; const c = col(shadeAt(x, y)); img.data[k] = c[0] * 255; img.data[k + 1] = c[1] * 255; img.data[k + 2] = c[2] * 255; img.data[k + 3] = mdata[k + 3]; }
@@ -56,7 +56,7 @@ export function paintProp(o) {
   // contorno de tinta: borda da máscara, irregular, mais grossa embaixo (peso)
   if (o.ink !== false) {
     const edge = cv(w, h), ex = edge.getContext('2d'); ex.drawImage(mask, 0, 0); ex.globalCompositeOperation = 'source-in';
-    const outl = cv(w, h), ox2 = outl.getContext('2d'); ox2.filter = 'blur(1.6px)'; ox2.drawImage(mask, 0, 0); const od = ox2.getImageData(0, 0, w, h).data;
+    const outl = cvR(w, h), ox2 = outl.getContext('2d'); ox2.filter = 'blur(1.6px)'; ox2.drawImage(mask, 0, 0); const od = ox2.getImageData(0, 0, w, h).data;
     const e = ax.getImageData(0, 0, w, h);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const k = (y * w + x) * 4, m = mdata[k + 3]; if (m < 8) continue; const soft = od[k + 3]; const edgeV = 1 - soft / 255; const wob = 0.12 * Math.sin(x * 0.31 + y * 0.17) + 0.1 * Math.sin(y * 0.23 - x * 0.11); const t = Math.max(0, Math.min(1, (edgeV + wob * edgeV) * 3.2)) * (o.inkAmt || 0.85);
       if (t > 0) { e.data[k] = e.data[k] * (1 - t) + 18 * t; e.data[k + 1] = e.data[k + 1] * (1 - t) + 10 * t; e.data[k + 2] = e.data[k + 2] * (1 - t) + 8 * t; } }

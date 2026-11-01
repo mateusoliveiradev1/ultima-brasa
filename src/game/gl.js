@@ -137,6 +137,7 @@ export class GLRenderer {
     add(g.hero.x, g.hero.z, 0.9, 8.2, '#ffa95a', 0.95 * fl);
     for (const p of g._fires || []) add(p.x, p.z, 0.9, 7, g.biome.fire, 0.85);
     for (const p of g.glowersNow || []) add(p.x, p.z, 0.9, 5, p.glow, 0.7);
+    if (g.world.map) for (const l of g.world.map.lights) add(l.x, l.z, 0.9, l.r * 1.2, l.color, Math.min(1, 0.75 * l.i));
     for (const l of g.lights) add(l.x, l.z, l.y || 0.8, l.r * 1.2, l.col, l.a * clamp(l.t / l.life * 1.4, 0, 1));
     for (const b of g.ebolts) add(b.x, b.z, b.y || 0.8, 3, b.col || '#ff7a2a', 0.8);
     L.sort((a, b) => Math.hypot(a.x - g.cam.x, a.z - g.cam.z) - Math.hypot(b.x - g.cam.x, b.z - g.cam.z));

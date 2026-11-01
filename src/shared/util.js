@@ -37,6 +37,8 @@ export function rgba(hex, a = 1) {
   return `rgba(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)},${a})`;
 }
 
+/** Canvas para ler pixels de volta (getImageData): contexto em CPU, bem mais rápido que ler de um canvas acelerado por GPU. */
+export function cvR(w, h = w) { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d', { willReadFrequently: true }); return c; }
 export function cv(w, h = w) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;

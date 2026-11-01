@@ -15,6 +15,7 @@ import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL
 import { World } from './world.js';
 import * as A from './audio.js';
 import { GLRenderer } from './gl.js';
+import { pickMap, buildMap, preloadMaps } from './maps.js';
 
 const SIN = 0.82, COS = Math.sqrt(1 - SIN * SIN);
 const rnd = Math.random;
@@ -63,6 +64,7 @@ export async function buildArt(onProgress = () => {}) {
   const sheetCache = new Map();
   art.sheetFor = (d) => { const k = d.sheet + (d.tint || ''); let r = sheetCache.get(k); if (!r) { const S = art.sheets[d.sheet]; if (!d.tint) r = { S, F: art.flash[d.sheet] }; else { const canvas = recolor(S.canvas, { color: d.tint, a: 0.66 }); r = { S: { ...S, canvas }, F: flashOf(canvas) }; } sheetCache.set(k, r); } return r; };
   art.biome = (id) => { let b = art.biomeCache[id]; if (!b) { const cfg = BIOMES[id]; b = art.biomeCache[id] = { props: buildBiomeProps(art.baseProps, cfg), ground: tintGround(art.ground, cfg.ground) }; } return b; };
+  await preloadMaps((p) => onProgress(0.9 + p * 0.1));
   onProgress(1);
   return art;
 }
@@ -97,7 +99,7 @@ export class Game {
     this.gl = GLRenderer.create(this); this.resize();
     this.enterHub({ skill: 'lamina', biome: 'ruinas' });
   }
-  setBiome(id) { this.biomeId = id; this.biome = BIOMES[id]; this.bart = this.art.biome(id); this.world = new World(this.bart.props, this.biome); }
+  setBiome(id, withMap = false) { this.biomeId = id; this.biome = BIOMES[id]; this.bart = this.art.biome(id); const sp = withMap ? pickMap(id) : null; this.world = new World(this.bart.props, this.biome, sp ? buildMap(sp) : null); }
 
   resize() {
     const r = this.canvas.getBoundingClientRect(), cap = 2400000;
@@ -128,7 +130,7 @@ export class Game {
     if (id === 'brasas') this.skillLv = { brasas: 4 };
   }
   startRun({ skill, depth, meta, biome, mul, diff }) {
-    this.reset(); this.subDone = {}; this.miniKills = 0; this.paused = false; this.over = false; this.setBiome(biome || 'ruinas'); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; const D = DIFF[diff] || DIFF.normal; this.diff = D.id; this.D = D; this.bossFlip = D.id !== 'normal' && rnd() < 0.5; this.dm = { hp: dm.hp * b.hp * D.hp, dmg: dm.dmg * b.dmg * D.dmg, scrap: dm.scrap * b.scrap * D.scrap }; this.rerolls = meta.reroll || 0;
+    this.reset(); this.subDone = {}; this.miniKills = 0; this.paused = false; this.over = false; this.setBiome(biome || 'ruinas', true); this.mode = 'run'; this.meta = meta; this.mul = mul || { dmg: 1, scrap: 1 }; this.depth = depth; const dm = DEPTH_MULT(depth), b = this.biome; const D = DIFF[diff] || DIFF.normal; this.diff = D.id; this.D = D; this.bossFlip = D.id !== 'normal' && rnd() < 0.5; this.dm = { hp: dm.hp * b.hp * D.hp, dmg: dm.dmg * b.dmg * D.dmg, scrap: dm.scrap * b.scrap * D.scrap }; this.rerolls = meta.reroll || 0;
     this.skillLv[skill] = 1 + (meta.maestria || 0); this.sk[skill] = { cd: 0.3, inst: null };
     this.stats = this.computeStats(meta, this.pass, false, this.mul); this.hero.maxHp = this.stats.maxHp; this.hero.hp = this.hero.maxHp; this.revives = this.stats.revive; this.shield = this.stats.t.shield || 0; this.evo = {}; this.cursed = {}; this.painT = 0; this.frenzyN = 0; this.frenzyT = 0;
     if (meta.impulso) { this.pending = meta.impulso; this.timers.push({ t: 0.7, fn: () => { if (this.pending > 0 && !this.paused) this.openLevelUp(); } }); }
@@ -677,6 +679,8 @@ export class Game {
     ctx.save(); const [ox, oy] = this.proj3(0, 0, 0); ctx.translate(ox, oy); ctx.scale(1, SIN); const ps = ppu / 38; ctx.scale(ps, ps);
     ctx.fillStyle = ctx.createPattern(this.bart.ground, 'repeat'); ctx.fillRect(-ox / ps - 200, -(oy / (SIN * ps)) - 200, W / ps + 400, H / (SIN * ps) + 400); ctx.restore();
     }
+    // chão do mapa desenhado (trilhas e manchas), sobre o piso de ladrilho
+    { const M = this.world.map; if (M) { const [mx, my] = this.proj3(-M.half + M.ox, 0, -M.half + M.oz); ctx.save(); ctx.translate(mx, my); ctx.scale(1, SIN); ctx.drawImage(M.macro, 0, 0, 2 * M.half * ppu, 2 * M.half * ppu); ctx.restore(); } }
     // decalques
     for (const d of this.decals) { const [sx, sy] = this.proj3(d.x, 0, d.z); if (sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue; ctx.save(); ctx.translate(sx, sy); ctx.scale(1, SIN); ctx.rotate(d.rot); ctx.globalAlpha = d.a; const s = d.r * ppu * 2; ctx.drawImage(art.tex.scorch, -s / 2, -s / 2, s, s); ctx.restore(); }
     ctx.globalAlpha = 1;
@@ -690,7 +694,7 @@ export class Game {
     const hx = W / (2 * ppu) + 4, hz = H / (2 * ppu * SIN) + 4, items = [], fires = [], glowers = [];
     this.world.each(this.cam.x - hx - 8, this.cam.x + hx + 8, this.cam.z - hz - 6, this.cam.z + hz + 22, (c) => { for (const p of c.list) {
       if (Math.abs(p.x - this.cam.x) > hx + p.def.w || p.z < this.cam.z - hz - 2 || p.z > this.cam.z + hz + p.def.h * 1.3) continue;
-      const tall = p.type === 'ruin' || p.type === 'tree' || p.type === 'pillar', occ = tall && h.z < p.z && p.z - h.z < p.def.h * 0.8 && Math.abs(h.x - p.x) < p.def.w * 0.55;
+      const tall = p.type === 'ruin' || p.type === 'tree' || p.type === 'pillar' || p.def.tall, occ = tall && h.z < p.z && p.z - h.z < p.def.h * 0.8 && Math.abs(h.x - p.x) < p.def.w * 0.55;
       p.a = lerp(p.a, occ ? 0.38 : 1, 0.12); items.push({ z: p.def.flat ? p.z - 9999 : p.z, k: 0, o: p }); if (p.fire) fires.push(p); if (p.glow) glowers.push(p);
     } });
     for (const g of this.gems) items.push({ z: g.z, k: 1, o: g });
@@ -709,7 +713,7 @@ export class Game {
     if (this.gl) { // sombras projetadas na GPU (props altos, inimigos e herói)
       const gl = this.gl, SH = (S, fr, x, z, hh, al, face, sc = 1) => { const [sx, sy] = this.proj3(x, 0, z), h2 = hh * sc, w2 = (h2 * S.fw) / S.fh; gl.shadow(S.canvas, fr * S.fw, 0, S.fw, S.fh, sx - w2 / 2, sy - h2 * 0.93, w2, h2, sy, al, face < 0); };
       for (const it of items) {
-        if (it.k === 0) { const p = it.o; if (p.def.flat || !['ruin', 'tree', 'pillar', 'barrel', 'wreck', 'spire', 'crystal'].includes(p.type)) continue; const [sx, sy] = this.proj3(p.x, 0, p.z), w = p.def.w * ppu, hh = p.def.h * ppu; gl.shadow(p.def.canvas, 0, 0, p.def.canvas.width, p.def.canvas.height, sx - w / 2, sy - hh * p.def.anchor, w, hh, sy, 0.42 * p.a, p.flip); }
+        if (it.k === 0) { const p = it.o; if (p.def.flat || !(p.def.shadow || ['ruin', 'tree', 'pillar', 'barrel', 'wreck', 'spire', 'crystal'].includes(p.type))) continue; const [sx, sy] = this.proj3(p.x, 0, p.z), w = p.def.w * ppu, hh = p.def.h * ppu; gl.shadow(p.def.canvas, 0, 0, p.def.canvas.width, p.def.canvas.height, sx - w / 2, sy - hh * p.def.anchor, w, hh, sy, 0.42 * p.a, p.flip); }
         else if (it.k === 2) { const e = it.o; if (e.d.fly) continue; const { S } = this.art.sheetFor(e.d); SH(S, Math.floor(e.anim * 1.6) % S.frames, e.x, e.z, S.h * ppu, 0.4 * e.spawn, e.face, e.sc || 1); }
         else if (it.k === 3) { const S = this.art.sheets.player; SH(S, h.moving ? Math.floor(h.anim * 7.5) % S.frames : (Math.floor(T0 * 1.8) % 2) * 2, h.x, h.z, S.h * ppu, 0.45, h.face); }
       }
@@ -823,6 +827,7 @@ export class Game {
     const fl = 0.9 + 0.1 * Math.sin(T * 17) + 0.05 * Math.sin(T * 31);
     L(h.x, 0.8, h.z, 8.2, '#ffa95a', 0.95 * fl); L(h.x, 0.8, h.z, 3, '#ffe2b0', 0.6 * fl);
     for (const p of fires) L(p.x, 0.8, p.z, 7 + Math.sin(T * 9 + p.ph) * 0.5, this.biome.fire, 0.85);
+    if (this.world.map) for (const l of this.world.map.lights) L(l.x, 0.8, l.z, l.r * 1.3, l.color, Math.min(1, 0.75 * l.i));
     for (const p of this.glowersNow || []) L(p.x, 0.8, p.z, 5, p.glow, 0.7);
     for (const l of this.lights) L(l.x, l.y, l.z, l.r * (1.4 - 0.4 * (l.t / l.life)), l.col, l.a * clamp(l.t / l.life * 1.4, 0, 1));
     for (const i of this.fx.insts) { const d = i.def; if (d.kind === 'orbit') { const pts = this.fx.orbitPoints(i); for (const q of pts) L(q.x, 0.9, q.z, 3.4, d.colors[1], 0.6); } else if (d.kind === 'projectile') L(i.x, 0.9, i.z, 4.2, d.colors[1], 0.8); else if (d.kind === 'nova' && i.t < d.life) L(i.x, 0.3, i.z, i.radius * 0.9 * clamp(i.t / d.life * 2, 0, 1) + 2, d.colors[1], 0.7 * (1 - i.t / d.life)); else if (d.kind === 'slash' && i.t < d.life) L(i.x + i.dx * 2, 0.9, i.z + i.dz * 2, 4.6, d.colors[1], 0.8 * (1 - i.t / d.life)); else if (d.kind === 'chain' && i.nodes && i.t < d.life) for (const n of i.nodes) L(n.x, 1, n.z, 3.6, d.colors[1], 0.8 * (1 - i.t / d.life)); }
