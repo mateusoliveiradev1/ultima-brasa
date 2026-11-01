@@ -10,7 +10,7 @@ export const onChange = (f) => subs.add(f);
 export const user = () => sess?.user || null;
 
 const decode = (jwt) => { try { const j = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return { id: j.sub, email: j.email }; } catch { return null; } };
-/** Chamar no boot: captura os tokens que o Supabase devolve no #hash após o login (Google ou link por e-mail). */
+/** Chamar no boot: captura os tokens que o Supabase devolve no #hash após o login (link de confirmação por e-mail). */
 export function takeRedirect() {
   if (!enabled() || !location.hash.includes('access_token')) return false;
   const p = new URLSearchParams(location.hash.slice(1)), at = p.get('access_token'); if (!at) return false;
@@ -41,8 +41,16 @@ async function rpc(fn, args = {}, auth = true) {
 }
 
 const back = () => location.origin + location.pathname;
-export const signInGoogle = () => { location.href = `${cfg().url}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(back())}`; };
-export const signInEmail = (email) => raw('/auth/v1/otp?redirect_to=' + encodeURIComponent(back()), { method: 'POST', body: { email, create_user: true } });
+const sessFrom = (d) => d?.access_token ? (put({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || Math.floor(Date.now() / 1000) + (d.expires_in || 3600), user: decode(d.access_token) || d.user }), true) : false;
+const ptErr = (e) => { const m = String(e || ''); return /invalid login/i.test(m) ? 'E-mail ou senha incorretos.' : /already registered|already been registered/i.test(m) ? 'Este e-mail já tem conta. Use "Entrar".' : /password/i.test(m) && /(least|short|weak)/i.test(m) ? 'Senha muito curta (mínimo 6 caracteres).' : /rate limit|too many/i.test(m) ? 'Muitas tentativas. Aguarde um pouco.' : /not confirmed/i.test(m) ? 'Confirme seu e-mail antes de entrar.' : m; };
+export const signInPassword = async (email, password) => { const r = await raw('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } }); return r.ok && sessFrom(r.data) ? { ok: true } : { ok: false, err: ptErr(r.err) }; };
+export const signUpPassword = async (email, password) => {
+  const r = await raw('/auth/v1/signup', { method: 'POST', body: { email, password } });
+  if (!r.ok) return { ok: false, err: ptErr(r.err) };
+  if (sessFrom(r.data)) return { ok: true };
+  if (r.data && Array.isArray(r.data.identities) && !r.data.identities.length) return { ok: false, err: 'Este e-mail já tem conta. Use "Entrar".' };
+  return { ok: true, confirm: true };
+};
 export const signOut = () => put(null);
 
 export const myProfile = () => rpc('my_profile');

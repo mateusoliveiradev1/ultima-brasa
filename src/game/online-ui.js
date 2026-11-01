@@ -40,11 +40,15 @@ export function mountOnline(H) {
     const render = () => {
       body.innerHTML = ''; const u = O.user();
       if (!u) {
-        const email = el('input', { class: 'on-in', type: 'email', placeholder: 'seu@email.com', autocomplete: 'email' }), msg = el('div', { class: 'dim' });
-        body.append(el('p', { class: 'hp-p' }, 'Entre para guardar seu progresso na nuvem e aparecer nos rankings. É opcional: o jogo funciona normalmente sem conta.'),
-          btn('go sm2', 'Entrar com Google', () => O.signInGoogle()),
-          el('div', { class: 'on-or' }, 'ou receba um link por e-mail'), email,
-          btn('sm', 'Enviar link', async () => { const v = email.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) { msg.textContent = 'Digite um e-mail válido.'; return; } msg.textContent = 'Enviando…'; const r = await O.signInEmail(v); msg.textContent = r.ok ? 'Pronto! Abra o link que chegou no seu e-mail neste mesmo aparelho.' : 'Falhou: ' + r.err; }), msg);
+        const email = el('input', { class: 'on-in', type: 'email', placeholder: 'seu@email.com', autocomplete: 'email' }), pw = el('input', { class: 'on-in', type: 'password', placeholder: 'senha (mín. 6 caracteres)', autocomplete: 'current-password' }), msg = el('div', { class: 'dim' });
+        const go = async (up) => {
+          const v = email.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) { msg.textContent = 'Digite um e-mail válido.'; return; }
+          if (pw.value.length < 6) { msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+          msg.textContent = 'Aguarde…'; const r = up ? await O.signUpPassword(v, pw.value) : await O.signInPassword(v, pw.value);
+          if (!r.ok) msg.textContent = r.err; else if (r.confirm) msg.textContent = 'Conta criada! Abra o e-mail que enviamos para confirmar e depois clique em Entrar.'; else { await loadProfile(); render(); if (prof) await sync(false); }
+        };
+        body.append(el('p', { class: 'hp-p' }, 'Entre para guardar seu progresso na nuvem e aparecer nos rankings. É opcional: o jogo funciona normalmente sem conta.'), email, pw,
+          el('div', { class: 'dlg-foot on-btns' }, btn('go sm2', 'Entrar', () => go(false)), btn('sm', 'Criar conta', () => go(true))), msg);
         return;
       }
       if (!prof) {
