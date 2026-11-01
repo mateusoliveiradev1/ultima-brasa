@@ -182,13 +182,34 @@ export function paintGroundMacro(size = 2048, seed = 5, half = 20, paths = [], p
       const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(190,176,164,.62)'); gg.addColorStop(1, 'rgba(150,136,128,.2)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
       for (let i = 0; i < 70; i++) { const [px, py] = rp(); x.strokeStyle = `rgba(${rnd() < 0.5 ? '220,206,190' : '90,80,76'},${0.18 + rnd() * 0.2})`; x.lineWidth = 3 + rnd() * 8; x.lineCap = 'round'; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 30 + rnd() * 70, py + (rnd() - 0.5) * 14); x.stroke(); }
       for (let i = 0; i < 26; i++) { const [px, py] = rp(); x.fillStyle = 'rgba(40,32,30,.3)'; x.beginPath(); x.ellipse(px, py, 4, 7, 0.3, 0, TAU); x.fill(); }
+    } else if (pt.type === 'water') {
+      const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(8,36,34,.96)'); gg.addColorStop(0.8, 'rgba(14,58,50,.92)'); gg.addColorStop(1, 'rgba(24,80,62,.85)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
+      x.lineCap = 'round'; for (let i = 0; i < 90; i++) { const [px, py] = rp(); x.strokeStyle = `rgba(${rnd() < 0.5 ? '150,230,200' : '10,30,26'},${0.1 + rnd() * 0.22})`; x.lineWidth = 2 + rnd() * 4; x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + 20, py - 6, px + 44 + rnd() * 30, py + (rnd() - 0.5) * 6); x.stroke(); }
+      x.globalCompositeOperation = 'lighter'; for (let i = 0; i < 26; i++) { const [px, py] = rp(); x.fillStyle = `rgba(110,255,200,${0.12 + rnd() * 0.2})`; x.beginPath(); x.ellipse(px, py, 3 + rnd() * 9, 1.5 + rnd() * 3, 0, 0, TAU); x.fill(); } x.globalCompositeOperation = 'source-over';
+    } else if (pt.type === 'mud') {
+      x.fillStyle = 'rgba(46,32,22,.94)'; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
+      for (let i = 0; i < 360; i++) { const [px, py] = rp(), v = rnd(); x.strokeStyle = `rgba(${Math.round(60 + v * 50)},${Math.round(42 + v * 34)},${Math.round(28 + v * 20)},${0.3 + rnd() * 0.4})`; x.lineWidth = 3 + rnd() * 9; x.lineCap = 'round'; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 16 + rnd() * 46, py + (rnd() - 0.5) * 12); x.stroke(); }
+      for (let i = 0; i < 14; i++) { const [px, py] = rp(); x.fillStyle = 'rgba(10,8,6,.55)'; x.beginPath(); x.ellipse(px, py, 8 + rnd() * 16, 4 + rnd() * 8, rnd() * 3, 0, TAU); x.fill(); x.fillStyle = 'rgba(160,200,170,.25)'; x.beginPath(); x.ellipse(px - 2, py - 1, 4, 2, 0, 0, TAU); x.fill(); }
+    } else if (pt.type === 'moss') {
+      const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(40,86,44,.78)'); gg.addColorStop(1, 'rgba(40,86,44,.25)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
+      for (let i = 0; i < 260; i++) { const [px, py] = rp(); x.fillStyle = `rgba(${rnd() < 0.5 ? '110,170,80' : '20,50,28'},${0.18 + rnd() * 0.25})`; x.beginPath(); x.ellipse(px, py, 2 + rnd() * 7, 1.5 + rnd() * 4, rnd() * 3, 0, TAU); x.fill(); }
+    } else if (pt.type === 'sand') {
+      const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(226,190,128,.86)'); gg.addColorStop(1, 'rgba(210,170,110,.3)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
+      x.lineCap = 'round'; for (let i = 0; i < 70; i++) { const [px, py] = rp(); x.strokeStyle = `rgba(${rnd() < 0.5 ? '120,86,44' : '250,226,172'},${0.16 + rnd() * 0.2})`; x.lineWidth = 2 + rnd() * 3; x.beginPath(); x.moveTo(px - 40, py); x.quadraticCurveTo(px, py - 8 - rnd() * 8, px + 40 + rnd() * 40, py + (rnd() - 0.5) * 6); x.stroke(); }
+    } else if (pt.type === 'snow') {
+      const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(240,246,255,.92)'); gg.addColorStop(1, 'rgba(210,226,246,.35)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
+      x.lineCap = 'round'; for (let i = 0; i < 80; i++) { const [px, py] = rp(); x.strokeStyle = `rgba(${rnd() < 0.5 ? '130,160,200' : '255,255,255'},${0.15 + rnd() * 0.22})`; x.lineWidth = 3 + rnd() * 7; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 24 + rnd() * 60, py + (rnd() - 0.5) * 10); x.stroke(); }
+    } else if (pt.type === 'ice') {
+      const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(150,196,236,.9)'); gg.addColorStop(0.7, 'rgba(186,220,248,.85)'); gg.addColorStop(1, 'rgba(220,238,255,.7)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
+      for (let i = 0; i < 40; i++) { const [px, py] = rp(); x.strokeStyle = `rgba(255,255,255,${0.12 + rnd() * 0.25})`; x.lineWidth = 3 + rnd() * 10; x.lineCap = 'round'; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 30 + rnd() * 80, py + (rnd() - 0.5) * 12); x.stroke(); }
+      x.lineCap = 'round'; for (let i = 0; i < 22; i++) { let [px, py] = rp(); x.strokeStyle = rnd() < 0.6 ? 'rgba(40,70,110,.7)' : 'rgba(255,255,255,.65)'; x.lineWidth = 1.5 + rnd() * 2; x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 8; k++) { px += (rnd() - 0.5) * 60; py += (rnd() - 0.5) * 40; x.lineTo(px, py); } x.stroke(); }
     } else { // scorch
       const gg = x.createRadialGradient(cx, cz, 0, cx, cz, Math.max(rx, rz)); gg.addColorStop(0, 'rgba(6,4,4,.92)'); gg.addColorStop(0.7, 'rgba(14,8,6,.6)'); gg.addColorStop(1, 'rgba(20,10,8,0)'); x.fillStyle = gg; x.fillRect(cx - rx - 20, cz - rx - 20, rx * 2 + 40, rx * 2 + 40);
       x.globalCompositeOperation = 'lighter'; for (let i = 0; i < 90; i++) { const [px, py] = rp(); x.fillStyle = `rgba(255,${90 + rnd() * 70},30,${0.2 + rnd() * 0.4})`; x.fillRect(px, py, 1 + rnd() * 2.5, 1 + rnd() * 2.5); } x.globalCompositeOperation = 'source-over';
     }
     x.restore();
     // borda: sombra leve para a mancha "assentar" no chão
-    outline(); x.strokeStyle = pt.type === 'ash' ? 'rgba(60,48,44,.25)' : 'rgba(6,4,4,.5)'; x.lineWidth = 5; x.stroke();
+    outline(); x.strokeStyle = pt.type === 'ash' ? 'rgba(60,48,44,.25)' : pt.type === 'snow' ? 'rgba(90,120,170,.25)' : 'rgba(6,4,4,.5)'; x.lineWidth = 5; x.stroke();
   }
   // trilhas: curva por pontos, pinceladas largas ao longo, com cerdas
   for (const pts of paths) {
