@@ -664,6 +664,10 @@ export class Game {
   // ─────────── renderização ───────────
   proj3(x, y, z) { return [this.W / 2 + (x - this.cam.x) * this.ppu + this.cam.sx, this.H * 0.56 + ((z - this.cam.z) * SIN - y * COS) * this.ppu + this.cam.sz]; }
   render(now) {
+    if (!this.gl) return this._render(now);
+    try { this._render(now); } catch (e) { console.warn('[gl] erro no renderer WebGL, voltando ao Canvas2D:', e && e.message); this.gl = null; this.ctx.setTransform(1, 0, 0, 1, 0, 0); this._render(now); }
+  }
+  _render(now) {
     const ctx = this.ctx, W = this.W, H = this.H, ppu = this.ppu, art = this.art, h = this.hero;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#0a0708'; ctx.fillRect(0, 0, W, H);
