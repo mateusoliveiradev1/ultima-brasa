@@ -90,7 +90,11 @@ function bridge(target) {
 }
 
 export class GLRenderer {
-  static enabled() { try { return new URLSearchParams(location.search).get('gl') === '1'; } catch { return false; } }
+  // padrão: ligado. ?gl=0 desliga (e lembra); ?gl=1 religa. Se o aparelho engasgar, o jogo desliga sozinho (ver Game.loop).
+  static enabled() {
+    try { const q = new URLSearchParams(location.search).get('gl'); if (q === '0') { localStorage.setItem('ub.gl', '0'); return false; } if (q === '1') { localStorage.removeItem('ub.gl'); return true; } return localStorage.getItem('ub.gl') !== '0'; } catch { return true; }
+  }
+  static disable() { try { localStorage.setItem('ub.gl', '0'); } catch {} }
   static create(game) { if (!GLRenderer.enabled()) return null; try { return new GLRenderer(game); } catch (e) { console.warn('[gl] indisponível, usando Canvas2D:', e.message); return null; } }
 
   constructor(game) {

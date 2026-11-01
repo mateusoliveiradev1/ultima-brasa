@@ -878,6 +878,7 @@ export class Game {
       const dt = (now - prev) / 1000; prev = now;
       this.fpsAvg = lerp(this.fpsAvg, dt * 1000, 0.05);
       if (this.fpsAvg > 26 && this.bloom && this.quality === 1 && this.time > 5) { this.bloom = false; this.quality = 0; }
+      if (this.gl && this.fpsAvg > 40 && this.quality === 0 && this.time > 10 && this.mode === 'run') { this.gl = null; GLRenderer.disable(); }
       this.update(Math.min(dt, 0.1)); this.render(now);
     };
     this.raf = requestAnimationFrame(loop);
