@@ -15,10 +15,14 @@ const FONTS = [
   font('bebas-neue', 'bebas-neue-latin-400-normal.woff2', 'Bebas Neue', 400),
 ].join('\n');
 
+// índice dos mapas publicados (data/maps/<bioma>.json) → src/game/maps.index.js
+{ const names = fs.existsSync('data/maps') ? fs.readdirSync('data/maps').filter((f) => f.endsWith('.json')).sort() : [];
+  fs.writeFileSync('src/game/maps.index.js', '// GERADO por build.mjs — não editar. Lista os mapas de data/maps/*.json.\n' + names.map((f, i) => `import M${i} from '../../data/maps/${f}';`).join('\n') + `\nexport const FILES = { ${names.map((f, i) => `${JSON.stringify(f.replace('.json', ''))}: M${i}`).join(', ')} };\n`); }
 const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '');
 const targets = [
   { entry: 'src/main-forja.js', out: 'dist/forja-de-efeitos.html', title: 'Forja de Efeitos — Última Brasa', css: ['src/styles-base.css', 'src/styles-forja.css'] },
-  { entry: 'src/main-game.js', out: 'dist/ultima-brasa.html', title: 'Última Brasa', css: ['src/styles-base.css', 'src/styles-forja.css', 'src/styles-game.css'] },
+  { entry: 'src/main-mapas.js', out: 'dist/forja-de-mapas.html', title: 'Forja de Mapas — Última Brasa', css: ['src/styles-base.css', 'src/styles-forja.css', 'src/styles-mapas.css'] },
+  { entry: 'src/main-game.js', out: 'dist/ultima-brasa.html', title: 'Última Brasa', css: ['src/styles-base.css', 'src/styles-forja.css', 'src/styles-game.css', 'src/styles-mapas.css'] },
 ];
 const only = process.argv[2];
 for (const t of targets) {

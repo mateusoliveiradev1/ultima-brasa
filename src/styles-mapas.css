@@ -1,0 +1,18 @@
+/* Forja de Mapas */
+.mp-root{display:grid;grid-template-columns:1fr 330px;height:calc(100vh - 26px);width:100vw;background:#120a07;color:#f1e3d3;font-family:Rajdhani,sans-serif}
+.mp-cv{width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;background:#150d0a}
+.mp-panel{overflow:auto;padding:12px 14px;border-left:1px solid #3a241a;background:#1a100c}
+.mp-panel h2{font:400 26px 'Bebas Neue',sans-serif;letter-spacing:.06em;color:#ff9a40;margin:0 0 8px}
+.mp-panel h3{font:600 14px Rajdhani,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#c99a78;margin:0 0 6px}
+.mp-sec{margin:12px 0;padding-top:10px;border-top:1px solid #2e1c14}
+.mp-tools,.mp-pal{display:flex;flex-wrap:wrap;gap:6px}
+.mp-b{background:#2a1913;color:#f1e3d3;border:1px solid #4a2e20;border-radius:6px;padding:6px 10px;font:600 14px Rajdhani,sans-serif;cursor:pointer}
+.mp-b:hover{border-color:#ff9a40}.mp-b.on{background:#ff8a3a;color:#1a0d06;border-color:#ff8a3a}.mp-b.go{background:#2f6b4f;border-color:#4fe0a0}.mp-b.bad{background:#5a1f18;border-color:#a8402e}
+.mp-f{display:flex;align-items:center;justify-content:space-between;gap:8px;font:600 14px Rajdhani,sans-serif;margin:5px 0}
+.mp-f input[type=number],.mp-f input[type=text],.mp-f select,.mp-sec select{background:#241610;color:#f1e3d3;border:1px solid #4a2e20;border-radius:5px;padding:4px 6px;width:130px;font:600 14px Rajdhani,sans-serif}
+.mp-f input[type=range]{width:130px}
+.mp-h{font-size:13px;color:#b89a84;margin:6px 0;line-height:1.35}
+.mp-lint{margin:0;padding-left:18px;font-size:13px;color:#d8c4a8}.mp-lint .e{color:#ff8a7a}
+.mp-status{height:26px;line-height:26px;padding:0 12px;font:500 13px Rajdhani,sans-serif;background:#0d0705;color:#b89a84}
+.mp-load{display:grid;place-items:center;height:100vh;color:#ff9a40;font:400 28px 'Bebas Neue',sans-serif;letter-spacing:.08em}
+@media (max-width:800px){.mp-root{grid-template-columns:1fr;grid-template-rows:55vh 1fr}.mp-panel{border-left:0;border-top:1px solid #3a241a}}

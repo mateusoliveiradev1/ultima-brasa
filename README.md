@@ -15,3 +15,7 @@ node build.mjs forja    # dist/forja-de-efeitos.html
 O deploy no GitHub Pages é automático a cada push (Settings → Pages → Source: GitHub Actions).
 
 Créditos de assets (Kenney, CC0) em `licenses/`.
+
+## Forja de Mapas
+Editor de mapas no navegador: `?editor=mapas` na página do jogo (ou `dist/forja-de-mapas.html`). Ferramentas: selecionar, carimbo, pincel, borracha, luz, trilha, terreno e ponto de partida; desfazer/refazer, avaliador de composição, exportar/importar JSON e "Testar no jogo" (`?map=local`).
+Mapas publicados ficam em `data/maps/<bioma>.json` (o `build.mjs` gera o índice). Dentro dos limites do mapa vale o desenho; fora, o mundo continua procedural. `?map=0` ignora os mapas.

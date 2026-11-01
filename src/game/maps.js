@@ -3,9 +3,9 @@
 import { CATALOG } from '../shared/paint-props.js';
 import { FOOT } from '../shared/mapspec.js';
 import { paintGroundMacro } from '../shared/paint.js';
-import RUINAS from '../../data/maps/ruinas.json';
+import { FILES } from './maps.index.js';
 
-export const MAPS = { ruinas: RUINAS };
+export const MAPS = FILES; // gerado por build.mjs a partir de data/maps/*.json
 const CAT = Object.fromEntries(CATALOG.map((e) => [e.id, e]));
 
 export function pickMap(biomeId) {
