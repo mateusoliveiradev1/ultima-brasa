@@ -37,8 +37,21 @@ const VS_SPR = `#version 300 es
 layout(location=0) in vec2 aP; layout(location=1) in vec2 aT; layout(location=2) in float aA; uniform vec2 uRes; out vec2 vT; out float vA;
 void main(){ vT = aT; vA = aA; gl_Position = vec4(aP.x/uRes.x*2.0-1.0, 1.0-aP.y/uRes.y*2.0, 0.0, 1.0); }`;
 const FS_SPR = `#version 300 es
-precision mediump float; uniform sampler2D uTex; in vec2 vT; in float vA; out vec4 o;
-void main(){ vec4 t = texture(uTex, vT); o = vA < 0.0 ? vec4(0.0,0.0,0.0,t.a*-vA) : t*vA; }`;
+precision highp float; uniform sampler2D uTex; uniform vec2 uRes; uniform float uLit; uniform int uN; uniform vec4 uLP[${NL}]; uniform vec3 uLC[${NL}]; in vec2 vT; in float vA; out vec4 o;
+float ht(vec2 uv){ vec4 c = texture(uTex, uv); return (dot(c.rgb, vec3(.3,.5,.2)) + 0.6) * c.a; }
+void main(){
+  vec4 t = texture(uTex, vT);
+  if (vA < 0.0) { o = vec4(0.0,0.0,0.0,t.a*-vA); return; }
+  vec3 rgb = t.rgb;
+  if (uLit > 0.5 && t.a > 0.05) {
+    vec2 e = 1.5/vec2(textureSize(uTex,0)); float gx = ht(vT+vec2(e.x,0.)) - ht(vT-vec2(e.x,0.)), gy = ht(vT+vec2(0.,e.y)) - ht(vT-vec2(0.,e.y));
+    vec3 N = normalize(vec3(-gx*2.2, gy*2.2, 1.0)); vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y); float acc = 0.0; vec3 tint = vec3(0.0);
+    for (int i=0;i<${NL};i++){ if (i>=uN) break; vec4 l = uLP[i]; vec3 d = vec3(l.x-px.x, -(l.y-px.y), l.z); float att = clamp(1.0-length(d.xy)/l.w,0.,1.); att*=att;
+      vec3 L = normalize(d); float diff = max(dot(N,L),0.) - L.z; tint += uLC[i]*att*diff; }
+    rgb = t.rgb * (1.0 + tint*1.5);
+  }
+  o = vec4(rgb, t.a) * vA;
+}`;
 
 function prog(gl, vs, fs) {
   const mk = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(x)); return x; };
@@ -87,7 +100,8 @@ export class GLRenderer {
     this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.dead = true; if (game.gl === this) game.gl = null; });
     this.pG = prog(gl, VS_FULL, FS_GROUND); this.pS = prog(gl, VS_SPR, FS_SPR);
     this.uG = {}; for (const n of ['uTex', 'uRes', 'uCam', 'uOff', 'uPpu', 'uTexSz', 'uH0', 'uK', 'uN', 'uL', 'uC']) this.uG[n] = gl.getUniformLocation(this.pG, n);
-    this.uS = { uRes: gl.getUniformLocation(this.pS, 'uRes'), uTex: gl.getUniformLocation(this.pS, 'uTex') };
+    this.uS = {}; for (const n of ['uRes', 'uTex', 'uLit', 'uN', 'uLP', 'uLC']) this.uS[n] = gl.getUniformLocation(this.pS, n);
+    this.sp = new Float32Array(NL * 4);
     this.vao = gl.createVertexArray(); gl.bindVertexArray(this.vao); this.vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     this.buf = new Float32Array(MAXQ * 6 * 5); gl.bufferData(gl.ARRAY_BUFFER, this.buf.byteLength, gl.DYNAMIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 20, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 8); gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 20, 16);
@@ -122,7 +136,7 @@ export class GLRenderer {
     for (const l of g.lights) add(l.x, l.z, l.y || 0.8, l.r * 1.2, l.col, l.a * clamp(l.t / l.life * 1.4, 0, 1));
     for (const b of g.ebolts) add(b.x, b.z, b.y || 0.8, 3, b.col || '#ff7a2a', 0.8);
     L.sort((a, b) => Math.hypot(a.x - g.cam.x, a.z - g.cam.z) - Math.hypot(b.x - g.cam.x, b.z - g.cam.z));
-    const n = Math.min(NL, L.length); for (let i = 0; i < n; i++) { const l = L[i]; this.lt.set([l.x, l.z, l.h, l.r], i * 4); this.lc.set([l.c[0] * l.a, l.c[1] * l.a, l.c[2] * l.a], i * 3); }
+    const n = Math.min(NL, L.length); this.Lw = L.slice(0, n); for (let i = 0; i < n; i++) { const l = L[i]; this.lt.set([l.x, l.z, l.h, l.r], i * 4); this.lc.set([l.c[0] * l.a, l.c[1] * l.a, l.c[2] * l.a], i * 3); }
     gl.viewport(0, 0, g.W, g.H); gl.disable(gl.BLEND); gl.useProgram(this.pG); const u = this.uG;
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tx); gl.uniform1i(u.uTex, 0);
     gl.uniform2f(u.uRes, g.W, g.H); gl.uniform2f(u.uCam, g.cam.x, g.cam.z); gl.uniform2f(u.uOff, g.cam.sx, g.cam.sz); gl.uniform1f(u.uPpu, g.ppu); gl.uniform1f(u.uTexSz, img.width); gl.uniform1f(u.uH0, g.H * 0.56); gl.uniform1f(u.uK, 5.5);
@@ -134,7 +148,10 @@ export class GLRenderer {
   begin(realCtx) {
     const gl = this.gl; this.ctxB.real = realCtx; this.ctxB.reset(); this.proxy = this.proxy || bridge(this.ctxB);
     gl.viewport(0, 0, this.game.W, this.game.H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.enable(gl.BLEND);
-    gl.useProgram(this.pS); gl.uniform2f(this.uS.uRes, this.game.W, this.game.H); gl.uniform1i(this.uS.uTex, 0); gl.bindVertexArray(this.vao); this.n = 0; this.cur = null; return this.proxy;
+    gl.useProgram(this.pS); gl.uniform2f(this.uS.uRes, this.game.W, this.game.H); gl.uniform1i(this.uS.uTex, 0);
+    const g = this.game, Lw = this.Lw || [], n = Math.min(NL, Lw.length);
+    for (let i = 0; i < n; i++) { const l = Lw[i], [sx, sy] = g.proj3(l.x, 0, l.z); this.sp.set([sx, sy, l.h * g.ppu * 0.5, l.r * g.ppu * 1.2], i * 4); }
+    gl.uniform1i(this.uS.uN, n); gl.uniform4fv(this.uS.uLP, this.sp); gl.uniform3fv(this.uS.uLC, this.lc); gl.bindVertexArray(this.vao); this.n = 0; this.cur = null; return this.proxy;
   }
   quad(img, sx, sy, sw, sh, dx, dy, dw, dh, m, alpha, add, atlas) {
     if (alpha <= 0.003 || !(img.width || img.naturalWidth)) return; if (img.complete === false) return;
@@ -162,6 +179,7 @@ export class GLRenderer {
   }
   flush() {
     if (!this.n || !this.cur) { this.n = 0; return; } const gl = this.gl;
+    gl.uniform1f(this.uS.uLit, this.curAdd ? 0 : 1);
     if (this.curAdd) gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.cur); gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.buf, 0, this.n * 30); gl.drawArrays(gl.TRIANGLES, 0, this.n * 6);
     this.stats.calls++; this.n = 0;
