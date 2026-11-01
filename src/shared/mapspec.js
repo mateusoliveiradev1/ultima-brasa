@@ -2,6 +2,7 @@
 // Um mapa é dado puro (JSON-serializável): o mesmo arquivo alimenta a prévia 2D rápida e o render WebGL final.
 import { mulberry32 } from './util.js';
 import { FOOT2 } from './paint-props2.js';
+import { FOOT3 } from './paint-props3.js';
 
 // raio de pegada no chão (unidades de mundo) e se bloqueia o caminho do jogador
 export const FOOT = {
@@ -9,7 +10,7 @@ export const FOOT = {
   sign: { r: 0.3, block: false }, bus: { r: 2.2, block: true }, barricade: { r: 1.8, block: true }, lamp: { r: 0.3, block: false }, billboard: { r: 1.4, block: true }, trafficlight: { r: 0.3, block: false },
   tent: { r: 1.3, block: true }, campfire: { r: 0.7, block: true }, sandbags: { r: 1.0, block: true }, fence: { r: 1.4, block: true }, crate: { r: 0.6, block: true }, skeleton: { r: 0.6, block: false },
   deadbush: { r: 0.5, block: false }, crystal: { r: 0.7, block: true }, puddle: { r: 1.1, block: false, decal: true }, crater: { r: 1.6, block: false, decal: true },
-  ...FOOT2,
+  ...FOOT2, ...FOOT3,
 };
 export const PATH_HALF = 1.15; // meia-largura da trilha pintada (paintGroundMacro: 2.3)
 

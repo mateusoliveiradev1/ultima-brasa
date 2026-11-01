@@ -147,6 +147,7 @@ export function paintCrater(seed = 1) {
 
 // kind: 'prop' (em pé, fatias de espessura) | 'decal' (deitado no chão) ; h = altura no mundo; thick = [espessura, fatias]
 import { CATALOG2 } from './paint-props2.js';
+import { CATALOG3 } from './paint-props3.js';
 const CATALOG1 = [
   { id: 'ruin', name: 'Parede em ruína', paint: paintRuinWall, n: 3, h: 5.2, thick: [0.9, 9], tags: ['ruinas', 'cidade'] },
   { id: 'house', name: 'Casa destruída', paint: paintHouse, n: 3, h: 4.5, thick: [1.2, 10], tags: ['ruinas', 'cidade'] },
@@ -171,4 +172,4 @@ const CATALOG1 = [
   { id: 'puddle', name: 'Poça tóxica', paint: paintPuddle, n: 1, h: 1.6, kind: 'decal', tags: ['ermo', 'cidade'], light: '#5ae870', lightI: 0.22, lightR: 3 },
   { id: 'crater', name: 'Cratera', paint: paintCrater, n: 1, h: 2.2, kind: 'decal', tags: ['ermo', 'brasa'] },
 ];
-export const CATALOG = [...CATALOG1, ...CATALOG2];
+export const CATALOG = [...CATALOG1, ...CATALOG2, ...CATALOG3];

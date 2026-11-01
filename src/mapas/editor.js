@@ -9,7 +9,7 @@ import { recolor } from '../shared/art-biomes.js';
 
 const SIN = 0.82, COS = Math.sqrt(1 - SIN * SIN), CAT = Object.fromEntries(CATALOG.map((e) => [e.id, e]));
 const BIOMAS = [['ruinas', 'Ruínas Cinzentas'], ['pantano', 'Pântano Tóxico'], ['deserto', 'Deserto de Sucata'], ['tundra', 'Tundra Cinzenta']];
-const PATCHES = [['scorch', 'Queimado'], ['asphalt', 'Asfalto'], ['rock', 'Rocha'], ['ash', 'Cinza']];
+const PATCHES = [['scorch', 'Queimado'], ['asphalt', 'Asfalto'], ['rock', 'Rocha'], ['ash', 'Cinza'], ['water', 'Água'], ['mud', 'Lama'], ['moss', 'Musgo'], ['sand', 'Areia'], ['snow', 'Neve'], ['ice', 'Gelo']];
 const PREFABS = [
   ['Acampamento', [['campfire', 0, 0], ['tent', -2.4, -1.2], ['tent', 2.5, -1], ['sandbags', 0, 2.4], ['crate', -1.6, 1.8], ['barrel', 2.2, 1.7]]],
   ['Barricada de estrada', [['barricade', -2.4, 0], ['barricade', 2.4, 0.3], ['sandbags', 0, -1.6], ['sandbags', -4.4, 1.4], ['sandbags', 4.5, 1.2]]],
@@ -23,6 +23,18 @@ const PREFABS = [
   ['Gruta de gelo', [['iceshard', 0, 0], ['iceshard', 2.4, 0.8], ['boulder', -2.4, 1], ['snowpine', -4.8, -1], ['snowdrift', 0.4, 2.4]]],
   ['Cerca (5 módulos)', [['fence', -5.6, 0], ['fence', -2.8, 0], ['fence', 0, 0], ['fence', 2.8, 0], ['fence', 5.6, 0]]],
   ['Bosque seco', [['tree', 0, 0], ['tree', 2.8, 1.2], ['tree', -2.6, 1.4], ['deadbush', 1, 2.6], ['skeleton', -1, 3]]],
+  ['Trono de salgueiros', [['willow', 0, -1.6], ['willow', -6, -0.6], ['willow', 6, -0.4], ['totem', -4.4, 2.4], ['totem', 4.6, 2.4], ['bonepile', 0, 2.2], ['ritual', 0, 1.2]]],
+  ['Vila de palafitas', [['stilthut', -5, -2], ['stilthut', 5, -2.2], ['stilthut', 0, 3.6], ['totem', 0, -2.4], ['campfire', -2.6, 1], ['boat', 6, 3.6]]],
+  ['Templo de runas', [['pillar', -5, -2.6], ['pillar', 5, -2.6], ['pillar', -5, 2.6], ['pillar', 5, 2.6], ['wall', -8, 0], ['wall', 8, 0], ['ritual', 0, 0], ['brazier', -2.4, 0.4], ['brazier', 2.4, 0.4]]],
+  ['Cemitério de cruzes', [['ironcross', -4.6, -1.6], ['ironcross', 0, -2.4], ['ironcross', 4.6, -1.6], ['ironcross', -2.4, 1.2], ['ironcross', 2.6, 1.4], ['bonepile', 6.6, 1.2], ['sandmound', 0, 4]]],
+  ['Oásis seco', [['palm', -5, -1.4], ['palm', 5, -1], ['palm', -2.4, -3.6], ['palm', 2.6, -3.4], ['skeleton', 0, 0.4], ['ribs', -2.6, 2], ['deadbush', 3.4, 2.4]]],
+  ['Bateria de tanques', [['tank', -3.6, 0], ['tank', 0, 0.4], ['tank', 3.6, -0.2], ['barrel', -2.4, 2.6], ['brazier', 2.4, 3], ['sign', 0, 4.6]]],
+  ['Paredão de mesas', [['mesa', -8, 0], ['mesa', 0, -1.4], ['mesa', 8, 0.2], ['spire', -4, 2.6], ['spire', 4, 2.4], ['sandmound', 0, 3]]],
+  ['Aldeia de iglus', [['igloo', -4.6, 0], ['igloo', 4.6, 0.4], ['igloo', 0, 4.4], ['campfire', 0, 0.8], ['banner', -2.4, -2.4], ['crate', 2.6, 2.6]]],
+  ['Ossuário gelado', [['bonepile', -3.4, 0], ['bonepile', 3.6, 0.4], ['icewall', 0, -3.2], ['iceshard', -6, 2.4], ['iceshard', 6, 2.6], ['skeleton', 0, 2.4], ['ritual', 0, 1]]],
+  ['Pesca no gelo', [['tent', 0, 0], ['tent', 3.4, 0.8], ['campfire', 1.6, 3.2], ['boat', -4.4, 1.6], ['crate', -2.2, 3], ['iceshard', 6, -1.6]]],
+  ['Contêineres empilhados', [['container', -2.4, 0], ['container', 2.4, 0], ['container', -2.4, 3.2], ['container', 2.4, 3.2], ['crate', 5.6, 1], ['barrel', -5.4, 2.4]]],
+  ['Posto de vigia', [['watchtower', 0, -1.4], ['sandbags', -3, 1.6], ['sandbags', 3, 1.8], ['brazier', 0, 2.6], ['banner', 4.4, -0.6]]],
 ];
 const DRAFT = 'ub.mapdraft', LOCAL = 'ub.map.local';
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === 'class') e.className = v; else if (n.startsWith('on')) e.addEventListener(n.slice(2), v); else if (v !== false && v != null) e.setAttribute(n, v); } for (const c of k.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -33,7 +45,7 @@ export function mountMapEditor(root, art) {
   root.innerHTML = '';
   let spec; try { spec = JSON.parse(localStorage.getItem(DRAFT)); } catch { spec = null; } if (!spec || !spec.props) spec = clone(MAPS.ruinas || blank());
   spec.biome = spec.biome || 'ruinas'; spec.ground.patches = spec.ground.patches || []; spec.lights = spec.lights || []; spec.smoke = spec.smoke || [];
-  const S = { mirror: false, pf: 0, clip: null, tool: 'sel', stamp: 'barrel', sel: null, view: { tx: 0, tz: -4, s: 34 }, brush: 3, dens: 0.5, scale: 1, lcol: '#ff8a3a', li: 1, lr: 6, patch: 'scorch', path: null, hist: [], redo: [], mouse: { x: 0, z: 0, sx: 0, sz: 0 }, drag: null, tag: 'todos' };
+  const S = { gap: 0, jit: 0.2, multi: [], mirror: false, pf: 0, clip: null, tool: 'sel', stamp: 'barrel', sel: null, view: { tx: 0, tz: -4, s: 34 }, brush: 3, dens: 0.5, scale: 1, lcol: '#ff8a3a', li: 1, lr: 6, patch: 'scorch', path: null, hist: [], redo: [], mouse: { x: 0, z: 0, sx: 0, sz: 0 }, drag: null, tag: 'todos' };
   const canvas = el('canvas', { class: 'mp-cv' }), panel = el('div', { class: 'mp-panel' }), status = el('div', { class: 'mp-status' });
   root.append(el('div', { class: 'mp-root' }, canvas, panel), status);
   const ctx = canvas.getContext('2d');
@@ -59,8 +71,8 @@ export function mountMapEditor(root, art) {
   const commit = () => { S.hist.push(S.last); if (S.hist.length > 80) S.hist.shift(); S.redo.length = 0; S.last = snap(); try { localStorage.setItem(DRAFT, S.last); } catch {} dirty = true; refresh(); };
   S.last = snap();
   const restore = (s) => { spec = JSON.parse(s); S.sel = null; S.last = s; try { localStorage.setItem(DRAFT, s); } catch {} dirty = true; refresh(); };
-  const undo = () => { if (S.hist.length) { S.redo.push(S.last); restore(S.hist.pop()); } };
-  const redoF = () => { if (S.redo.length) { S.hist.push(S.last); restore(S.redo.pop()); } };
+  const undo = () => { S.multi = []; if (S.hist.length) { S.redo.push(S.last); restore(S.hist.pop()); } };
+  const redoF = () => { S.multi = []; if (S.redo.length) { S.hist.push(S.last); restore(S.redo.pop()); } };
 
   // ── desenho ──
   function draw() {
@@ -85,9 +97,17 @@ export function mountMapEditor(root, art) {
     if (S.tool === 'stamp' && CAT[S.stamp]) { const r = rect({ id: S.stamp, v: 0, x: S.mouse.x, z: S.mouse.z, s: S.scale }); x.globalAlpha = 0.6; if (r.k) x.drawImage(r.k, r.x, r.y, r.w, r.h); x.globalAlpha = 1; }
     if (S.tool === 'prefab') { x.globalAlpha = 0.5; for (const [id, dx, dz] of PREFABS[S.pf][1]) { const r = rect({ id, v: 0, x: S.mouse.x + (S.mirror ? -dx : dx), z: S.mouse.z + dz }); if (r.k) x.drawImage(r.k, r.x, r.y, r.w, r.h); } x.globalAlpha = 1; }
     if (S.tool === 'brush' || S.tool === 'erase') { x.strokeStyle = S.tool === 'erase' ? '#ff6a5a' : '#7dffcf'; x.lineWidth = 2; x.beginPath(); x.ellipse(mx, mz, S.brush * s, S.brush * s * SIN, 0, 0, 7); x.stroke(); }
+    for (const i of S.multi) { const p = spec.props[i]; if (!p || !CAT[p.id]) continue; const r = rect(p); x.strokeStyle = '#7dffcf'; x.lineWidth = 2; x.strokeRect(r.x, r.y, r.w, r.h); }
+    if (S.drag?.marq) { const d = S.drag; x.strokeStyle = '#7dffcf'; x.fillStyle = 'rgba(125,255,207,.12)'; x.setLineDash([6, 4]); x.lineWidth = 1.5; x.fillRect(d.sx, d.sy, d.ex - d.sx, d.ey - d.sy); x.strokeRect(d.sx, d.sy, d.ex - d.sx, d.ey - d.sy); x.setLineDash([]); }
+    if (S.drag?.shape) { x.globalAlpha = 0.65; for (const [qx, qz] of shapePts(S.drag)) { const r = rect({ id: S.stamp, v: 0, x: qx, z: qz, s: S.scale }); if (r.k) x.drawImage(r.k, r.x, r.y, r.w, r.h); } x.globalAlpha = 1; }
   }
 
   // ── operações ──
+  const shapePts = (d) => { const f = FOOT[S.stamp], gap = S.gap || Math.max(1.4, (f ? f.r : 0.8) * 2.3), out = []; if (!d) return out;
+    if (d.shape === 'line') { const L = Math.hypot(d.x1 - d.x0, d.z1 - d.z0), n = Math.max(1, Math.round(L / gap) + 1); for (let i = 0; i < n; i++) { const t = n === 1 ? 0 : i / (n - 1); out.push([d.x0 + (d.x1 - d.x0) * t, d.z0 + (d.z1 - d.z0) * t]); } }
+    else { const rx = Math.abs(d.x1 - d.x0), rz = Math.max(0.01, Math.abs(d.z1 - d.z0)), per = Math.PI * (3 * (rx + rz) - Math.sqrt((3 * rx + rz) * (rx + 3 * rz))), n = Math.max(3, Math.round(per / gap)); for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; out.push([d.x0 + Math.cos(a) * rx, d.z0 + Math.sin(a) * rz]); } }
+    return out; };
+  const selProps = () => (S.multi.length ? S.multi : S.sel?.k === 'prop' ? [S.sel.i] : []);
   const rnd = mulberry32((Date.now() & 0xffff) + 1);
   const place = (id, wx, wz, extra = {}) => { const p = { id, x: +wx.toFixed(2), z: +wz.toFixed(2), v: (rnd() * 99) | 0, ...extra }; if (S.scale !== 1) p.s = S.scale; spec.props.push(p); return p; };
   const near = (wx, wz, r) => spec.props.map((p, i) => [p, i]).filter(([p]) => Math.hypot(p.x - wx, p.z - wz) < r);
@@ -101,14 +121,17 @@ export function mountMapEditor(root, art) {
     canvas.setPointerCapture(e.pointerId); const r = canvas.getBoundingClientRect(), sx = (e.clientX - r.left) * (canvas.width / r.width), sy = (e.clientY - r.top) * (canvas.height / r.height), [wx, wz] = unproj(sx, sy);
     if (e.button === 1 || e.button === 2 || e.shiftKey && S.tool === 'sel' && false || S.space) { S.drag = { pan: true, sx, sy, tx: S.view.tx, tz: S.view.tz }; return; }
     const t = S.tool;
-    if (t === 'sel') { const h = pickAt(sx, sy); S.sel = h; if (h) { const o = h.k === 'prop' ? spec.props[h.i] : h.k === 'light' ? spec.lights[h.i] : spec.ground.patches[h.i]; S.drag = { move: true, ox: wx - o.x, oz: wz - o.z, moved: false }; } refresh(); dirty = true; }
+    if (t === 'sel') { const h = pickAt(sx, sy);
+      if (h && h.k === 'prop' && S.multi.includes(h.i)) { S.drag = { group: true, wx, wz, orig: S.multi.map((i) => [i, spec.props[i].x, spec.props[i].z]), moved: false }; }
+      else { S.multi = []; S.sel = h; if (h) { const o = h.k === 'prop' ? spec.props[h.i] : h.k === 'light' ? spec.lights[h.i] : spec.ground.patches[h.i]; S.drag = { move: true, ox: wx - o.x, oz: wz - o.z, moved: false }; } else S.drag = { marq: true, sx, sy, ex: sx, ey: sy, shift: e.shiftKey }; refresh(); } dirty = true; }
+    else if (t === 'line' || t === 'ring') { S.drag = { shape: t, x0: wx, z0: wz, x1: wx, z1: wz }; dirty = true; }
     else if (t === 'stamp') { place(S.stamp, wx, wz); commit(); }
     else if (t === 'prefab') { for (const [id, dx, dz] of PREFABS[S.pf][1]) place(id, wx + (S.mirror ? -dx : dx), wz + dz, S.mirror && CAT[id].kind !== 'decal' ? { f: 1 } : {}); commit(); }
     else if (t === 'brush') { brushScatter(wx, wz); S.drag = { brush: true }; dirty = true; }
     else if (t === 'erase') { const hit = near(wx, wz, S.brush).map(([, i]) => i); if (hit.length) { spec.props = spec.props.filter((_, i) => !hit.includes(i)); S.sel = null; } S.drag = { erase: true }; dirty = true; }
     else if (t === 'light') { spec.lights.push({ x: +wx.toFixed(2), z: +wz.toFixed(2), color: S.lcol, i: S.li, r: S.lr }); S.sel = { k: 'light', i: spec.lights.length - 1 }; commit(); }
     else if (t === 'path') { S.path = S.path || []; S.path.push([+wx.toFixed(1), +wz.toFixed(1)]); dirty = true; }
-    else if (t === 'patch') { spec.ground.patches.push({ type: S.patch, x: +wx.toFixed(1), z: +wz.toFixed(1), rx: 4, rz: 2.5 }); S.sel = { k: 'patch', i: spec.ground.patches.length - 1 }; commit(); }
+    else if (t === 'patch') { spec.ground.patches.push({ type: S.patch, x: +wx.toFixed(1), z: +wz.toFixed(1), rx: 0.5, rz: 0.5 }); S.sel = { k: 'patch', i: spec.ground.patches.length - 1 }; S.drag = { patchNew: true, x0: wx, z0: wz, moved: false }; dirty = true; }
     else if (t === 'spawn') { spec.spawn.x = +wx.toFixed(1); spec.spawn.z = +wz.toFixed(1); commit(); }
   }
   function move(e) {
@@ -117,25 +140,34 @@ export function mountMapEditor(root, art) {
     const d = S.drag; if (!d) return;
     if (d.pan) { S.view.tx = d.tx - (sx - d.sx) / S.view.s; S.view.tz = d.tz - (sy - d.sy) / (S.view.s * SIN); }
     else if (d.move && S.sel) { const o = S.sel.k === 'prop' ? spec.props[S.sel.i] : S.sel.k === 'light' ? spec.lights[S.sel.i] : spec.ground.patches[S.sel.i]; o.x = +(wx - d.ox).toFixed(2); o.z = +(wz - d.oz).toFixed(2); d.moved = true; }
+    else if (d.group) { for (const [i, ox, oz] of d.orig) { spec.props[i].x = +(ox + wx - d.wx).toFixed(2); spec.props[i].z = +(oz + wz - d.wz).toFixed(2); } d.moved = true; }
+    else if (d.marq) { d.ex = sx; d.ey = sy; }
+    else if (d.shape) { d.x1 = wx; d.z1 = wz; }
+    else if (d.patchNew) { const p = spec.ground.patches[S.sel.i]; p.rx = +Math.max(0.5, Math.abs(wx - d.x0)).toFixed(1); p.rz = +Math.max(0.5, Math.abs(wz - d.z0)).toFixed(1); d.moved = true; }
     else if (d.brush) brushScatter(wx, wz);
     else if (d.erase) { const hit = near(wx, wz, S.brush).map(([, i]) => i); if (hit.length) spec.props = spec.props.filter((_, i) => !hit.includes(i)); }
   }
-  function up() { const d = S.drag; S.drag = null; if (d && (d.moved || d.brush || d.erase)) commit(); }
+  function up() { const d = S.drag; S.drag = null; if (!d) return;
+    if (d.marq) { const x0 = Math.min(d.sx, d.ex), x1 = Math.max(d.sx, d.ex), y0 = Math.min(d.sy, d.ey), y1 = Math.max(d.sy, d.ey); if (x1 - x0 > 6 || y1 - y0 > 6) { S.multi = []; spec.props.forEach((p, i) => { if (!CAT[p.id]) return; const r = rect(p), cx = r.sx, cy = r.y + r.h * 0.6; if (cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1) S.multi.push(i); }); S.sel = null; refresh(); } dirty = true; return; }
+    if (d.shape) { const pts = shapePts(d); for (const [qx, qz] of pts) place(S.stamp, qx + (rnd() - 0.5) * 2 * S.jit, qz + (rnd() - 0.5) * 2 * S.jit); if (pts.length) commit(); return; }
+    if (d.patchNew) { if (!d.moved) { const p = spec.ground.patches[S.sel.i]; p.rx = 4; p.rz = 2.5; } commit(); return; }
+    if (d.moved || d.brush || d.erase) commit(); }
   canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerup', up); canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('dblclick', () => { if (S.tool === 'path') finishPath(); });
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); S.view.s = Math.max(10, Math.min(120, S.view.s * (e.deltaY < 0 ? 1.1 : 0.9))); dirty = true; }, { passive: false });
   function finishPath() { if (S.path && S.path.length > 1) { spec.ground.paths.push(S.path); commit(); } S.path = null; dirty = true; }
-  const del = () => { const s = S.sel; if (!s) return; if (s.k === 'prop') spec.props.splice(s.i, 1); else if (s.k === 'light') spec.lights.splice(s.i, 1); else if (s.k === 'patch') spec.ground.patches.splice(s.i, 1); else if (s.k === 'path') spec.ground.paths.splice(s.i, 1); S.sel = null; commit(); };
+  const del = () => { if (S.multi.length) { const set = new Set(S.multi); spec.props = spec.props.filter((_, i) => !set.has(i)); S.multi = []; S.sel = null; commit(); return; } const s = S.sel; if (!s) return; if (s.k === 'prop') spec.props.splice(s.i, 1); else if (s.k === 'light') spec.lights.splice(s.i, 1); else if (s.k === 'patch') spec.ground.patches.splice(s.i, 1); else if (s.k === 'path') spec.ground.paths.splice(s.i, 1); S.sel = null; commit(); };
   const onKey = (e) => {
     if (!root.isConnected || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return; const k = e.key.toLowerCase();
     if (k === ' ') { S.space = e.type === 'keydown'; if (e.type === 'keydown') e.preventDefault(); return; } if (e.type !== 'keydown') return;
     if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redoF() : undo(); return; } if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redoF(); return; }
-    const T = { v: 'sel', g: 'prefab', p: 'stamp', b: 'brush', x: 'erase', l: 'light', t: 'path', m: 'patch', s: 'spawn' }; if (T[k] && !e.ctrlKey) { setTool(T[k]); return; }
-    if (k === 'delete' || k === 'backspace') { if (S.path && S.path.length) S.path.pop(); else del(); dirty = true; } if (k === 'enter') finishPath(); if (k === 'escape') { S.path = null; S.sel = null; refresh(); dirty = true; }
+    const T = { v: 'sel', g: 'prefab', p: 'stamp', b: 'brush', x: 'erase', l: 'light', t: 'path', m: 'patch', n: 'line', r: 'ring', s: 'spawn' }; if (T[k] && !e.ctrlKey) { setTool(T[k]); return; }
+    if (k === 'delete' || k === 'backspace') { if (S.path && S.path.length) S.path.pop(); else del(); dirty = true; }
+    if (k === 'a' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); S.multi = spec.props.map((_, i) => i); S.sel = null; refresh(); dirty = true; return; } if (k === 'enter') finishPath(); if (k === 'escape') { S.path = null; S.sel = null; S.multi = []; refresh(); dirty = true; }
     if (k === '0') { fitView(); return; }
-    if ((e.ctrlKey || e.metaKey) && k === 'c' && S.sel?.k === 'prop') { S.clip = clone(spec.props[S.sel.i]); return; }
-    if ((e.ctrlKey || e.metaKey) && k === 'v' && S.clip) { e.preventDefault(); const c = clone(S.clip); c.x = +S.mouse.x.toFixed(2); c.z = +S.mouse.z.toFixed(2); spec.props.push(c); S.sel = { k: 'prop', i: spec.props.length - 1 }; commit(); return; }
-    if ((e.ctrlKey || e.metaKey) && k === 'd' && S.sel?.k === 'prop') { e.preventDefault(); const c = clone(spec.props[S.sel.i]); c.x += 1.2; c.z += 0.6; spec.props.push(c); S.sel = { k: 'prop', i: spec.props.length - 1 }; commit(); return; }
+    if ((e.ctrlKey || e.metaKey) && k === 'c' && selProps().length) { const ps = selProps().map((i) => clone(spec.props[i])), cx = ps.reduce((a, p) => a + p.x, 0) / ps.length, cz = ps.reduce((a, p) => a + p.z, 0) / ps.length; S.clip = ps.map((p) => ({ ...p, x: p.x - cx, z: p.z - cz })); return; }
+    if ((e.ctrlKey || e.metaKey) && k === 'v' && S.clip) { e.preventDefault(); const base = spec.props.length; for (const q of S.clip) { const c = clone(q); c.x = +(S.mouse.x + q.x).toFixed(2); c.z = +(S.mouse.z + q.z).toFixed(2); spec.props.push(c); } S.multi = S.clip.length > 1 ? S.clip.map((_, j) => base + j) : []; S.sel = S.clip.length === 1 ? { k: 'prop', i: base } : null; commit(); return; }
+    if ((e.ctrlKey || e.metaKey) && k === 'd' && selProps().length) { e.preventDefault(); const base = spec.props.length, src = selProps(); for (const i of src) { const c = clone(spec.props[i]); c.x = +(c.x + 1.6).toFixed(2); c.z = +(c.z + 0.8).toFixed(2); spec.props.push(c); } if (src.length > 1) { S.multi = src.map((_, j) => base + j); S.sel = null; } else S.sel = { k: 'prop', i: base }; commit(); return; }
     if (S.sel?.k === 'prop' && k === 'f' && !e.ctrlKey) { const p = spec.props[S.sel.i]; p.f = flipOf(p) ? 0 : 1; commit(); return; }
     if (S.sel?.k === 'prop') { const p = spec.props[S.sel.i]; if (k === '[') { p.v = Math.max(0, (p.v || 0) - 1); commit(); } if (k === ']') { p.v = (p.v || 0) + 1; commit(); } if (k === 'q') { p.s = +Math.max(0.3, (p.s || 1) - 0.1).toFixed(2); commit(); } if (k === 'e') { p.s = +Math.min(3, (p.s || 1) + 0.1).toFixed(2); commit(); } const st = e.shiftKey ? 1 : 0.2; if (k === 'arrowleft') { p.x -= st; commit(); } if (k === 'arrowright') { p.x += st; commit(); } if (k === 'arrowup') { p.z -= st; commit(); } if (k === 'arrowdown') { p.z += st; commit(); } }
   };
@@ -150,20 +182,21 @@ export function mountMapEditor(root, art) {
   const tintRow = (label, key) => { const t = spec[key]; return el('label', { class: 'mp-f' }, label + ' ', el('input', { type: 'color', value: t?.color || '#888888', onchange: (e) => { spec[key] = { color: e.target.value, a: spec[key]?.a ?? 0.4 }; commit(); } }), el('input', { type: 'range', min: 0, max: 0.8, step: 0.05, value: t?.a ?? 0, style: 'width:70px', onchange: (e) => { const a = +e.target.value; if (a <= 0) delete spec[key]; else spec[key] = { color: spec[key]?.color || '#888888', a }; commit(); } })); };
   function refresh() {
     panel.innerHTML = '';
-    const tools = [['sel', 'Selecionar (V)'], ['stamp', 'Carimbo (P)'], ['prefab', 'Pré-fabricado (G)'], ['brush', 'Pincel (B)'], ['erase', 'Borracha (X)'], ['light', 'Luz (L)'], ['path', 'Trilha (T)'], ['patch', 'Terreno (M)'], ['spawn', 'Partida (S)']];
+    const tools = [['sel', 'Selecionar (V)'], ['stamp', 'Carimbo (P)'], ['prefab', 'Pré-fabricado (G)'], ['brush', 'Pincel (B)'], ['erase', 'Borracha (X)'], ['light', 'Luz (L)'], ['path', 'Trilha (T)'], ['patch', 'Terreno (M)'], ['line', 'Linha de props (N)'], ['ring', 'Anel de props (R)'], ['spawn', 'Partida (S)']];
     panel.append(el('h2', {}, 'Forja de Mapas'), el('div', { class: 'mp-tools' }, tools.map(([k, n]) => btn(n, () => setTool(k), S.tool === k ? 'on' : ''))));
     const opts = el('div', { class: 'mp-sec' });
-    if (S.tool === 'stamp' || S.tool === 'brush') {
+    if (['stamp', 'brush', 'line', 'ring'].includes(S.tool)) {
       const tags = ['todos', ...new Set(CATALOG.flatMap((e) => e.tags || []))];
       opts.append(el('select', { onchange: (e) => { S.tag = e.target.value; refresh(); } }, tags.map((t) => el('option', { value: t, selected: t === S.tag }, t))));
       opts.append(el('div', { class: 'mp-pal' }, CATALOG.filter((e) => S.tag === 'todos' || (e.tags || []).includes(S.tag)).map((e) => btn(e.name, () => { S.stamp = e.id; refresh(); }, S.stamp === e.id ? 'on' : ''))), rng('Escala', () => S.scale, (v) => (S.scale = v), 0.4, 2.5, 0.1));
+      if (S.tool === 'line' || S.tool === 'ring') opts.append(el('p', { class: 'mp-h' }, S.tool === 'line' ? 'Arraste de um ponto a outro: os props ocupam a linha.' : 'Arraste do centro para fora: os props formam uma elipse.'), rng('Espaçamento (0 = auto)', () => S.gap, (v) => (S.gap = v), 0, 8, 0.2), rng('Variação', () => S.jit, (v) => (S.jit = v), 0, 1.5, 0.1));
       if (S.tool === 'brush') opts.append(rng('Raio', () => S.brush, (v) => (S.brush = v), 1, 12, 0.5), rng('Densidade', () => S.dens, (v) => (S.dens = v), 0.1, 1, 0.1));
     } else if (S.tool === 'prefab') opts.append(el('div', { class: 'mp-pal' }, PREFABS.map(([n], i) => btn(n, () => { S.pf = i; refresh(); }, S.pf === i ? 'on' : ''))), el('label', { class: 'mp-f' }, 'Espelhar ', el('input', { type: 'checkbox', checked: S.mirror ? 'checked' : null, onchange: (e) => (S.mirror = e.target.checked) })));
     else if (S.tool === 'erase') opts.append(rng('Raio', () => S.brush, (v) => (S.brush = v), 0.5, 12, 0.5));
     else if (S.tool === 'light') opts.append(el('label', { class: 'mp-f' }, 'Cor ', el('input', { type: 'color', value: S.lcol, oninput: (e) => (S.lcol = e.target.value) })), rng('Intensidade', () => S.li, (v) => (S.li = v), 0.2, 2, 0.1), rng('Alcance', () => S.lr, (v) => (S.lr = v), 2, 14, 0.5));
     else if (S.tool === 'patch') opts.append(el('select', { onchange: (e) => (S.patch = e.target.value) }, PATCHES.map(([k, n]) => el('option', { value: k, selected: k === S.patch }, n))), el('p', { class: 'mp-h' }, 'Clique para criar; selecione (V) para mover e ajustar o tamanho.'));
     else if (S.tool === 'path') opts.append(el('p', { class: 'mp-h' }, 'Clique para marcar pontos; Enter ou duplo clique termina; Backspace desfaz o último ponto.'), btn('Terminar trilha', finishPath));
-    else if (S.tool === 'sel') opts.append(el('p', { class: 'mp-h' }, 'Arraste para mover. Delete apaga. [ ] troca a variação, Q/E muda a escala, setas ajustam. Espaço+arrastar ou botão direito move a câmera.'));
+    else if (S.tool === 'sel') opts.append(el('p', { class: 'mp-h' }, 'Arraste num prop para mover; arraste no vazio para selecionar vários (Ctrl+A tudo; mover, Ctrl+C/V/D e Delete valem para o grupo). Delete apaga. [ ] troca a variação, Q/E muda a escala, setas ajustam. Espaço+arrastar ou botão direito move a câmera.'));
     panel.append(opts);
     const s = S.sel; if (s) { const sec = el('div', { class: 'mp-sec' }, el('h3', {}, { prop: 'Prop', light: 'Luz', patch: 'Terreno', path: 'Trilha' }[s.k])); const o = s.k === 'prop' ? spec.props[s.i] : s.k === 'light' ? spec.lights[s.i] : s.k === 'patch' ? spec.ground.patches[s.i] : null;
       if (s.k === 'prop' && o) sec.append(el('p', {}, CAT[o.id]?.name || o.id), num('Variação', () => o.v || 0, (v) => (o.v = v), 1, 0, 99), num('Escala', () => o.s || 1, (v) => (o.s = v), 0.1, 0.3, 3), num('Altura (y)', () => o.y || 0, (v) => (o.y = v), 0.5, 0, 20), btn('Virar (F)', () => { o.f = flipOf(o) ? 0 : 1; commit(); }), btn('Duplicar (Ctrl+D)', () => { const c = clone(o); c.x += 1.2; c.z += 0.6; spec.props.push(c); S.sel = { k: 'prop', i: spec.props.length - 1 }; commit(); }));
