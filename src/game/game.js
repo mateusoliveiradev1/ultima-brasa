@@ -14,6 +14,7 @@ import { KENNEY_TEX } from '../assets/kenney.js';
 import { SKILLS, SKILL_IDS, PASSIVES, PASSIVE_IDS, ENEMIES, BOSS_TIME, MAX_SKILL, DEPTH_MULT, xpNeed, treeFx, EVOS, DIFF } from './data.js';
 import { World } from './world.js';
 import * as A from './audio.js';
+import { GLRenderer } from './gl.js';
 
 const SIN = 0.82, COS = Math.sqrt(1 - SIN * SIN);
 const rnd = Math.random;
@@ -93,7 +94,7 @@ export class Game {
     this.ash = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), s: 0.5 + rnd(), v: 0.02 + rnd() * 0.05, w: rnd() * TAU }));
     this.qLight = cv(8); this.qFx = cv(8); this.qG1 = cv(8); this.qG2 = cv(8);
     this.bloom = true; this.fpsAvg = 16; this.quality = 1; this.opts = { shake: 1, numbers: true }; this.camHub = { x: 2.4, z: 0.5 };
-    this.resize();
+    this.gl = GLRenderer.create(this); this.resize();
     this.enterHub({ skill: 'lamina', biome: 'ruinas' });
   }
   setBiome(id) { this.biomeId = id; this.biome = BIOMES[id]; this.bart = this.art.biome(id); this.world = new World(this.bart.props, this.biome); }
@@ -102,7 +103,7 @@ export class Game {
     const r = this.canvas.getBoundingClientRect(), cap = 2400000;
     let dpr = Math.min(window.devicePixelRatio || 1, 1.6); if (r.width * r.height * dpr * dpr > cap) dpr = Math.sqrt(cap / (r.width * r.height));
     this.W = this.canvas.width = Math.max(320, Math.floor(r.width * dpr)); this.H = this.canvas.height = Math.max(240, Math.floor(r.height * dpr));
-    this.ppu = clamp(Math.min(this.W / 21, this.H / 12.2), 22 * dpr, 90 * dpr);
+    this.ppu = clamp(Math.min(this.W / 21, this.H / 12.2), 22 * dpr, 90 * dpr); this.gl?.resize();
     const mk = (c, w, h) => { c.width = Math.max(8, Math.ceil(w)); c.height = Math.max(8, Math.ceil(h)); };
     mk(this.qLight, this.W / 4, this.H / 4); mk(this.qFx, this.W / 2, this.H / 2); mk(this.qG1, this.W / 5, this.H / 5); mk(this.qG2, this.W / 14, this.H / 14);
   }
@@ -667,8 +668,11 @@ export class Game {
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#0a0708'; ctx.fillRect(0, 0, W, H);
     // chão
+    if (this.gl && this.gl.ground(this)) ctx.drawImage(this.gl.canvas, 0, 0, W, H);
+    else {
     ctx.save(); const [ox, oy] = this.proj3(0, 0, 0); ctx.translate(ox, oy); ctx.scale(1, SIN); const ps = ppu / 38; ctx.scale(ps, ps);
     ctx.fillStyle = ctx.createPattern(this.bart.ground, 'repeat'); ctx.fillRect(-ox / ps - 200, -(oy / (SIN * ps)) - 200, W / ps + 400, H / (SIN * ps) + 400); ctx.restore();
+    }
     // decalques
     for (const d of this.decals) { const [sx, sy] = this.proj3(d.x, 0, d.z); if (sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue; ctx.save(); ctx.translate(sx, sy); ctx.scale(1, SIN); ctx.rotate(d.rot); ctx.globalAlpha = d.a; const s = d.r * ppu * 2; ctx.drawImage(art.tex.scorch, -s / 2, -s / 2, s, s); ctx.restore(); }
     ctx.globalAlpha = 1;
@@ -696,28 +700,30 @@ export class Game {
     for (const e of this.enemies) { const [sx, sy] = this.proj3(e.x, 0, e.z), w = e.d.boss ? 3.6 : e.r * 2.6; ctx.globalAlpha = e.spawn * (e.d.fly ? 0.35 : 0.55); ctx.beginPath(); ctx.ellipse(sx, sy, w * 0.5 * ppu, w * 0.5 * ppu * SIN * 0.7, 0, 0, TAU); ctx.fill(); }
     { const [sx, sy] = this.proj3(h.x, 0, h.z); ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.ellipse(sx, sy, 0.62 * ppu, 0.62 * ppu * SIN * 0.7, 0, 0, TAU); ctx.fill(); }
     ctx.globalAlpha = 1;
+    const wc = this.gl ? this.gl.begin(ctx) : ctx; this._fires = fires;
     // sprites ordenados
     const T = now / 1000;
-    for (const gh of this.ghosts) { const S = this.art.sheets.player, [sx, sy] = this.proj3(gh.x, 0, gh.z), hh = S.h * ppu, w = (hh * S.fw) / S.fh, fr = Math.floor(gh.an * 7.5) % S.frames; ctx.save(); ctx.translate(sx, sy + hh * 0.07); if (gh.face < 0) ctx.scale(-1, 1); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = gh.a; ctx.drawImage(this.art.flash.player, fr * S.fw, 0, S.fw, S.fh, -w / 2, -hh, w, hh); ctx.restore(); }
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    for (const gh of this.ghosts) { const S = this.art.sheets.player, [sx, sy] = this.proj3(gh.x, 0, gh.z), hh = S.h * ppu, w = (hh * S.fw) / S.fh, fr = Math.floor(gh.an * 7.5) % S.frames; wc.save(); wc.translate(sx, sy + hh * 0.07); if (gh.face < 0) wc.scale(-1, 1); wc.globalCompositeOperation = 'lighter'; wc.globalAlpha = gh.a; wc.drawImage(this.art.flash.player, fr * S.fw, 0, S.fw, S.fh, -w / 2, -hh, w, hh); wc.restore(); }
+    wc.globalAlpha = 1; wc.globalCompositeOperation = 'source-over';
     for (const it of items) {
-      if (it.k === 0) { const p = it.o, [sx, sy] = this.proj3(p.x, 0, p.z), w = p.def.w * ppu, hh = p.def.h * ppu, cw = p.def.canvas; ctx.globalAlpha = p.a;
-        if (p.flip) { ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(cw, -w / 2, sy - hh * p.def.anchor, w, hh); ctx.restore(); } else ctx.drawImage(cw, sx - w / 2, sy - hh * p.def.anchor, w, hh); ctx.globalAlpha = 1; }
+      if (it.k === 0) { const p = it.o, [sx, sy] = this.proj3(p.x, 0, p.z), w = p.def.w * ppu, hh = p.def.h * ppu, cw = p.def.canvas; wc.globalAlpha = p.a;
+        if (p.flip) { wc.save(); wc.translate(sx, 0); wc.scale(-1, 1); wc.drawImage(cw, -w / 2, sy - hh * p.def.anchor, w, hh); wc.restore(); } else wc.drawImage(cw, sx - w / 2, sy - hh * p.def.anchor, w, hh); wc.globalAlpha = 1; }
       else if (it.k === 1) { const g = it.o, [sx, sy0] = this.proj3(g.x, 0, g.z), bob = Math.sin(T * 4 + g.bob) * 0.08, [, sy] = this.proj3(g.x, 0.5 + bob, g.z), sz = 0.8 * ppu;
-        if (g.tier === 'chest') { const s = 1.5 * ppu; ctx.drawImage(art.chest, sx - s / 2, sy - s * 0.62, s, s); }
-        else if (g.tier === 'scrap') { const s = 0.75 * ppu; ctx.save(); ctx.translate(sx, sy); ctx.rotate(T * 2 + g.bob); ctx.drawImage(art.scrap, -s / 2, -s / 2, s, s); ctx.restore(); }
-        else { const fr = g.tier === 'heart' ? 3 : g.tier; ctx.drawImage(art.pick.canvas, fr * 64, 0, 64, 64, sx - sz / 2, sy - sz / 2, sz, sz); } }
-      else if (it.k === 2) this.drawEnemy(ctx, it.o);
-      else if (it.k === 3) this.drawHero(ctx, T);
-      else if (it.k === 5) this.drawCorpse(ctx, it.o);
-      else if (it.k === 4) { const b = it.o, [sx, sy] = this.proj3(b.x, b.y, b.z), s = 1.1 * ppu; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(this.flareFor(b.col), sx - s / 2, sy - s / 2, s, s); ctx.globalCompositeOperation = 'source-over'; }
+        if (g.tier === 'chest') { const s = 1.5 * ppu; wc.drawImage(art.chest, sx - s / 2, sy - s * 0.62, s, s); }
+        else if (g.tier === 'scrap') { const s = 0.75 * ppu; wc.save(); wc.translate(sx, sy); wc.rotate(T * 2 + g.bob); wc.drawImage(art.scrap, -s / 2, -s / 2, s, s); wc.restore(); }
+        else { const fr = g.tier === 'heart' ? 3 : g.tier; wc.drawImage(art.pick.canvas, fr * 64, 0, 64, 64, sx - sz / 2, sy - sz / 2, sz, sz); } }
+      else if (it.k === 2) this.drawEnemy(wc, it.o);
+      else if (it.k === 3) this.drawHero(wc, T);
+      else if (it.k === 5) this.drawCorpse(wc, it.o);
+      else if (it.k === 4) { const b = it.o, [sx, sy] = this.proj3(b.x, b.y, b.z), s = 1.1 * ppu; wc.globalCompositeOperation = 'lighter'; wc.drawImage(this.flareFor(b.col), sx - s / 2, sy - s / 2, s, s); wc.globalCompositeOperation = 'source-over'; }
     }
     // fogo dos barris (chamas Kenney)
-    ctx.globalCompositeOperation = 'lighter';
-    for (const p of fires) { const [sx, sy] = this.proj3(p.x, 1.15, p.z); for (let i = 0; i < 3; i++) { const ph = T * 3 + p.ph + i * 2.1, u = (ph % 1), s = (0.9 + 0.5 * Math.sin(ph * 4 + i)) * ppu * (1.3 - u * 0.7); ctx.globalAlpha = (1 - u) * 0.85; ctx.drawImage(i === 0 ? art.tex.flameHot : art.tex.flame, sx - s / 2 + Math.sin(ph * 5) * 3, sy - s * 0.9 - u * ppu * 0.8, s, s); } }
+    wc.globalCompositeOperation = 'lighter';
+    for (const p of fires) { const [sx, sy] = this.proj3(p.x, 1.15, p.z); for (let i = 0; i < 3; i++) { const ph = T * 3 + p.ph + i * 2.1, u = (ph % 1), s = (0.9 + 0.5 * Math.sin(ph * 4 + i)) * ppu * (1.3 - u * 0.7); wc.globalAlpha = (1 - u) * 0.85; wc.drawImage(i === 0 ? art.tex.flameHot : art.tex.flame, sx - s / 2 + Math.sin(ph * 5) * 3, sy - s * 0.9 - u * ppu * 0.8, s, s); } }
     // brilho dos cogumelos e cristais
-    for (const p of glowers) { const [sx, sy] = this.proj3(p.x, 0.9, p.z), s = (p.def.w * 1.7 + Math.sin(T * 2 + p.ph) * 0.2) * ppu; ctx.globalAlpha = 0.4 + 0.12 * Math.sin(T * 2.4 + p.ph); ctx.drawImage(softTint(art, p.glow), sx - s / 2, sy - s / 2, s, s); }
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    for (const p of glowers) { const [sx, sy] = this.proj3(p.x, 0.9, p.z), s = (p.def.w * 1.7 + Math.sin(T * 2 + p.ph) * 0.2) * ppu; wc.globalAlpha = 0.4 + 0.12 * Math.sin(T * 2.4 + p.ph); wc.drawImage(softTint(art, p.glow), sx - s / 2, sy - s / 2, s, s); }
+    wc.globalAlpha = 1; wc.globalCompositeOperation = 'source-over';
+    if (this.gl) this.gl.end(ctx);
     // névoa do horizonte
     const fog = ctx.createLinearGradient(0, 0, 0, H * 0.42); fog.addColorStop(0, rgba(this.biome.fog, 0.92)); fog.addColorStop(1, rgba(this.biome.fog, 0)); ctx.fillStyle = fog; ctx.fillRect(0, 0, W, H * 0.42);
     // fumaça baixa em movimento
