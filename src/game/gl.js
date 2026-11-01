@@ -13,23 +13,32 @@ const FS_GROUND = `#version 300 es
 precision highp float;
 uniform sampler2D uTex; uniform vec2 uRes, uCam, uOff; uniform float uPpu, uTexSz, uH0, uK; uniform int uN; uniform vec4 uL[${NL}]; uniform vec3 uC[${NL}];
 out vec4 o;
+vec3 kuwa(vec2 uv){
+  float r = 2.2/uTexSz; vec3 best = vec3(0.); float bv = 1e9;
+  for (int q=0;q<4;q++){ vec2 s = vec2(q==0||q==2 ? -1.:1., q<2 ? -1.:1.); vec3 m = vec3(0.); float m2 = 0.;
+    for (int i=0;i<3;i++) for (int j=0;j<3;j++){ vec3 c = texture(uTex, uv + s*vec2(float(i),float(j))*r*.5).rgb; m += c; m2 += dot(c,c); }
+    m /= 9.; float v = m2/9. - dot(m,m); if (v < bv){ bv = v; best = m; } }
+  return best;
+}
+float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
 float lum(vec2 uv){ vec3 c = texture(uTex, uv).rgb; return dot(c, vec3(.3,.5,.2)); }
 void main(){
   float px = gl_FragCoord.x, py = uRes.y - gl_FragCoord.y;
   vec2 w = vec2(uCam.x + (px - uRes.x*.5 - uOff.x)/uPpu, uCam.y + (py - uH0 - uOff.y)/(${SIN.toFixed(2)}*uPpu));
-  vec2 uv = w*38.0/uTexSz; vec3 alb = texture(uTex, uv).rgb;
+  vec2 uv = w*38.0/uTexSz; vec3 alb = kuwa(uv);
   float e = 1.6/uTexSz, hx = lum(uv+vec2(e,0.)) - lum(uv-vec2(e,0.)), hz = lum(uv+vec2(0.,e)) - lum(uv-vec2(0.,e));
   vec3 N = normalize(vec3(-hx*uK, 1.0, -hz*uK)); vec3 acc = vec3(0.0);
   for (int i=0;i<${NL};i++){ if (i>=uN) break; vec4 l = uL[i]; vec3 d = vec3(l.x-w.x, l.z, l.y-w.y); float dist = length(d.xz); float att = clamp(1.0-dist/l.w,0.,1.); att*=att;
     vec3 L = normalize(d); float diff = max(dot(N,L),0.) - L.y; acc += uC[i]*att*diff; }
-  o = vec4(clamp(alb*(1.0+acc*1.7), 0.0, 1.0), 1.0);
+  vec3 col = alb*(1.0+acc*1.7); col *= vec3(1.05,1.0,0.93); col += (hash(gl_FragCoord.xy)-.5)*0.045;
+  o = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
 const VS_SPR = `#version 300 es
 layout(location=0) in vec2 aP; layout(location=1) in vec2 aT; layout(location=2) in float aA; uniform vec2 uRes; out vec2 vT; out float vA;
 void main(){ vT = aT; vA = aA; gl_Position = vec4(aP.x/uRes.x*2.0-1.0, 1.0-aP.y/uRes.y*2.0, 0.0, 1.0); }`;
 const FS_SPR = `#version 300 es
 precision mediump float; uniform sampler2D uTex; in vec2 vT; in float vA; out vec4 o;
-void main(){ o = texture(uTex, vT) * vA; }`;
+void main(){ vec4 t = texture(uTex, vT); o = vA < 0.0 ? vec4(0.0,0.0,0.0,t.a*-vA) : t*vA; }`;
 
 function prog(gl, vs, fs) {
   const mk = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(x)); return x; };
@@ -138,6 +147,17 @@ export class GLRenderer {
     const B = this.buf; let o = this.n * 30;
     B[o++] = x0; B[o++] = y0; B[o++] = u0; B[o++] = v0; B[o++] = alpha; B[o++] = x1; B[o++] = y1; B[o++] = u1; B[o++] = v0; B[o++] = alpha; B[o++] = x2; B[o++] = y2; B[o++] = u1; B[o++] = v1; B[o++] = alpha;
     B[o++] = x0; B[o++] = y0; B[o++] = u0; B[o++] = v0; B[o++] = alpha; B[o++] = x2; B[o++] = y2; B[o++] = u1; B[o++] = v1; B[o++] = alpha; B[o++] = x3; B[o++] = y3; B[o++] = u0; B[o++] = v1; B[o++] = alpha;
+    this.n++; this.stats.quads++;
+  }
+  // sombra projetada: o próprio sprite achatado e inclinado para a direita/baixo a partir da linha de base (luz alta à esquerda)
+  shadow(img, sx, sy, sw, sh, dx, dy, dw, dh, baseY, a, flip) {
+    if (a <= 0.003 || img.complete === false) return; const tx = this.texFor(img, false); if (!tx) return;
+    if (tx !== this.cur || this.curAdd || this.n >= MAXQ) { this.flush(); this.cur = tx; this.curAdd = false; }
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, u0 = (sx + 0.5) / iw, v0 = (sy + 0.5) / ih, u1 = (sx + sw - 0.5) / iw, v1 = (sy + sh - 0.5) / ih;
+    const K = 0.55, S = 0.34, P = (x, y) => [x + (baseY - y) * K, baseY + (baseY - y) * S];
+    const L = flip ? u1 : u0, R = flip ? u0 : u1, [x0, y0] = P(dx, dy), [x1, y1] = P(dx + dw, dy), [x2, y2] = P(dx + dw, dy + dh), [x3, y3] = P(dx, dy + dh), m = -a, B = this.buf; let o = this.n * 30;
+    B[o++] = x0; B[o++] = y0; B[o++] = L; B[o++] = v0; B[o++] = m; B[o++] = x1; B[o++] = y1; B[o++] = R; B[o++] = v0; B[o++] = m; B[o++] = x2; B[o++] = y2; B[o++] = R; B[o++] = v1; B[o++] = m;
+    B[o++] = x0; B[o++] = y0; B[o++] = L; B[o++] = v0; B[o++] = m; B[o++] = x2; B[o++] = y2; B[o++] = R; B[o++] = v1; B[o++] = m; B[o++] = x3; B[o++] = y3; B[o++] = L; B[o++] = v1; B[o++] = m;
     this.n++; this.stats.quads++;
   }
   flush() {

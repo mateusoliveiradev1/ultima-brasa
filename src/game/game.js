@@ -701,6 +701,15 @@ export class Game {
     { const [sx, sy] = this.proj3(h.x, 0, h.z); ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.ellipse(sx, sy, 0.62 * ppu, 0.62 * ppu * SIN * 0.7, 0, 0, TAU); ctx.fill(); }
     ctx.globalAlpha = 1;
     const wc = this.gl ? this.gl.begin(ctx) : ctx; this._fires = fires;
+    const T0 = now / 1000;
+    if (this.gl) { // sombras projetadas na GPU (props altos, inimigos e herói)
+      const gl = this.gl, SH = (S, fr, x, z, hh, al, face, sc = 1) => { const [sx, sy] = this.proj3(x, 0, z), h2 = hh * sc, w2 = (h2 * S.fw) / S.fh; gl.shadow(S.canvas, fr * S.fw, 0, S.fw, S.fh, sx - w2 / 2, sy - h2 * 0.93, w2, h2, sy, al, face < 0); };
+      for (const it of items) {
+        if (it.k === 0) { const p = it.o; if (p.def.flat || !['ruin', 'tree', 'pillar', 'barrel', 'wreck', 'spire', 'crystal'].includes(p.type)) continue; const [sx, sy] = this.proj3(p.x, 0, p.z), w = p.def.w * ppu, hh = p.def.h * ppu; gl.shadow(p.def.canvas, 0, 0, p.def.canvas.width, p.def.canvas.height, sx - w / 2, sy - hh * p.def.anchor, w, hh, sy, 0.42 * p.a, p.flip); }
+        else if (it.k === 2) { const e = it.o; if (e.d.fly) continue; const { S } = this.art.sheetFor(e.d); SH(S, Math.floor(e.anim * 1.6) % S.frames, e.x, e.z, S.h * ppu, 0.4 * e.spawn, e.face, e.sc || 1); }
+        else if (it.k === 3) { const S = this.art.sheets.player; SH(S, h.moving ? Math.floor(h.anim * 7.5) % S.frames : (Math.floor(T0 * 1.8) % 2) * 2, h.x, h.z, S.h * ppu, 0.45, h.face); }
+      }
+    }
     // sprites ordenados
     const T = now / 1000;
     for (const gh of this.ghosts) { const S = this.art.sheets.player, [sx, sy] = this.proj3(gh.x, 0, gh.z), hh = S.h * ppu, w = (hh * S.fw) / S.fh, fr = Math.floor(gh.an * 7.5) % S.frames; wc.save(); wc.translate(sx, sy + hh * 0.07); if (gh.face < 0) wc.scale(-1, 1); wc.globalCompositeOperation = 'lighter'; wc.globalAlpha = gh.a; wc.drawImage(this.art.flash.player, fr * S.fw, 0, S.fw, S.fh, -w / 2, -hh, w, hh); wc.restore(); }
