@@ -73,5 +73,5 @@ export function buildMap(spec) {
       def: { w, h, canvas: cv0, anchor: 1, flat: decal, shadow: !decal && h > 0.9, tall: !decal && h > 3 } });
   }
   const half = spec.ground.half, lights = (spec.lights || []).map((l) => ({ x: l.x + ox, z: l.z + oz, color: l.color, i: l.i, r: l.r }));
-  return { name: spec.name, ox, oz, half, macro: macroFor(spec), lights, props, bounds: [bx0 + ox - 1, bx1 + ox + 1, bz0 + oz - 1, bz1 + oz + 1] };
+  return { name: spec.name, ox, oz, half, macro: macroFor(spec), lights, props, arena: spec.arena ? { x: spec.arena.x + ox, z: spec.arena.z + oz, r: spec.arena.r } : null, bounds: [bx0 + ox - 1, bx1 + ox + 1, bz0 + oz - 1, bz1 + oz + 1] };
 }

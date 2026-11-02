@@ -451,8 +451,8 @@ export class Game {
     if (!this.bossSpawned) { this.eventT -= dt; if (this.eventT <= 0 && t > 20) this.runEvent(); }
     if (this.tideT > 0) this.tideT -= dt;
     if (!this.bossSpawned && t >= this.bossAt) {
-      this.bossSpawned = true; const [x, z] = this.ringPos(1), b = this.spawnEnemy((this.bossN + (this.bossFlip ? 1 : 0)) % 2 === 0 ? B.boss : (B.boss2 || B.boss), x, z); b.hp *= (1 + this.bossN * 0.7) * (this.D?.boss || 1); b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
-      this.hooks.onBoss?.(b); A.sfx('bell', { vol: 0.8, rate: 0.5 }); this.cam.shake = 0.8; this.ring(this.hero.x, this.hero.z, 13, '#ff4a2a', 1.2, 0.3); this.ring(this.hero.x, this.hero.z, 8, '#ffb347', 0.9, 0.18); this.flashA = 0.35; this.flashCol = '#ff3a1a';
+      this.bossSpawned = true; const AR = this.world.map?.arena, inArena = AR && Math.hypot(this.hero.x - AR.x, this.hero.z - AR.z) < 70, [x, z] = inArena ? [AR.x, AR.z] : this.ringPos(1), b = this.spawnEnemy((this.bossN + (this.bossFlip ? 1 : 0)) % 2 === 0 ? B.boss : (B.boss2 || B.boss), x, z); b.hp *= (1 + this.bossN * 0.7) * (this.D?.boss || 1); b.maxHp = b.hp; b.dmg *= 1 + this.bossN * 0.25; this.boss = b;
+      this.hooks.onBoss?.(b); A.sfx('bell', { vol: 0.8, rate: 0.5 }); this.cam.shake = 0.8; this.ring(this.hero.x, this.hero.z, 13, '#ff4a2a', 1.2, 0.3); this.ring(this.hero.x, this.hero.z, 8, '#ffb347', 0.9, 0.18); this.flashA = 0.35; this.flashCol = '#ff3a1a'; if (inArena) { this.ring(AR.x, AR.z, AR.r, '#ff4a2a', 1.4, 0.35); this.ring(AR.x, AR.z, AR.r * 0.6, '#ffb347', 1.0, 0.2); }
       for (const e of this.enemies) if (!e.d.boss && rnd() < 0.5) e.dead = true;
     }
     if (!this.bossSpawned && B.subs) for (let k = 0; k < B.subs.length; k++) {

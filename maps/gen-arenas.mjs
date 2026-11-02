@@ -26,7 +26,7 @@ def('ruinas-arena', 'ruinas', 'Ruínas 07 — Coliseu de Sucata', 'Uma arena de 
   frame(m, ['wall', 'ruin', 'wreck', 'container', 'boulder', 'deadbush'], { inset: 1.8, step: 4.2 });
   m.scatter(['deadbush', 'skeleton', 'crate', 'tires', 'boulder'], 8, [-27, 27, -23, 19]); m.scatter(['puddle', 'crater'], 4, [-26, 26, -20, 18]);
   glow(m, 0, 0, '#ffb060', 0.9, 8); glow(m, -23, -12, FIRE, 0.7, 6); glow(m, 23, -12, FIRE, 0.7, 6);
-});
+}, { arena: { x: 0, z: 0, r: 14 } });
 
 def('pantano-arena', 'pantano', 'Pântano 04 — Clareira da Matriarca', 'Salgueiros e totens fecham uma clareira de musgo; o círculo de runas no centro pulsa em verde.', 171, {
   paths: [X, Y, Z], patches: [{ type: 'moss', x: 0, z: 0, rx: 16, rz: 10 }, { type: 'mud', x: 0, z: 0, rx: 8, rz: 5 }, { type: 'water', x: -22, z: -12, rx: 7, rz: 3.8 }, { type: 'water', x: 22, z: 12, rx: 7, rz: 3.8 }, { type: 'water', x: 22, z: -12, rx: 6, rz: 3.4 }, { type: 'water', x: -22, z: 12, rx: 6, rz: 3.4 }],
@@ -41,7 +41,7 @@ def('pantano-arena', 'pantano', 'Pântano 04 — Clareira da Matriarca', 'Salgue
   frame(m, ['mangrove', 'willow', 'mangrove', 'reeds', 'boulder'], { inset: 1.8, step: 3.5, depth: 2 });
   m.scatter(['reeds', 'shroom', 'skeleton', 'boulder'], 8, [-27, 27, -23, 19]); m.scatter(['puddle', 'crater'], 4, [-26, 26, -20, 18]);
   glow(m, 0, 0, G, 1.5, 9); glow(m, -22, -12, '#5ae870', 0.8, 6); glow(m, 22, 12, '#5ae870', 0.8, 6);
-});
+}, { arena: { x: 0, z: 0, r: 14 } });
 
 def('deserto-arena', 'deserto', 'Deserto 05 — Anel de Pedra', 'Mesas, obeliscos e cruzes de ferro desenham um anel perfeito na areia; no centro, o círculo ainda queima.', 181, {
   paths: [X, Y, Z], patches: [{ type: 'sand', x: 0, z: 0, rx: 16, rz: 10 }, { type: 'scorch', x: 0, z: 0, rx: 7, rz: 4.4 }, { type: 'rock', x: -22, z: -12, rx: 7, rz: 3.6 }, { type: 'rock', x: 22, z: 12, rx: 7, rz: 3.6 }, { type: 'sand', x: 22, z: -12, rx: 6, rz: 3.4 }, { type: 'sand', x: -22, z: 12, rx: 6, rz: 3.4 }],
@@ -56,7 +56,7 @@ def('deserto-arena', 'deserto', 'Deserto 05 — Anel de Pedra', 'Mesas, obelisco
   frame(m, ['mesa', 'boulder', 'cactus', 'sandmound', 'spire'], { inset: 1.8, step: 4.2 });
   m.scatter(['cactus', 'deadbush', 'skeleton', 'boulder'], 8, [-27, 27, -23, 19]); m.scatter(['crater'], 3, [-26, 26, -20, 18]);
   glow(m, 0, 0, '#ff6a28', 1.3, 9); glow(m, 0, 0, '#ffb060', 0.7, 6);
-});
+}, { arena: { x: 0, z: 0, r: 14 } });
 
 def('tundra-arena', 'tundra', 'Tundra 05 — Anel de Gelo', 'Paredões de gelo e ossos fecham um círculo congelado; as fendas azuis do chão brilham sob o ritual.', 191, {
   paths: [X, Y, Z], patches: [{ type: 'ice', x: 0, z: 0, rx: 16, rz: 10 }, { type: 'snow', x: 0, z: 0, rx: 7, rz: 4.4 }, { type: 'snow', x: -22, z: -12, rx: 7, rz: 3.6 }, { type: 'snow', x: 22, z: 12, rx: 7, rz: 3.6 }, { type: 'rock', x: 22, z: -12, rx: 6, rz: 3.4 }, { type: 'rock', x: -22, z: 12, rx: 6, rz: 3.4 }],
@@ -71,4 +71,4 @@ def('tundra-arena', 'tundra', 'Tundra 05 — Anel de Gelo', 'Paredões de gelo e
   frame(m, ['snowpine', 'icewall', 'boulder', 'iceshard', 'snowdrift', 'bonepile'], { inset: 1.8, step: 3.8, depth: 2 });
   m.scatter(['snowdrift', 'skeleton', 'boulder', 'iceshard'], 8, [-27, 27, -23, 19]);
   glow(m, 0, 0, ICE, 1.5, 9); glow(m, 0, 0, '#ffb070', 0.6, 6); glow(m, -22, -12, '#ffb070', 0.8, 6); glow(m, 22, 12, '#ffb070', 0.8, 6);
-});
+}, { arena: { x: 0, z: 0, r: 14 } });

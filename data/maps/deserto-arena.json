@@ -985,6 +985,11 @@
   }
  ],
  "smoke": [],
+ "arena": {
+  "x": 0,
+  "z": 0,
+  "r": 14
+ },
  "biome": "deserto",
  "blurb": "Mesas, obeliscos e cruzes de ferro desenham um anel perfeito na areia; no centro, o círculo ainda queima.",
  "tint": {

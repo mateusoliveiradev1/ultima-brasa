@@ -1574,6 +1574,11 @@
   }
  ],
  "smoke": [],
+ "arena": {
+  "x": 0,
+  "z": 0,
+  "r": 14
+ },
  "biome": "pantano",
  "blurb": "Salgueiros e totens fecham uma clareira de musgo; o círculo de runas no centro pulsa em verde.",
  "tint": {

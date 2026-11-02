@@ -1381,6 +1381,11 @@
   }
  ],
  "smoke": [],
+ "arena": {
+  "x": 0,
+  "z": 0,
+  "r": 14
+ },
  "biome": "tundra",
  "blurb": "Paredões de gelo e ossos fecham um círculo congelado; as fendas azuis do chão brilham sob o ritual.",
  "tint": {

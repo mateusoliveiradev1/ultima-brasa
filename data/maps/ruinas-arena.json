@@ -946,6 +946,11 @@
   }
  ],
  "smoke": [],
+ "arena": {
+  "x": 0,
+  "z": 0,
+  "r": 14
+ },
  "biome": "ruinas",
  "blurb": "Uma arena de contêineres e carcaças erguida por saqueadores; braseiros nos portões e estandartes de quem não saiu."
 }
