@@ -22,8 +22,8 @@ def('deserto-cemiterio', 'deserto', 'Deserto 01 — Cemitério de Ferro', 'Carca
   set(m, 8, -4.4, [['sign', 0, 0], ['skeleton', 2.6, 1], ['crater', -1.8, 2.8, { force: true }]]);
   set(m, -9, 3.4, [['wreck', 0, 0], ['ironcross', 3.4, 0.6], ['sandbags', -3.2, 1.6]]);
   along(m, ['ironcross', 'cactus', 'deadbush', 'bonepile'], CE, { step: 6, off: 3.8, skip: 0.45 });
-  frame(m, ['mesa', 'boulder', 'cactus', 'wreck', 'sandmound', 'spire'], { inset: 1.8, step: 4.2, depth: 1 });
-  m.scatter(['cactus', 'deadbush', 'skeleton', 'sandmound', 'boulder', 'tires'], 14, [-27, 27, -23, 19]); m.scatter(['crater'], 5, [-26, 26, -20, 18]);
+  frame(m, ['mesa', 'boulder', 'cactus', 'bonepile', 'sandmound', 'spire', 'ironcross'], { inset: 1.8, step: 3.8, depth: 2 });
+  m.scatter(['cactus', 'deadbush', 'skeleton', 'sandmound', 'boulder', 'bonepile', 'cactus', 'spire'], 24, [-27, 27, -23, 19]); m.scatter(['crater'], 5, [-26, 26, -20, 18]);
   glow(m, 22, -9, FIRE, 1.0, 7); glow(m, 17, 6, FIRE, 0.8, 6); glow(m, -16, -9, WARM, 0.8, 7); glow(m, 0, -18, '#ff6a28', 0.9, 7); glow(m, -3, 11, FIRE, 0.7, 6); glow(m, 0, 0, WARM, 0.6, 5);
 });
 
@@ -47,7 +47,7 @@ def('deserto-oasis', 'deserto', 'Deserto 02 — Oásis Seco', 'Palmeiras mortas 
   set(m, -12, -3, [['palm', 0, 0], ['sandmound', 3.2, 1.6], ['cactus', -3, 1.6]]);
   along(m, ['cactus', 'deadbush', 'sandmound', 'palm'], OA, { step: 6, off: 3.6, skip: 0.4 });
   frame(m, ['mesa', 'palm', 'cactus', 'boulder', 'sandmound'], { inset: 1.8, step: 4, depth: 1 });
-  m.scatter(['cactus', 'deadbush', 'skeleton', 'sandmound', 'boulder'], 14, [-27, 27, -23, 19]); m.scatter(['crater'], 4, [-26, 26, -20, 18]);
+  m.scatter(['cactus', 'deadbush', 'skeleton', 'sandmound', 'boulder', 'cactus', 'spire', 'bonepile'], 24, [-27, 27, -23, 19]); m.scatter(['crater'], 4, [-26, 26, -20, 18]);
   glow(m, -18, 12, FIRE, 1.2, 7); glow(m, 21, 12, FIRE, 1.1, 7); glow(m, 0, -13, WARM, 0.7, 8); glow(m, -4, 11, '#ff6a28', 0.6, 6); glow(m, 0, 0, WARM, 0.6, 5);
 });
 
@@ -72,7 +72,7 @@ def('deserto-canion', 'deserto', 'Deserto 03 — Cânion das Mesas', 'Paredões 
   set(m, -12, 2.6, [['cactus', 0, 0], ['cactus', 2.4, 1.2], ['deadbush', -2.2, 1.4]]);
   along(m, ['cactus', 'deadbush', 'sandmound', 'spire'], CA, { step: 6, off: 3.6, skip: 0.4 });
   frame(m, ['mesa', 'spire', 'boulder', 'sandmound'], { inset: 1.6, step: 4.4, depth: 1 });
-  m.scatter(['cactus', 'deadbush', 'skeleton', 'sandmound', 'boulder'], 12, [-27, 27, -23, 19]); m.scatter(['crater'], 4, [-26, 26, -20, 18]);
+  m.scatter(['cactus', 'deadbush', 'skeleton', 'sandmound', 'boulder', 'spire', 'ironcross'], 20, [-27, 27, -23, 19]); m.scatter(['crater'], 4, [-26, 26, -20, 18]);
   glow(m, 3, -18, FIRE, 1.1, 7); glow(m, 3, -19.4, '#ff5a28', 1.3, 9); glow(m, -3, 11, FIRE, 1.1, 7); glow(m, -10, -4, WARM, 0.6, 5); glow(m, 11, -5, WARM, 0.6, 5); glow(m, 0, 0, WARM, 0.6, 5);
 });
 
