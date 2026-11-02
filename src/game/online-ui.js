@@ -57,7 +57,10 @@ export function mountOnline(H) {
           btn('go sm2', 'Salvar apelido', async () => { const r = await O.setNick(nick.value); const d = r.data; if (r.ok && d?.ok) { await loadProfile(); render(); await sync(false); } else msg.textContent = d?.err || r.err || 'Erro ao salvar'; }), msg);
         return;
       }
-      body.append(el('p', { class: 'hp-p' }, el('b', {}, prof.nick), el('br'), el('span', { class: 'dim' }, u.email || '')),
+      const place = el('div', { class: 'ac-place' }, el('span', { class: 'dim' }, 'Sua posição no ranking: carregando…'));
+      O.leaderboard('all', '', '', 'run').then((r) => { const me = r.ok && (r.data || []).find((x) => x.me); place.innerHTML = ''; place.append(me ? el('span', {}, 'Sua posição no ranking ', el('b', {}, '#' + me.rank), el('small', {}, ` · ${fmt(me.pts)} pontos`)) : el('span', { class: 'dim' }, r.ok ? 'Você ainda não está no ranking. Termine uma partida de 1 minuto ou mais.' : 'Não foi possível ver sua posição agora.')); });
+      const sv = SV.data(), hist = el('div', { class: 'ac-hist' }, ...[['Partidas', sv.runs], ['Vitórias', sv.wins], ['Melhor tempo', fmtTime(sv.best.time)], ['Abates', fmt(sv.kills)]].map(([a, v]) => el('div', {}, el('span', {}, a), el('b', {}, v))));
+      body.append(el('p', { class: 'hp-p' }, el('b', {}, prof.nick), el('br'), el('span', { class: 'dim' }, u.email || '')), place, hist,
         el('p', { class: 'hp-p dim' }, prof.save_at ? `Último save na nuvem: ${new Date(prof.save_at).toLocaleString('pt-BR')}` : 'Ainda sem save na nuvem.'),
         el('div', { class: 'dlg-foot on-btns' }, btn('sm', 'Sincronizar agora', async () => { await sync(true); await loadProfile(); render(); }), btn('sm', 'Sair da conta', () => { O.signOut(); prof = null; refreshLabel(); render(); })));
     };
@@ -82,9 +85,9 @@ export function mountOnline(H) {
       }
       const r = await O.leaderboard(st.tab === 'all' ? 'all' : st.tab === 'week' ? 'week' : st.tab === 'day' ? 'day' : 'all', st.biome, st.diff, st.tab === 'progress' ? 'progress' : 'run');
       list.innerHTML = ''; if (!r.ok) { list.append(el('div', { class: 'dim' }, 'Não foi possível carregar o ranking: ' + r.err)); return; }
-      const rows = r.data || []; if (!rows.length) { list.append(el('div', { class: 'dim' }, 'Ainda não há ninguém aqui. Seja o primeiro!')); return; }
-      rows.forEach((x) => list.append(el('div', { class: 'rk-row' + (x.me ? ' me' : '') }, el('b', { class: 'rk-n' }, '#' + x.rank), el('span', { class: 'rk-nick' }, x.nick, x.victory ? el('i', { title: 'Derrotou o chefe' }, ' ★') : null),
-        el('span', { class: 'rk-s dim' }, x.secs ? `${fmtTime(x.secs)} · ${fmt(x.kills)} abates · nv ${x.lvl}` : ''), el('b', { class: 'rk-p' }, fmt(x.pts)))));
+      const rows = r.data || []; if (!rows.length) { list.append(el('div', { class: 'dim' }, 'Ainda não há ninguém aqui. Termine uma partida de 1 minuto ou mais para abrir o ranking.')); return; }
+      rows.forEach((x, i) => { if (x.me && i > 0 && x.rank > rows[i - 1].rank + 1) list.append(el('div', { class: 'rk-gap dim' }, '···')); list.append(el('div', { class: 'rk-row' + (x.me ? ' me' : '') }, el('b', { class: 'rk-n' }, '#' + x.rank), el('span', { class: 'rk-nick' }, x.nick, x.victory ? el('i', { title: 'Derrotou o chefe' }, ' ★') : null),
+        el('span', { class: 'rk-s dim' }, x.secs ? `${fmtTime(x.secs)} · ${fmt(x.kills)} abates · nv ${x.lvl}` : ''), el('b', { class: 'rk-p' }, fmt(x.pts)))); });
     }
     box.append(tabs, filt, dailyBox, list); openDlg('Ranking', box); render();
   }
@@ -103,5 +106,5 @@ export function mountOnline(H) {
     checked = true;
   }
   boot();
-  return { buttons: [rankBtn, accountBtn], onRunEnd };
+  return { buttons: [rankBtn, accountBtn], onRunEnd, openRank, openAccount, label: () => (O.user() ? (prof?.nick ? `Conectado como ${prof.nick}` : 'Escolha seu apelido') : 'Entrar ou criar conta') };
 }

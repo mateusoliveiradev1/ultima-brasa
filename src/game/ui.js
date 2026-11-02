@@ -65,7 +65,7 @@ export async function mountGame(root) {
   const dlgCard = el('div', { class: 'ms-card dlg' }), dlg = el('div', { class: 'g-overlay ms', onclick: (e) => { if (e.target === dlg) closeDlg(); } }, dlgCard);
   ui.append(dlg);
   const openDlg = (title, ...kids) => { dlgCard.innerHTML = ''; dlgCard.append(el('h2', {}, title), ...kids, el('div', { class: 'dlg-foot' }, btn('sm pri', 'Fechar', closeDlg))); dlg.classList.add('show'); };
-  const closeDlg = () => { dlg.classList.remove('show'); SV.save(); };
+  const closeDlg = () => { dlg.classList.remove('show'); SV.save(); if (screen === 'title') refreshTitle(); };
   dlg.addEventListener('pointerdown', (e) => { if (e.target === dlg) closeDlg(); });
   const sw = (label, sub, key, on) => { const b = el('button', { class: 'sw' + (save.opts[key] ?? save[key] ? ' on' : ''), onmouseenter: sfxOver, onclick: () => { sfxClick(); on(); b.classList.toggle('on'); } }, el('i')); return el('div', { class: 'op-row' }, el('div', {}, el('b', {}, label), el('small', {}, sub)), b); };
   function openOptions() {
@@ -101,13 +101,14 @@ export async function mountGame(root) {
   const stat = el('div', { class: 'tt-stat' });
   const mkBtn = (label, sub, fn, cls = '') => el('button', { class: 'tt-btn ' + cls, onmouseenter: (e) => focusItem(e.currentTarget), onclick: () => { sfxClick(); fn(); } }, el('b', {}, label), el('small', {}, sub));
   const playBtn = mkBtn('JOGAR', '', () => goHub(), 'main');
-  const items = [playBtn, mkBtn('ÁRVORE DA BRASA', 'Gastar sucata e evoluir', () => { goHub(); openTree(); }), mkBtn('FORJA DE EFEITOS', 'Pinte os efeitos das habilidades', () => openForja())];
-  const sec = [['Como jogar', openHelp], ['Opções', openOptions], ['Créditos', openCredits]].map(([t, f]) => el('button', { class: 'tt-sec', onmouseenter: (e) => focusItem(e.currentTarget), onclick: () => { sfxClick(); f(); } }, t));
+  const rankItem = O.enabled() ? mkBtn('RANKING', 'Quem mais durou e o desafio do dia', () => online?.openRank()) : null;
+  const accItem = O.enabled() ? mkBtn('CONTA', 'Guarde seu progresso na nuvem', () => online?.openAccount()) : null;
+  const items = [playBtn, mkBtn('ÁRVORE DA BRASA', 'Gastar sucata e evoluir', () => { goHub(); openTree(); }), rankItem, accItem].filter(Boolean);
+  const sec = [['Como jogar', openHelp], ['Opções', openOptions], ['Créditos', openCredits], ['Início', () => { location.href = '/'; }]].map(([t, f]) => el('button', { class: 'tt-sec', onmouseenter: (e) => focusItem(e.currentTarget), onclick: () => { sfxClick(); f(); } }, t));
   const allItems = [...items, ...sec]; let focusIx = 0;
   function focusItem(b) { focusIx = Math.max(0, allItems.indexOf(b)); allItems.forEach((x, i) => x.classList.toggle('foc', i === focusIx)); }
   const title = el('div', { class: 'g-title' }, embers,
     el('div', { class: 'tt-side' },
-      el('div', { class: 'tt-kicker' }, 'roguelike incremental · pós-apocalipse'),
       el('h1', { class: 'tt-logo', 'aria-label': GAME_TITLE }, el('span', { class: 'a' }, 'ÚLTIMA'), el('span', { class: 'b' }, 'BRASA')),
       el('div', { class: 'tt-tag' }, 'O mundo acabou. A chama não.'),
       el('div', { class: 'tt-menu' }, ...items), el('div', { class: 'tt-secs' }, ...sec), stat),
@@ -125,6 +126,7 @@ export async function mountGame(root) {
   function refreshTitle() {
     const fresh = save.runs === 0 && save.lifetime < 50;
     playBtn.querySelector('b').textContent = fresh ? 'JOGAR' : 'CONTINUAR'; playBtn.querySelector('small').textContent = fresh ? 'Comece sua primeira expedição' : `Abrigo · ${BIOMES[save.biome].name}`;
+    if (accItem) accItem.querySelector('small').textContent = online?.label() || 'Guarde seu progresso na nuvem';
     stat.innerHTML = fresh ? '' : `<span>Patente <b>${patente()}</b></span><span>⬢ <b>${fmt(Math.floor(save.scrap))}</b></span>${save.cinzas ? `<span>Cinzas <b>${save.cinzas}</b></span>` : ''}<span>Melhor <b>${fmtTime(save.best.time)}</b></span>`;
   }
   function showTitle() {
@@ -137,7 +139,7 @@ export async function mountGame(root) {
     if (dlg.classList.contains('show')) { if (k === 'escape') closeDlg(); return; }
     if (msModal.classList.contains('show')) { if (k === 'escape' || k === 'enter') closeMs(); return; }
     if (k === 'arrowdown' || k === 's') focusIx = (focusIx + 1) % allItems.length; else if (k === 'arrowup' || k === 'w') focusIx = (focusIx - 1 + allItems.length) % allItems.length;
-    else if (k === 'arrowright' && focusIx >= 3) focusIx = 3 + ((focusIx - 3 + 1) % 3); else if (k === 'arrowleft' && focusIx >= 3) focusIx = 3 + ((focusIx - 3 + 2) % 3);
+    else if (k === 'arrowright' && focusIx >= items.length) focusIx = items.length + ((focusIx - items.length + 1) % sec.length); else if (k === 'arrowleft' && focusIx >= items.length) focusIx = items.length + ((focusIx - items.length + sec.length - 1) % sec.length);
     else if (k === 'enter' || k === ' ') { sfxClick(); allItems[focusIx].click(); return; } else return;
     focusItem(allItems[focusIx]); sfxOver();
   }
@@ -151,11 +153,10 @@ export async function mountGame(root) {
     el('div', { class: 'h-sp' }),
     el('div', { class: 'h-scrap', title: 'Sucata: moeda permanente' }, el('span', { class: 'ic' }, '⬢'), scrapVal, scrapRate),
     btn('sm', '← Menu', () => showTitle(), { title: 'Voltar ao menu inicial' }),
-    btn('sm', '♪', () => { save.music = !save.music; save.sfx = save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); SV.save(); syncSound(); }, { id: 'snd', title: 'Som ligado/desligado' }),
-    btn('sm', 'Forja de Efeitos', () => openForja(), { title: 'Pinte os efeitos das habilidades' }));
+    btn('sm', '♪', () => { save.music = !save.music; save.sfx = save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); SV.save(); syncSound(); }, { id: 'snd', title: 'Som ligado/desligado' }));
   let online = null;
   const startDailyRun = (info) => { save.biome = info.biome; save.diff = info.diff; save.depth = 1; SV.save(); renderAll(); startRun({ daily: true }); };
-  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime }); topbar.append(...online.buttons); }
+  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime }); online.buttons.forEach((b) => b.classList.add('h-online')); topbar.append(...online.buttons); }
   const syncSound = () => { const b = topbar.querySelector('#snd'); b.textContent = save.music ? '♪' : '✕'; b.classList.toggle('off', !save.music); };
 
   // painel esquerdo: sobrevivente
@@ -163,24 +164,25 @@ export async function mountGame(root) {
   const treeBadge = el('span', { class: 'badge' }), treeBtn = btn('go tb', ['ÁRVORE DA BRASA', treeBadge], () => openTree());
   const msBtn = btn('', '', () => openMilestones());
   const statsBox = el('div', { class: 'h-stats' });
-  const survivor = el('section', { class: 'g-panel h-surv' }, el('h2', {}, 'Sobrevivente', el('small', {}, 'sua conta permanente')),
+  const survivor = el('section', { class: 'g-panel h-surv' }, el('h2', {}, 'Seu progresso', el('small', {}, 'vale para todas as partidas')),
     el('div', { class: 'h-rankbox' }, rankName, el('div', { class: 'g-bar' }, rankBar), rankSub), cinzasRow, el('div', { class: 'h-actions' }, treeBtn, msBtn), statsBox);
 
   // painel direito: expedição
   const mapsBox = el('div', { class: 'h-maps' }), relicRow = el('div', { class: 'h-relics' });
   const depthVal = el('b', {}, '1'), depthInfo = el('div', { class: 'h-depthinfo' }), diffBox = el('div', { class: 'h-diffs' });
   const skillName = el('div', { class: 'h-skname' }), skillDesc = el('div', { class: 'h-skdesc' });
-  const go = btn('go', 'PARTIR', () => startRun());
+  const go = btn('go', 'JOGAR', () => startRun()), summaryLine = el('div', { class: 'h-sum' }), diffDesc = el('div', { class: 'h-diffdesc' });
   const expedition = el('section', { class: 'g-panel h-exp' },
-    el('h2', {}, 'Expedição', el('small', {}, 'sobreviva ' + fmtTime(BOSS_TIME) + ' e derrube o chefe do mapa')),
-    el('div', { class: 'h-sub' }, 'Mapa'), mapsBox,
-    el('div', { class: 'h-sub' }, 'Habilidade inicial'), relicRow, skillName, skillDesc,
-    el('div', { class: 'h-sub' }, 'Dificuldade'), diffBox,
-    el('div', { class: 'h-sub' }, 'Profundidade'),
-    el('div', { class: 'h-depth' }, btn('sm', '−', () => setDepth(-1)), el('div', { class: 'h-dv' }, 'Nível ', depthVal), btn('sm', '+', () => setDepth(1))), depthInfo, go);
-  const tabs = el('div', { class: 'h-tabs' }, btn('sm', 'Sobrevivente', () => setTab('surv'), { id: 'tsurv' }), btn('sm on', 'Expedição', () => setTab('exp'), { id: 'texp' }));
+    el('h2', {}, 'Nova partida', el('small', {}, 'aguente ' + fmtTime(BOSS_TIME) + ' e derrube o chefe')),
+    el('div', { class: 'h-sub' }, el('i', {}, '1'), 'Escolha o mapa'), mapsBox,
+    el('div', { class: 'h-sub' }, el('i', {}, '2'), 'Escolha a habilidade'), relicRow, skillName, skillDesc,
+    el('div', { class: 'h-sub' }, el('i', {}, '3'), 'Escolha a dificuldade'), diffBox, diffDesc,
+    el('details', { class: 'h-adv' }, el('summary', {}, 'Avançado: profundidade'),
+      el('div', { class: 'h-depth' }, btn('sm', '−', () => setDepth(-1)), el('div', { class: 'h-dv' }, 'Nível ', depthVal), btn('sm', '+', () => setDepth(1))), depthInfo),
+    el('div', { class: 'h-go' }, summaryLine, go));
+  const tabs = el('div', { class: 'h-tabs' }, btn('sm', 'Seu progresso', () => setTab('surv'), { id: 'tsurv' }), btn('sm on', 'Nova partida', () => setTab('exp'), { id: 'texp' }));
   const hub = el('div', { class: 'g-hub off', 'data-tab': 'exp' }, topbar, tabs, survivor, expedition);
-  ui.append(hub);
+  hub.dataset.tab = 'exp'; ui.append(hub);
   function setTab(t) { hub.dataset.tab = t; tabs.querySelector('#tsurv').classList.toggle('on', t === 'surv'); tabs.querySelector('#texp').classList.toggle('on', t === 'exp'); }
 
   const affordable = () => TREE.filter((n) => (save.meta[n.id] || 0) < n.max && nodeOpen(n.id, save.meta) && save.scrap >= nodeCost(n.id, save.meta[n.id] || 0)).length;
@@ -222,10 +224,11 @@ export async function mountGame(root) {
   }
   function renderDepth() {
     save.depth = Math.min(save.depth, save.depthMax); depthVal.textContent = save.depth; const D = DIFF[save.diff] || DIFF.normal, m0 = DEPTH_MULT(save.depth), m = { hp: m0.hp * D.hp, dmg: m0.dmg * D.dmg, scrap: m0.scrap * D.scrap }, b = BIOMES[save.biome];
-    depthInfo.innerHTML = `<div class="dim" style="color:${D.color}">${D.desc}</div>Inimigos <b>×${(m.hp * b.hp).toFixed(2)}</b> vida · <b>×${(m.dmg * b.dmg).toFixed(2)}</b> dano &nbsp;|&nbsp; Sucata <b class="g">×${(m.scrap * b.scrap).toFixed(2)}</b>` + (save.depthMax === save.depth && save.depthMax < 30 ? '<div class="dim">Vença um chefe para liberar a próxima profundidade.</div>' : '');
+    depthInfo.innerHTML = `Inimigos <b>×${(m.hp * b.hp).toFixed(2)}</b> vida · <b>×${(m.dmg * b.dmg).toFixed(2)}</b> dano &nbsp;|&nbsp; Sucata <b class="g">×${(m.scrap * b.scrap).toFixed(2)}</b>` + (save.depthMax === save.depth && save.depthMax < 30 ? '<div class="dim">Vença um chefe para liberar a próxima profundidade.</div>' : '');
   }
   function renderHubTop() { scrapVal.textContent = fmt(Math.floor(save.scrap)); const r = catadorRate(save.meta.catador) * catadorMul(save.meta) * SV.prestigeMul(); scrapRate.textContent = r > 0 ? `+${r.toFixed(2)}/s` : ''; }
-  function renderAll() { renderDiffs(); renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); syncSound(); if (treeOpen) refreshTree(); }
+  function renderSummary() { const d = DIFFS.find((x) => x.id === save.diff); summaryLine.textContent = `${BIOMES[save.biome].name} · ${SKILLS[save.startSkill].name} · ${d ? d.name : 'Normal'}`; diffDesc.textContent = d ? d.desc : ''; diffDesc.style.color = d ? d.color : ''; }
+  function renderAll() { renderDiffs(); renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); renderSummary(); syncSound(); if (treeOpen) refreshTree(); }
   function ENEMIES_NAME(id) { return ({ colosso: 'O Colosso', matriarca: 'A Matriarca', titan: 'Titã das Dunas', gigante: 'Gigante de Gelo' })[id]; }
 
   // ───────── Marcos ─────────
@@ -435,10 +438,17 @@ export async function mountGame(root) {
   }
 
   // ───────── fluxo ─────────
+  let tutTok = 0;
   function startRun(opts = {}) {
     A.init(); screen = 'run'; title.classList.remove('show'); embRun = false; hub.classList.add('off'); hud.classList.add('on'); slotKey = '';
     runFlags = { won: false, daily: !!opts.daily }; const mul = mulOf();
     game.startRun({ skill: save.startSkill, depth: save.depth, diff: save.diff, meta: { ...save.meta }, biome: save.biome, mul }); renderHubTop(); banner(BIOMES[save.biome].name, 2800, 'Sobreviva e derrube o chefe');
+    tutTok++; if (!save.opts.tut) { save.opts.tut = true; if (save.runs < 1) runTutorial(); SV.save(); }
+  }
+  function runTutorial() {
+    const touch = matchMedia('(pointer:coarse)').matches, run = tutTok;
+    const steps = [[3000, 'Mova-se', touch ? 'Arraste o dedo na metade esquerda da tela' : 'WASD ou setas do teclado'], [6600, 'Elas atacam sozinhas', 'Você só se posiciona; as habilidades disparam sem apertar nada'], [10200, 'Colete as gemas verdes', 'Cada gema enche a barra de nível e libera cartas de melhoria'], [13800, 'Fuja com o Dash', touch ? 'Toque no botão Dash: invulnerável por um instante' : 'Espaço ou Shift: invulnerável por um instante']];
+    for (const [ms, t, sub] of steps) setTimeout(() => { if (screen === 'run' && game.mode === 'run' && !game.over && tutTok === run && !game.paused && !levelUp.classList.contains('show')) banner(t, 3200, sub); }, ms);
   }
   function toHub() { screen = 'hub'; game.camHub = { x: 2.4, z: 0.5 }; hub.classList.remove('off'); hud.classList.remove('on'); game.enterHub({ skill: save.startSkill, biome: save.biome }); renderAll(); }
 
