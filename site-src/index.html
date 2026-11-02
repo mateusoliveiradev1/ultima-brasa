@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Última Brasa — roguelike pós-apocalíptico no navegador</title>
+<meta name="description" content="Sobreviva 5 minutos, derrube o chefe e acenda a Árvore da Brasa. Roguelike incremental pós-apocalíptico grátis, direto no navegador, no PC ou no celular.">
+<meta name="theme-color" content="#0a0708">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Última Brasa — o mundo acabou, a chama não">
+<meta property="og:description" content="Roguelike incremental pós-apocalíptico. Jogue agora no navegador e entre no ranking.">
+<meta property="og:image" content="https://ultima-brasa.vercel.app/img/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="{{FAVICON}}">
+<link rel="preload" as="image" href="/img/hero.jpg">
+<style>{{CSS}}</style>
+</head>
+<body>
+<a class="skip" href="#principal">Pular para o conteúdo</a>
+
+<header class="top" id="topo">
+  <a class="brand" href="/" aria-label="Última Brasa — início">ÚLTIMA <b>BRASA</b></a>
+  <nav class="nav" aria-label="Seções">
+    <a href="#ranking">Ranking</a>
+    <a href="#como-jogar">Como jogar</a>
+    <a href="#biomas">Biomas</a>
+  </nav>
+  <div class="top-act">
+    <a class="btn ghost" href="#conta" id="top-conta">Entrar</a>
+    <a class="btn primary" href="/jogar/">Jogar</a>
+  </div>
+</header>
+
+<main id="principal">
+  <section class="hero" aria-labelledby="h1">
+    <div class="hero-img" role="img" aria-label="O sobrevivente com uma lanterna no centro de um cruzamento em brasa, cercado de ruínas"></div>
+    <div class="hero-in">
+      <h1 id="h1">O mundo acabou.<br>A chama não.</h1>
+      <p class="lead">Sobreviva cinco minutos, derrube o chefe e gaste a sucata na Árvore da Brasa. Cada expedição te deixa mais forte para a próxima.</p>
+      <div class="cta">
+        <a class="btn primary xl" href="/jogar/" id="cta-jogar">Jogar agora</a>
+        <a class="btn ghost xl" href="#ranking">Ver o ranking</a>
+      </div>
+      <p class="fine">Grátis, sem baixar nada. Funciona no PC e no celular. Conta é opcional.</p>
+    </div>
+  </section>
+
+  <section class="sec rank" id="ranking" aria-labelledby="h-rank">
+    <div class="wrap grid-rank">
+      <div class="rank-main">
+        <h2 id="h-rank">Quem mais durou</h2>
+        <div class="tabs" role="tablist" aria-label="Tipo de ranking" id="rank-tabs">
+          <button role="tab" aria-selected="true" data-scope="all" data-board="run">Geral</button>
+          <button role="tab" aria-selected="false" data-scope="week" data-board="run">Semana</button>
+          <button role="tab" aria-selected="false" data-scope="day" data-board="run">Desafio de hoje</button>
+          <button role="tab" aria-selected="false" data-scope="all" data-board="progress">Evolução</button>
+        </div>
+        <div class="board" id="board" aria-live="polite" aria-busy="true">
+          <p class="state">Carregando o ranking…</p>
+        </div>
+      </div>
+      <aside class="rank-side" aria-label="Desafio do dia">
+        <h3>Desafio de hoje</h3>
+        <p class="daily" id="daily">Mapa e dificuldade mudam todo dia, iguais para todo mundo.</p>
+        <a class="btn primary" href="/jogar/">Jogar o desafio</a>
+        <p class="fine" id="rank-note">Pontos = abates + nível × 25 + tempo × 3, mais 3000 se você vencer o chefe, multiplicados pela dificuldade.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="sec how" id="como-jogar" aria-labelledby="h-how">
+    <div class="wrap">
+      <h2 id="h-how">Como se joga</h2>
+      <ol class="steps">
+        <li>
+          <h3>Entre na expedição</h3>
+          <p>Escolha o mapa e a habilidade inicial. Você anda, a habilidade acerta sozinha, e o <b>Dash</b> tira você do aperto. Aguente cinco minutos e derrube o chefe.</p>
+        </li>
+        <li>
+          <h3>Junte sucata</h3>
+          <p>Cada inimigo derrubado solta sucata. Ao subir de nível você escolhe uma melhoria para a partida. Morrer não zera nada: a sucata vai com você.</p>
+        </li>
+        <li>
+          <h3>Acenda a Árvore da Brasa</h3>
+          <p>Gaste a sucata em melhorias permanentes, destrave habilidades e biomas, e volte mais forte em dificuldades maiores.</p>
+        </li>
+      </ol>
+      <p class="controls"><b>Teclado:</b> WASD ou setas para andar, Espaço para o Dash. <b>Celular:</b> arraste na tela para o joystick, toque em Dash.</p>
+    </div>
+  </section>
+
+  <section class="sec biomes" id="biomas" aria-labelledby="h-bio">
+    <div class="wrap"><h2 id="h-bio">Quatro biomas, vinte e um mapas</h2>
+    <p class="sub">Cada bioma abre quando você vence o anterior. Cada expedição sorteia um mapa novo.</p></div>
+    <div class="strip">
+      <article tabindex="0" style="--img:url(/img/ruinas.jpg)"><div><h3>Ruínas Cinzentas</h3><p>Asfalto, ferro e fogueiras de saqueadores. É aqui que tudo começa.</p></div></article>
+      <article tabindex="0" style="--img:url(/img/pantano.jpg)"><div><h3>Pântano Tóxico</h3><p>Mangues, água parada e cogumelos que brilham no escuro.</p></div></article>
+      <article tabindex="0" style="--img:url(/img/deserto.jpg)"><div><h3>Deserto de Sucata</h3><p>Cemitérios de carcaças e mesas de arenito sob um sol de brasa.</p></div></article>
+      <article tabindex="0" style="--img:url(/img/tundra.jpg)"><div><h3>Tundra Cinzenta</h3><p>Gelo rachado e ossos congelados. O único calor é o seu.</p></div></article>
+    </div>
+  </section>
+
+  <section class="sec conta" id="conta" aria-labelledby="h-conta">
+    <div class="wrap grid-conta">
+      <div>
+        <h2 id="h-conta">Guarde o que você queimou</h2>
+        <p class="lead sm">Com uma conta, seu progresso fica salvo na nuvem, você joga do celular e do PC com o mesmo save e aparece no ranking com o seu apelido.</p>
+        <p class="fine">Só e-mail e senha. Sem rede social.</p>
+      </div>
+      <div class="card" id="account" aria-live="polite">
+        <p class="state">Carregando…</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap"><a class="brand sm" href="/">ÚLTIMA <b>BRASA</b></a><span>v0.6 · feito para jogar rápido.</span><a href="/jogar/">Jogar</a></div>
+</footer>
+<script>{{JS}}</script>
+</body>
+</html>
