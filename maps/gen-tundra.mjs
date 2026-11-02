@@ -21,8 +21,8 @@ def('tundra-posto', 'tundra', 'Tundra 01 — Posto Congelado', 'Um posto de estr
   set(m, 25, 5, [['watchtower', 0, 0], ['sandbags', -2.8, 2.2], ['snowpine', 3.4, 2.6]]);
   set(m, -26, 6, [['bus', 0, 0], ['snowdrift', 4, 1.4], ['snowdrift', -3.6, 2], ['skeleton', 2, 3.4]]);
   along(m, ['snowpine', 'snowdrift', 'lamp', 'snowdrift'], PO, { step: 6, off: 3.8, skip: 0.4 });
-  frame(m, ['snowpine', 'icewall', 'boulder', 'iceshard', 'snowdrift', 'wreck'], { inset: 1.8, step: 3.8, depth: 2 });
-  m.scatter(['snowdrift', 'snowpine', 'skeleton', 'boulder', 'iceshard', 'tires'], 14, [-27, 27, -23, 19]); m.scatter(['crater'], 3, [-26, 26, -20, 18]);
+  frame(m, ['snowpine', 'icewall', 'boulder', 'iceshard', 'snowdrift', 'bonepile', 'icewall'], { inset: 1.8, step: 3.8, depth: 2 });
+  m.scatter(['snowdrift', 'snowpine', 'skeleton', 'boulder', 'iceshard', 'bonepile', 'snowdrift'], 14, [-27, 27, -23, 19]); m.scatter(['crater'], 3, [-26, 26, -20, 18]);
   glow(m, 4, -14, FIRE, 1.3, 8); glow(m, -15, -5.4, FIRE, 1.0, 7); glow(m, -3.4, -14.4, '#ffd8a0', 0.7, 6); glow(m, 11.6, -14.4, '#ffd8a0', 0.7, 6); glow(m, 18, -11, ICE, 0.8, 6); glow(m, -20, 12, ICE, 0.8, 6); glow(m, 0, 0, '#cfe8ff', 0.6, 5);
 });
 
