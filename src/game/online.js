@@ -24,7 +24,7 @@ async function raw(path, { method = 'GET', body, token } = {}) {
     const txt = await r.text(); let j = null; try { j = txt ? JSON.parse(txt) : null; } catch { j = null; }
     if (!r.ok) return { ok: false, status: r.status, err: j?.message || j?.msg || j?.error_description || `erro ${r.status}` };
     return { ok: true, data: j };
-  } catch { return { ok: false, err: 'sem conexão' }; }
+  } catch { return { ok: false, err: 'Sem conexão com o servidor. Confira sua internet e tente de novo.' }; }
 }
 async function token() {
   if (!sess) return null;
