@@ -121,21 +121,21 @@ export function paintSandMound(seed = 1) {
 }
 
 export const CATALOG2 = [
-  { id: 'mangrove', name: 'Mangue retorcido', paint: paintMangrove, n: 3, h: 6.2, thick: [0.3, 3], tags: ['pantano'] },
-  { id: 'reeds', name: 'Juncos', paint: paintReeds, n: 3, h: 2.0, thick: [0.2, 2], tags: ['pantano'] },
-  { id: 'shroom', name: 'Cogumelo luminoso', paint: paintShroom, n: 2, h: 2.4, thick: [0.4, 4], tags: ['pantano'], light: '#4af0c0', lightI: 0.5, lightR: 4 },
-  { id: 'stilthut', name: 'Palafita', paint: paintStiltHut, n: 2, h: 5.0, thick: [1.2, 8], tags: ['pantano'] },
+  { id: 'mangrove', name: 'Mangue retorcido', paint: paintMangrove, n: 5, h: 6.2, thick: [0.3, 3], tags: ['pantano'] },
+  { id: 'reeds', name: 'Juncos', paint: paintReeds, n: 5, h: 2.0, thick: [0.2, 2], tags: ['pantano'] },
+  { id: 'shroom', name: 'Cogumelo luminoso', paint: paintShroom, n: 4, h: 2.4, thick: [0.4, 4], tags: ['pantano'], light: '#4af0c0', lightI: 0.5, lightR: 4 },
+  { id: 'stilthut', name: 'Palafita', paint: paintStiltHut, n: 4, h: 5.0, thick: [1.2, 8], tags: ['pantano'] },
   { id: 'boat', name: 'Barco encalhado', paint: paintBoat, n: 2, h: 1.7, thick: [0.8, 5], tags: ['pantano'] },
-  { id: 'totem', name: 'Totem de ossos', paint: paintTotem, n: 2, h: 3.4, thick: [0.3, 3], tags: ['pantano', 'ermo'], light: '#4af0c0', lightI: 0.4, lightR: 3.5 },
+  { id: 'totem', name: 'Totem de ossos', paint: paintTotem, n: 4, h: 3.4, thick: [0.3, 3], tags: ['pantano', 'ermo'], light: '#4af0c0', lightI: 0.4, lightR: 3.5 },
   { id: 'ribs', name: 'Costelas gigantes', paint: paintRibs, n: 2, h: 3.4, thick: [0.5, 5], tags: ['deserto'] },
-  { id: 'cactus', name: 'Cacto', paint: paintCactus, n: 3, h: 3.2, thick: [0.3, 3], tags: ['deserto'] },
+  { id: 'cactus', name: 'Cacto', paint: paintCactus, n: 5, h: 3.2, thick: [0.3, 3], tags: ['deserto'] },
   { id: 'windpump', name: 'Cata-vento enferrujado', paint: paintWindPump, n: 2, h: 9, thick: [0.5, 5], tags: ['deserto', 'ermo'] },
-  { id: 'tires', name: 'Pilha de pneus', paint: paintTires, n: 2, h: 1.6, thick: [0.7, 5], tags: ['deserto', 'ruinas', 'acampamento'] },
-  { id: 'boulder', name: 'Pedregulho', paint: paintBoulder, n: 3, h: 2.2, thick: [0.8, 6], tags: ['ermo', 'deserto', 'tundra', 'pantano'] },
-  { id: 'iceshard', name: 'Cristal de gelo', paint: paintIceShard, n: 3, h: 3.6, thick: [0.5, 5], tags: ['tundra'], light: '#9ad0ff', lightI: 0.3, lightR: 3.5 },
-  { id: 'snowpine', name: 'Pinheiro morto', paint: paintSnowPine, n: 3, h: 7.4, thick: [0.3, 3], tags: ['tundra'] },
-  { id: 'snowdrift', name: 'Monte de neve', paint: paintSnowDrift, n: 2, h: 2.0, kind: 'decal', tags: ['tundra'] },
-  { id: 'sandmound', name: 'Duna baixa', paint: paintSandMound, n: 2, h: 2.0, kind: 'decal', tags: ['deserto'] },
+  { id: 'tires', name: 'Pilha de pneus', paint: paintTires, n: 3, h: 1.6, thick: [0.7, 5], tags: ['deserto', 'ruinas', 'acampamento'] },
+  { id: 'boulder', name: 'Pedregulho', paint: paintBoulder, n: 6, h: 2.2, thick: [0.8, 6], tags: ['ermo', 'deserto', 'tundra', 'pantano'] },
+  { id: 'iceshard', name: 'Cristal de gelo', paint: paintIceShard, n: 6, h: 3.6, thick: [0.5, 5], tags: ['tundra'], light: '#9ad0ff', lightI: 0.3, lightR: 3.5 },
+  { id: 'snowpine', name: 'Pinheiro morto', paint: paintSnowPine, n: 6, h: 7.4, thick: [0.3, 3], tags: ['tundra'] },
+  { id: 'snowdrift', name: 'Monte de neve', paint: paintSnowDrift, n: 5, h: 2.0, kind: 'decal', tags: ['tundra'] },
+  { id: 'sandmound', name: 'Duna baixa', paint: paintSandMound, n: 4, h: 2.0, kind: 'decal', tags: ['deserto'] },
 ];
 export const FOOT2 = {
   mangrove: { r: 0.9, block: true }, reeds: { r: 0.6, block: false }, shroom: { r: 0.7, block: true }, stilthut: { r: 2.0, block: true }, boat: { r: 1.5, block: true }, totem: { r: 0.5, block: true },

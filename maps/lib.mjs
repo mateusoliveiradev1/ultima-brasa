@@ -1,6 +1,7 @@
 // Biblioteca de composição dos mapas temáticos: cada mapa é um conjunto de "cenas" posicionadas à mão,
 // ligadas por estradas, com moldura de borda, luzes e detalhes soltos.
-import { createMap, distToPath } from '../src/shared/mapspec.js';
+import { createMap, distToPath, FOOT, PATH_HALF } from '../src/shared/mapspec.js';
+import { mulberry32 } from '../src/shared/util.js';
 
 export const TINT = {
   ruinas: {},
@@ -17,10 +18,24 @@ export const def = (key, biome, name, blurb, seed, ground, build, over = {}) => 
   MAPS[key] = () => {
     CUR = key; REJ[key] = [];
     const m = createMap({ ...BASE, ...over, name, seed, ground: { macroSeed: seed + 3, half: 32, paths: [], patches: [], ...ground } });
-    build(m); const { backdrop, platforms, ...spec } = m.spec; return { ...spec, biome, blurb, ...TINT[biome] };
+    build(m); varied(m.spec, seed); const { backdrop, platforms, ...spec } = m.spec; return { ...spec, biome, blurb, ...TINT[biome] };
   };
 };
 
+// Variedade final: escala e espelhamento por prop (orgânicos variam bastante, estruturas pouco), sem mudar a composição.
+const ORG = new Set(['snowpine', 'mangrove', 'willow', 'reeds', 'shroom', 'cactus', 'palm', 'boulder', 'snowdrift', 'iceshard', 'deadbush', 'tree', 'skeleton', 'bonepile', 'sandmound', 'spire', 'puddle', 'crater', 'totem', 'icewall', 'crystal', 'ribs']);
+const STR = new Set(['house', 'ruin', 'tower', 'tent', 'crate', 'barrel', 'sign', 'lamp', 'bus', 'wreck', 'tank', 'container', 'wall', 'pillar', 'stilthut', 'mesa', 'igloo', 'obelisk', 'ironcross', 'tires', 'banner', 'boat', 'watchtower', 'brazier', 'sandbags']);
+function varied(spec, seed) {
+  const r = mulberry32(seed * 7919 + 13);
+  for (const p of spec.props) {
+    const f = FOOT[p.id]; if (!f) continue; const org = ORG.has(p.id), str = STR.has(p.id); if (p.s) continue;
+    p.f = r() < 0.5 ? 1 : 0;
+    if (f.decal) { if (org) p.s = +(0.7 + r() * 0.8).toFixed(2); continue; }
+    const k = org ? 0.78 + r() * 0.62 : str ? 0.92 + r() * 0.2 : 1; if (k === 1) continue;
+    const grow = k > 1 && f.block && !(p.y > 0) && spec.ground.paths.some((pa) => distToPath(p.x, p.z, pa) < PATH_HALF + f.r * k + 0.25);
+    p.s = +(grow ? Math.min(k, 1) : k).toFixed(2);
+  }
+}
 const pick = (m, ids) => ids[(m.rnd() * ids.length) | 0];
 
 /** Amostra a curva Catmull-Rom (a mesma da trilha pintada) com espaçamento por comprimento de arco. */
