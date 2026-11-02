@@ -1,6 +1,1 @@
-{
-  "buildCommand": "node site-src/build-site.mjs",
-  "outputDirectory": "site",
-  "cleanUrls": true,
-  "trailingSlash": true
-}
+{"installCommand":"npm ci","buildCommand":"node site-src/build-site.mjs","outputDirectory":"site","cleanUrls":true,"trailingSlash":true}
