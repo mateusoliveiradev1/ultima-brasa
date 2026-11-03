@@ -20,13 +20,19 @@ const el = (tag, props = {}, ...kids) => {
   kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c)));
   return e;
 };
+const RAR = { comum: { n: 'Comum', c: '#b9ada0' }, rara: { n: 'Rara', c: '#4fb4f0' }, epica: { n: 'Épica', c: '#b57aff' }, lendaria: { n: 'Lendária', c: '#ffb347' } };
+const bossAt = (s, biome, minIdx) => DIFFS.some((d, i) => i >= minIdx && (s.bw?.[`${biome}|${d.id}`] || 0) > 0);
 const SKINS = [
-  { id: 'padrao', name: 'Sobrevivente', hint: 'A skin original.', ok: () => true },
-  { id: 'ruinas', name: 'Saqueador', hint: 'Derrote o chefe das Ruínas Cinzentas.', ok: (s) => (s.biomeWins.ruinas || 0) > 0 },
-  { id: 'pantano', name: 'Musgo Tóxico', hint: 'Derrote o chefe do Pântano Tóxico.', ok: (s) => (s.biomeWins.pantano || 0) > 0 },
-  { id: 'deserto', name: 'Nômade da Duna', hint: 'Derrote o chefe do Deserto de Sucata.', ok: (s) => (s.biomeWins.deserto || 0) > 0 },
-  { id: 'tundra', name: 'Geada', hint: 'Derrote o chefe da Tundra Cinzenta.', ok: (s) => (s.biomeWins.tundra || 0) > 0 },
-  { id: 'cinzas', name: 'Cinzas Eternas', hint: 'Renasça uma vez na Árvore da Brasa.', ok: (s) => s.rebirths > 0 },
+  { id: 'padrao', name: 'Sobrevivente', rar: 'comum', hint: 'A skin original.', ok: () => true },
+  { id: 'ruinas', name: 'Saqueador', rar: 'rara', hint: 'Derrote o chefe das Ruínas Cinzentas no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'ruinas', 1) },
+  { id: 'pantano', name: 'Musgo Tóxico', rar: 'rara', hint: 'Derrote o chefe do Pântano Tóxico no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'pantano', 1) },
+  { id: 'deserto', name: 'Nômade da Duna', rar: 'rara', hint: 'Derrote o chefe do Deserto de Sucata no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'deserto', 1) },
+  { id: 'tundra', name: 'Geada', rar: 'rara', hint: 'Derrote o chefe da Tundra Cinzenta no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'tundra', 1) },
+  { id: 'cacador', name: 'Caçador de Chefes', rar: 'epica', hint: 'Derrote 25 chefes.', ok: (s) => s.wins >= 25, prog: (s) => [s.wins, 25] },
+  { id: 'veterano', name: 'Veterano de Ferro', rar: 'epica', hint: 'Chegue à patente 20.', ok: (s) => patenteOf(s.lifetime) >= 20, prog: (s) => [patenteOf(s.lifetime), 20] },
+  { id: 'cinzas', name: 'Cinzas Eternas', rar: 'epica', hint: 'Renasça 3 vezes na Árvore da Brasa.', ok: (s) => s.rebirths >= 3, prog: (s) => [s.rebirths, 3] },
+  { id: 'calamidade', name: 'Calamidade', rar: 'epica', hint: 'Derrote um chefe na dificuldade Calamidade.', ok: (s) => (s.diffWins.calamidade || 0) > 0 },
+  { id: 'coroa', name: 'Coroa da Brasa', rar: 'lendaria', hint: 'Derrote um chefe na dificuldade Abissal.', ok: (s) => (s.diffWins.abissal || 0) > 0 },
 ];
 const PASSIVE_ICO = { dmg: '✦', cdr: '⟳', spd: '»', hp: '♥', regen: '✚', magnet: '◎', area: '◌', luck: '☘', armor: '▣', crit: '✺' };
 
@@ -197,15 +203,19 @@ export async function mountGame(root) {
   function setTab(t) { hub.dataset.tab = t; tabs.querySelector('#tsurv').classList.toggle('on', t === 'surv'); tabs.querySelector('#texp').classList.toggle('on', t === 'exp'); }
 
   const affordable = () => TREE.filter((n) => (save.meta[n.id] || 0) < n.max && nodeOpen(n.id, save.meta) && save.scrap >= nodeCost(n.id, save.meta[n.id] || 0)).length;
+  let skinInfo = null;
   function renderSkins() {
-    skinBox.innerHTML = ''; const cur = SKINS.find((k) => k.id === save.skin) || SKINS[0];
-    const row = el('div', { class: 'sk-row' }), label = el('div', { class: 'sk-name' }, el('b', {}, cur.name), el('small', {}, 'Só muda a aparência'));
+    skinBox.innerHTML = ''; const eq = SKINS.find((k) => k.id === save.skin) || SKINS[0], inf = SKINS.find((k) => k.id === skinInfo) || eq;
+    const row = el('div', { class: 'sk-row' }), got = SKINS.filter((k) => k.ok(save)).length;
     for (const k of SKINS) {
-      const P = PLAYER_SKINS[k.id], open = k.ok(save);
-      row.append(el('button', { class: 'sk' + (save.skin === k.id ? ' sel' : '') + (open ? '' : ' lock'), title: open ? k.name : `${k.name}: ${k.hint}`, 'aria-label': open ? k.name : `${k.name} (bloqueada). ${k.hint}`, style: `--a:${P.cloak[0]};--b:${P.scarf[1]};--c:${P.lant}`, onmouseenter: sfxOver,
-        onclick: () => { sfxClick(); if (!open) { showToast(`${k.name}: ${k.hint}`, 3600); return; } save.skin = k.id; art.setSkin(k.id); SV.save(); renderSkins(); } }, el('i')));
+      const P = PLAYER_SKINS[k.id], open = k.ok(save), R = RAR[k.rar];
+      row.append(el('button', { class: 'sk' + (save.skin === k.id ? ' sel' : '') + (inf.id === k.id ? ' look' : '') + (open ? '' : ' lock'), title: open ? k.name : `${k.name}: ${k.hint}`, 'aria-label': `${k.name}, ${R.n}${open ? '' : ' (bloqueada). ' + k.hint}`, style: `--a:${P.cloak[0]};--b:${P.scarf[1]};--c:${P.lant};--r:${R.c}`, onmouseenter: sfxOver,
+        onclick: () => { sfxClick(); skinInfo = k.id; if (open) { save.skin = k.id; art.setSkin(k.id); SV.save(); } renderSkins(); } }, el('i')));
     }
-    skinBox.append(el('div', { class: 'h-sub' }, 'Aparência'), row, label);
+    const open = inf.ok(save), pr = inf.prog && !open ? inf.prog(save) : null, R = RAR[inf.rar];
+    skinBox.append(el('div', { class: 'h-sub' }, 'Aparência', el('small', {}, `${got}/${SKINS.length}`)), row,
+      el('div', { class: 'sk-info' }, el('div', { class: 'sk-name' }, el('b', { style: `color:${R.c}` }, inf.name), el('em', { style: `color:${R.c};border-color:${R.c}` }, R.n), open && save.skin === inf.id ? el('small', {}, 'Equipada') : null),
+        open ? null : el('div', { class: 'sk-hint' }, el('span', {}, inf.hint), pr ? el('div', { class: 'g-bar' }, el('i', { style: `width:${Math.min(100, (pr[0] / pr[1]) * 100)}%` })) : null, pr ? el('small', {}, `${fmt(Math.min(pr[0], pr[1]))} / ${fmt(pr[1])}`) : null)));
   }
   function checkSkins(quiet) {
     const got = []; for (const k of SKINS) if (k.ok(save) && !save.skins[k.id]) { save.skins[k.id] = true; if (k.id !== 'padrao') got.push(k); }
@@ -443,7 +453,7 @@ export async function mountGame(root) {
     const b = BIOMES[r.biome]; let unlockMsg = [];
     const rec = { time: r.time > save.best.time && save.best.time > 0, kills: r.kills > save.best.kills && save.best.kills > 0, level: r.level > save.best.level && save.best.level > 0, combo: r.combo > (save.best.combo || 0) && (save.best.combo || 0) > 0 };
     if (r.victory && !runFlags.won) {
-      runFlags.won = true; save.wins++; { const dn = r.diff || 'normal'; const first = !(save.diffWins[dn] > 0); save.diffWins[dn] = (save.diffWins[dn] || 0) + 1; const di = DIFFS.findIndex((x) => x.id === dn); if (first && DIFFS[di + 1]) unlockMsg.push(`Dificuldade liberada: ${DIFFS[di + 1].name}`); } save.biomeWins[r.biome] = (save.biomeWins[r.biome] || 0) + 1;
+      runFlags.won = true; save.wins++; { const dn = r.diff || 'normal'; const first = !(save.diffWins[dn] > 0); save.diffWins[dn] = (save.diffWins[dn] || 0) + 1; const di = DIFFS.findIndex((x) => x.id === dn); if (first && DIFFS[di + 1]) unlockMsg.push(`Dificuldade liberada: ${DIFFS[di + 1].name}`); } save.biomeWins[r.biome] = (save.biomeWins[r.biome] || 0) + 1; { const k = `${r.biome}|${r.diff || 'normal'}`; save.bw[k] = (save.bw[k] || 0) + 1; }
       if (r.depth >= save.depthMax && save.depthMax < 30) { save.depthMax = r.depth + 1; unlockMsg.push(`Profundidade ${save.depthMax} liberada!`); }
       const newSkins = checkSkins(true); newSkins.forEach((k) => unlockMsg.push(`Nova skin: ${k.name}`));
       const ni = BIOME_ORDER.indexOf(r.biome) + 1; if (ni < BIOME_ORDER.length && save.biomeWins[r.biome] === 1) unlockMsg.push(`Novo mapa: ${BIOMES[BIOME_ORDER[ni]].name}`);

@@ -2,7 +2,7 @@
 // Os efeitos das habilidades vêm do mesmo motor da Forja (FxSystem) — o que se pinta lá aparece aqui.
 import { TAU, clamp, lerp, mulberry32, cv, rgba } from '../shared/util.js';
 import { PAL, FOG } from '../shared/theme.js';
-import { buildSheet, buildPickups, buildSoft, setPlayerSkin } from '../shared/art-chars.js';
+import { buildSheet, buildPickups, buildSoft, setPlayerSkin, PLAYER_SKINS } from '../shared/art-chars.js';
 import { buildGround } from '../shared/art-env.js';
 import { buildAllProps } from '../shared/art-props.js';
 import { buildBiomeProps, tintGround, recolor } from '../shared/art-biomes.js';
@@ -51,7 +51,7 @@ export async function buildArt(onProgress = () => {}) {
   const step = () => new Promise((r) => setTimeout(r, 0));
   const art = { sheets: {}, flash: {} };
   for (const n of ['player', 'raider', 'ghoul', 'drone', 'brute', 'boss', 'hound', 'shaman', 'scorpion']) { const s = buildSheet(n); art.sheets[n] = s; art.flash[n] = flashOf(s.canvas); onProgress(0.15 + Math.random() * 0.01); await step(); }
-  art.setSkin = (id) => { setPlayerSkin(id); const s = buildSheet('player'); art.sheets.player = s; art.flash.player = flashOf(s.canvas); };
+  art.setSkin = (id) => { art.skinId = PLAYER_SKINS[id] ? id : 'padrao'; const au = PLAYER_SKINS[art.skinId].aura; if (art.tex && au) { art.tex.aura = tintImg(art.k.k_spark, au.col); art.tex.auraSoft = tintImg(art.k.k_smoke, au.col); } setPlayerSkin(id); const s = buildSheet('player'); art.sheets.player = s; art.flash.player = flashOf(s.canvas); };
   art.pick = buildPickups(); art.scrap = scrapSprite(); art.soft = buildSoft(); onProgress(0.3); await step();
   art.ground = buildGround(512); onProgress(0.5); await step();
   art.baseProps = buildAllProps(); art.chest = chestSprite(); art.biomeCache = {}; onProgress(0.8); await step();
@@ -521,7 +521,21 @@ export class Game {
     this.cam.x = lerp(this.cam.x, h.x + h.vx * 0.12, 1 - Math.exp(-7 * dt)); this.cam.z = lerp(this.cam.z, h.z + h.vz * 0.12, 1 - Math.exp(-7 * dt));
     A.setIntensity(clamp(this.time / this.bossAt, 0, 1)); A.beat(dt, clamp(1 - h.hp / h.maxHp + this.time / this.bossAt * 0.5, 0, 1));
   }
+  auraTick(dt) {
+    const au = PLAYER_SKINS[this.art.skinId]?.aura; if (!au || this.paused || this.over || this.dying > 0) return;
+    this.auraT = (this.auraT || 0) - dt; if (this.auraT > 0) return; this.auraT = au.rate || 0.11;
+    const h = this.hero, x = h.x + (rnd() - 0.5) * 0.8, z = h.z + (rnd() - 0.5) * 0.5, k = au.kind, y = 0.2 + rnd() * 1.5;
+    const S = (o) => this.addSpark({ x, y, z, vx: 0, vy: 0, vz: 0, g: 0, a: 1, rot: rnd() * TAU, ...o });
+    if (k === 'embers') S({ tex: 'aura', vx: (rnd() - 0.5) * 0.7, vy: 1.1 + rnd(), vz: (rnd() - 0.5) * 0.4, life: 1.1 + rnd() * 0.6, s0: 0.3, s1: 0.05, add: true });
+    else if (k === 'sparks') S({ tex: 'aura', vx: (rnd() - 0.5) * 3, vy: 1.5 + rnd() * 2, vz: (rnd() - 0.5) * 2, life: 0.5, s0: 0.22, s1: 0.04, add: true, g: 9 });
+    else if (k === 'spores') S({ tex: 'aura', vx: (rnd() - 0.5) * 0.5, vy: 0.2 + rnd() * 0.4, vz: (rnd() - 0.5) * 0.5, life: 1.8, s0: 0.26, s1: 0.08, add: true });
+    else if (k === 'sand') S({ tex: 'auraSoft', y: 0.1 + rnd() * 0.5, vx: 1.2 + rnd(), vz: (rnd() - 0.5) * 0.4, vy: 0.1, life: 1, s0: 0.4, s1: 0.8, a: 0.4 });
+    else if (k === 'snow') S({ tex: 'aura', y: 1.8 + rnd() * 0.6, vx: (rnd() - 0.5) * 0.6, vy: -1, vz: (rnd() - 0.5) * 0.4, life: 1.5, s0: 0.2, s1: 0.16, a: 0.95 });
+    else if (k === 'mist') S({ tex: 'auraSoft', y: 0.2 + rnd() * 0.8, vx: (rnd() - 0.5) * 0.5, vy: 0.5, life: 1.2, s0: 0.6, s1: 1, a: 0.35, add: true });
+    else if (k === 'flames') S({ tex: 'aura', y: 0.3 + rnd() * 1.4, vx: (rnd() - 0.5) * 0.8, vy: 2 + rnd() * 1.5, vz: (rnd() - 0.5) * 0.5, life: 0.7, s0: 0.5, s1: 0.08, add: true });
+  }
   tickCommon(dt) {
+    this.auraTick(dt);
     this.cam.shake = Math.max(0, this.cam.shake - dt * 2.2); this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.2);
     const shk = this.cam.shake * 12 * this.opts.shake; this.cam.sx = (rnd() - 0.5) * shk; this.cam.sz = (rnd() - 0.5) * shk;
     for (const di of this.dmgInd) di.t += dt; this.dmgInd = this.dmgInd.filter((d) => d.t < d.life);

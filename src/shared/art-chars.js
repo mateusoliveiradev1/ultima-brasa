@@ -90,14 +90,115 @@ function grime(ctx, rnd, x0, y0, x1, y1, n = 26) {
 
 // ───────────── skins do sobrevivente (só cor: nunca mudam o jogo) ─────────────
 export const PLAYER_SKINS = {
-  padrao: { cloak: ['#3a2c27', '#241a17', '#110b0a'], patch: [PAL.rust, '#7a3216', '#53231a'], hood: ['#46372f', '#1a1210'], tail: ['#6a2512', '#b24a24'], scarf: ['#a8431f', '#d9622f'], lant: PAL.ember, core: ['#fffbe8', '#ffd98a', '#ff7a2a'], flame: PAL.flame, eye: '#ffd28a', eyeGlow: PAL.glow, light: '255,150,70', belt: '#5e3320', buckle: '#c28a3a', pack: '#6e3a22', gauge: PAL.toxic },
-  ruinas: { cloak: ['#3a3e46', '#262a31', '#111317'], patch: ['#5b616b', '#444a53', '#2c3037'], hood: ['#484d57', '#171a1f'], tail: ['#7a1a14', '#c0322a'], scarf: ['#b02a22', '#e0463a'], lant: '#ffe08a', core: ['#ffffff', '#fff1b8', '#ffc247'], flame: '#fff1b8', eye: '#fff1b8', eyeGlow: '#ffe08a', light: '255,226,150', belt: '#3c4048', buckle: '#d9d2c0', pack: '#5b616b', gauge: '#ff5a4a' },
-  pantano: { cloak: ['#243a2c', '#162619', '#08120b'], patch: ['#2f5a3a', '#3b6b32', '#1d3a26'], hood: ['#2c4634', '#0d1a11'], tail: ['#0f5a48', '#22b08a'], scarf: ['#17806a', '#42e0b4'], lant: '#42e0b4', core: ['#f0fff8', '#a8ffe0', '#22c08f'], flame: '#a8ffe0', eye: '#b6ffe6', eyeGlow: '#42e0b4', light: '70,224,180', belt: '#2a3b2c', buckle: '#8fd9b6', pack: '#3d5a3a', gauge: '#d6ff5a' },
-  deserto: { cloak: ['#7a5c36', '#5a4226', '#2c1f12'], patch: ['#a67c44', '#8a6230', '#5e421f'], hood: ['#8a6a40', '#2f2112'], tail: ['#0f4f7a', '#2d8ccc'], scarf: ['#1d6ea8', '#4fb4f0'], lant: '#ffb347', core: ['#fffbe8', '#ffd98a', '#e8892a'], flame: '#ffe0a0', eye: '#ffe0a0', eyeGlow: '#ffb347', light: '255,190,100', belt: '#4a3420', buckle: '#e0b25a', pack: '#8a6230', gauge: '#4fb4f0' },
-  tundra: { cloak: ['#5a6a78', '#3a4854', '#1a222a'], patch: ['#8aa0b4', '#6a8096', '#46586a'], hood: ['#6a7c8a', '#1e2830'], tail: ['#9fb4c4', '#e8f2fa'], scarf: ['#d0e2f0', '#ffffff'], lant: '#8fe0ff', core: ['#ffffff', '#c8f2ff', '#4cc4f0'], flame: '#c8f2ff', eye: '#d8f6ff', eyeGlow: '#8fe0ff', light: '140,224,255', belt: '#3a4a58', buckle: '#d8e6f0', pack: '#6a8096', gauge: '#8fe0ff' },
-  cinzas: { cloak: ['#1c1514', '#0f0a09', '#050303'], patch: ['#3a2a22', '#241a16', '#150e0b'], hood: ['#241a17', '#070404'], tail: ['#8a5a14', '#e0a82a'], scarf: ['#c98a1c', '#ffd35a'], lant: '#ffd35a', core: ['#ffffff', '#fff0b0', '#ffb520'], flame: '#fff0b0', eye: '#fff0b0', eyeGlow: '#ffd35a', light: '255,200,90', belt: '#2a1d14', buckle: '#ffd35a', pack: '#3a2a22', gauge: '#ffd35a' },
+  padrao: { acc: [], aura: null, cloak: ['#3a2c27', '#241a17', '#110b0a'], patch: [PAL.rust, '#7a3216', '#53231a'], hood: ['#46372f', '#1a1210'], tail: ['#6a2512', '#b24a24'], scarf: ['#a8431f', '#d9622f'], lant: PAL.ember, core: ['#fffbe8', '#ffd98a', '#ff7a2a'], flame: PAL.flame, eye: '#ffd28a', eyeGlow: PAL.glow, light: '255,150,70', belt: '#5e3320', buckle: '#c28a3a', pack: '#6e3a22', gauge: PAL.toxic },
+  ruinas: { acc: ['goggles', 'pauldron'], aura: { kind: 'sparks', col: '#ffb060' }, cloak: ['#3a3e46', '#262a31', '#111317'], patch: ['#5b616b', '#444a53', '#2c3037'], hood: ['#484d57', '#171a1f'], tail: ['#7a1a14', '#c0322a'], scarf: ['#b02a22', '#e0463a'], lant: '#ffe08a', core: ['#ffffff', '#fff1b8', '#ffc247'], flame: '#fff1b8', eye: '#fff1b8', eyeGlow: '#ffe08a', light: '255,226,150', belt: '#3c4048', buckle: '#d9d2c0', pack: '#5b616b', gauge: '#ff5a4a' },
+  pantano: { acc: ['moss', 'shrooms'], aura: { kind: 'spores', col: '#42e0b4' }, cloak: ['#243a2c', '#162619', '#08120b'], patch: ['#2f5a3a', '#3b6b32', '#1d3a26'], hood: ['#2c4634', '#0d1a11'], tail: ['#0f5a48', '#22b08a'], scarf: ['#17806a', '#42e0b4'], lant: '#42e0b4', core: ['#f0fff8', '#a8ffe0', '#22c08f'], flame: '#a8ffe0', eye: '#b6ffe6', eyeGlow: '#42e0b4', light: '70,224,180', belt: '#2a3b2c', buckle: '#8fd9b6', pack: '#3d5a3a', gauge: '#d6ff5a' },
+  deserto: { acc: ['turban'], aura: { kind: 'sand', col: '#e8c890' }, cloak: ['#7a5c36', '#5a4226', '#2c1f12'], patch: ['#a67c44', '#8a6230', '#5e421f'], hood: ['#8a6a40', '#2f2112'], tail: ['#0f4f7a', '#2d8ccc'], scarf: ['#1d6ea8', '#4fb4f0'], lant: '#ffb347', core: ['#fffbe8', '#ffd98a', '#e8892a'], flame: '#ffe0a0', eye: '#ffe0a0', eyeGlow: '#ffb347', light: '255,190,100', belt: '#4a3420', buckle: '#e0b25a', pack: '#8a6230', gauge: '#4fb4f0' },
+  tundra: { acc: ['fur', 'ice'], aura: { kind: 'snow', col: '#e8f6ff' }, cloak: ['#5a6a78', '#3a4854', '#1a222a'], patch: ['#8aa0b4', '#6a8096', '#46586a'], hood: ['#6a7c8a', '#1e2830'], tail: ['#9fb4c4', '#e8f2fa'], scarf: ['#d0e2f0', '#ffffff'], lant: '#8fe0ff', core: ['#ffffff', '#c8f2ff', '#4cc4f0'], flame: '#c8f2ff', eye: '#d8f6ff', eyeGlow: '#8fe0ff', light: '140,224,255', belt: '#3a4a58', buckle: '#d8e6f0', pack: '#6a8096', gauge: '#8fe0ff' },
+  cinzas: { acc: ['cracks'], aura: { kind: 'embers', col: '#ffb347' }, cloak: ['#1c1514', '#0f0a09', '#050303'], patch: ['#3a2a22', '#241a16', '#150e0b'], hood: ['#241a17', '#070404'], tail: ['#8a5a14', '#e0a82a'], scarf: ['#c98a1c', '#ffd35a'], lant: '#ffd35a', core: ['#ffffff', '#fff0b0', '#ffb520'], flame: '#fff0b0', eye: '#fff0b0', eyeGlow: '#ffd35a', light: '255,200,90', belt: '#2a1d14', buckle: '#ffd35a', pack: '#3a2a22', gauge: '#ffd35a' },
+  cacador: { acc: ['horns'], aura: { kind: 'mist', col: '#ff6a3a' }, cloak: ['#4a3a2a', '#2e2218', '#140d09'], patch: ['#6a4a2a', '#4a331c', '#2a1c10'], hood: ['#5a4632', '#1c130c'], tail: ['#5a1a14', '#a8321f'], scarf: ['#8a2a1e', '#c8442c'], lant: '#ff6a3a', core: ['#fff1e0', '#ffb27a', '#e0431a'], flame: '#ffb27a', eye: '#ff8a5a', eyeGlow: '#ff5a2a', light: '255,110,60', belt: '#3a2616', buckle: '#e8dcc6', pack: '#4a331c', gauge: '#ff6a3a' },
+  veterano: { acc: ['plates'], aura: { kind: 'sparks', col: '#bcd8ff' }, cloak: ['#2e3a4a', '#1d2733', '#0c1117'], patch: ['#44566a', '#2e3f52', '#1c2836'], hood: ['#3c4b5c', '#121a22'], tail: ['#7a5a1a', '#c8a24a'], scarf: ['#b08a2e', '#e8c866'], lant: '#ffd98a', core: ['#ffffff', '#ffeec0', '#e8b040'], flame: '#fff0c0', eye: '#ffeec0', eyeGlow: '#ffd98a', light: '255,220,140', belt: '#2a2018', buckle: '#e8c866', pack: '#44566a', gauge: '#e8c866' },
+  calamidade: { acc: ['spikes'], aura: { kind: 'embers', col: '#ff3a2a' }, cloak: ['#4a1a1a', '#2c0e0e', '#120505'], patch: ['#7a2020', '#4a1212', '#2a0a0a'], hood: ['#5a2020', '#160606'], tail: ['#5a0f0f', '#c0201a'], scarf: ['#8a1414', '#e0321e'], lant: '#ff3a2a', core: ['#fff0e0', '#ff8a5a', '#d01a10'], flame: '#ff8a5a', eye: '#ff4a3a', eyeGlow: '#ff2a1a', light: '255,60,40', belt: '#2a0d0d', buckle: '#c8c0b0', pack: '#5a2020', gauge: '#ff3a2a' },
+  coroa: { acc: ['crown'], aura: { kind: 'flames', col: '#ffd35a', rate: 0.05 }, cloak: ['#bfae8c', '#8a7a5c', '#40351f'], patch: ['#ffd35a', '#e8b040', '#a8802a'], hood: ['#cdbd9c', '#5a4a30'], tail: ['#c8962a', '#ffd35a'], scarf: ['#e8b040', '#fff0a8'], lant: '#fff0a8', core: ['#ffffff', '#fff8d0', '#ffd35a'], flame: '#fff8d0', eye: '#fff8d0', eyeGlow: '#ffe58a', light: '255,235,150', belt: '#8a6a2a', buckle: '#fff0a8', pack: '#c8a24a', gauge: '#fff0a8' },
 };
 let SK = PLAYER_SKINS.padrao;
+// acessórios das skins: desenhados sobre o personagem (formas próprias, não só cor)
+function drawAcc(ctx, list, by, sw) {
+  const has = (k) => list.includes(k), M = (x) => 148 - x;
+  const poly = (pts, fill, stroke, lw = 1.2) => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); } };
+  if (has('cracks')) { // rachaduras de brasa no manto
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const [pts, w] of [[[[52, 108], [57, 118], [52, 128], [58, 140], [55, 152]], 1.8], [[[78, 112], [74, 122], [80, 132], [76, 146]], 1.5], [[[66, 126], [62, 136], [67, 146]], 1.2]]) {
+      ctx.strokeStyle = SK.lant; ctx.globalAlpha = 0.35; ctx.lineWidth = w + 3; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y + by * 0.3) : ctx.moveTo(x, y + by * 0.3))); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.strokeStyle = SK.core[1]; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y + by * 0.3) : ctx.moveTo(x, y + by * 0.3))); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if (has('moss')) { // musgo pendurado no capuz e na barra do manto
+    ctx.save(); ctx.lineCap = 'round';
+    for (const [x, y, l, c] of [[50, 74, 16, '#3b7a46'], [58, 80, 20, '#2f6a3a'], [70, 83, 14, '#3b7a46'], [84, 78, 18, '#2f6a3a'], [46, 150, 14, '#3b7a46'], [60, 158, 16, '#2f6a3a'], [78, 154, 14, '#3b7a46']]) {
+      ctx.strokeStyle = c; ctx.lineWidth = 3.2; ctx.beginPath(); ctx.moveTo(x, y + by); ctx.quadraticCurveTo(x + 3 + sw * 2, y + by + l * 0.5, x - 1 + sw * 3, y + by + l); ctx.stroke();
+      ctx.strokeStyle = '#6fd08a'; ctx.lineWidth = 1; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(x, y + by); ctx.quadraticCurveTo(x + 3 + sw * 2, y + by + l * 0.5, x - 1 + sw * 3, y + by + l); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+  if (has('shrooms')) { // cogumelos brilhantes no capuz
+    for (const [x, y, r] of [[56, 44, 6], [67, 38, 8], [79, 41, 5.5]]) {
+      glow(ctx, x, y + by - 3, r * 2.4, '#42e0b4', 0.55);
+      ctx.fillStyle = '#d9f2e2'; ctx.fillRect(x - 1.4, y + by - 2, 2.8, 6);
+      ctx.fillStyle = lin(ctx, x - r, y + by - r, x + r, y + by, [[0, '#7affd0'], [1, '#1f9a78']]); ctx.beginPath(); ctx.ellipse(x, y + by - 2, r, r * 0.62, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(x - r * 0.35, y + by - 4, 1.2, 0, TAU); ctx.arc(x + r * 0.3, y + by - 3, 0.9, 0, TAU); ctx.fill();
+    }
+  }
+  if (has('turban')) { // turbante enrolado com ponta solta
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.strokeStyle = '#cdb27a'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(48, 62 + by); ctx.quadraticCurveTo(34 + sw * 4, 72 + by, 30 + sw * 6, 94 + by); ctx.stroke();
+    ctx.strokeStyle = '#e8d6a8'; ctx.lineWidth = 3; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(47, 61 + by); ctx.quadraticCurveTo(34 + sw * 4, 71 + by, 30 + sw * 6, 93 + by); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.fillStyle = lin(ctx, 44, 38, 92, 60, [[0, '#f0e2bc'], [1, '#b8975a']]);
+    ctx.beginPath(); ctx.moveTo(45, 60 + by); ctx.bezierCurveTo(44, 38 + by, 80, 28 + by, 92, 52 + by); ctx.bezierCurveTo(92, 58 + by, 90, 60 + by, 88, 59 + by); ctx.bezierCurveTo(78, 46 + by, 58, 48 + by, 50, 64 + by); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(80,50,20,.45)'; ctx.lineWidth = 1.4;
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(52 + i * 9, 56 - i * 2 + by); ctx.quadraticCurveTo(58 + i * 9, 44 - i * 2 + by, 66 + i * 9, 41 + i * 1.4 + by); ctx.stroke(); }
+    ctx.fillStyle = '#4fb4f0'; ctx.beginPath(); ctx.arc(70, 47 + by, 2.6, 0, TAU); ctx.fill(); glow(ctx, 70, 47 + by, 8, '#4fb4f0', 0.6);
+  }
+  if (has('fur')) { // gola de pelo em volta do rosto
+    for (let i = 0; i < 13; i++) { const a = -2.3 + (i / 12) * 4.6, x = 77 + Math.cos(a) * 15.5, y = 63 + by + Math.sin(a) * 16.5 + 1;
+      ctx.fillStyle = i % 2 ? '#dbe6ef' : '#f4f9fd'; ctx.beginPath(); ctx.arc(x, y, 4.6, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; for (let i = 0; i < 13; i += 2) { const a = -2.3 + (i / 12) * 4.6; ctx.beginPath(); ctx.arc(77 + Math.cos(a) * 15.5 + 1.2, 63 + by + Math.sin(a) * 16.5 + 3, 2, 0, TAU); ctx.fill(); }
+  }
+  if (has('ice')) { // cristais de gelo no ombro
+    for (const [x, y, h, w] of [[90, 90, 16, 5], [97, 95, 11, 4], [83, 91, 12, 4]]) {
+      poly([[x - w, y + by], [x, y - h + by], [x + w, y + by]], lin(ctx, x - w, y - h, x + w, y, [[0, '#f0fcff'], [1, '#4cc4f0']]), 'rgba(255,255,255,.7)', 1);
+      glow(ctx, x, y - h * 0.4 + by, 9, '#8fe0ff', 0.35);
+    }
+  }
+  if (has('goggles')) { // óculos de soldador + tira
+    ctx.strokeStyle = '#242830'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(46, 58 + by); ctx.quadraticCurveTo(70, 52 + by, 91, 59 + by); ctx.stroke();
+    for (const x of [73, 84]) {
+      ctx.fillStyle = 'rgba(255,225,150,.28)'; ctx.beginPath(); ctx.arc(x, 61 + by, 7.5, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#8a929c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, 61 + by, 7.5, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#d9d2c0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, 61 + by, 8.8, 3.6, 5); ctx.stroke();
+    }
+  }
+  if (has('pauldron') || has('plates')) { // ombreira de metal
+    const gold = has('plates'), rx = gold ? 15 : 13;
+    ctx.fillStyle = lin(ctx, 66, 80, 98, 98, gold ? [[0, '#f0d27a'], [0.5, '#b8902c'], [1, '#5e4410']] : [[0, '#b4bcc6'], [0.5, '#6a727c'], [1, '#2a2f36']]);
+    ctx.beginPath(); ctx.ellipse(82, 90 + by, rx, 8.5, -0.25, Math.PI, 0); ctx.lineTo(82 + rx, 94 + by); ctx.quadraticCurveTo(82, 99 + by, 82 - rx, 94 + by); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = gold ? '#fff0b0' : '#d9d2c0'; for (const x of [74, 82, 90]) { ctx.beginPath(); ctx.arc(x, 88 + by + (x === 82 ? -1 : 0.5), 1.4, 0, TAU); ctx.fill(); }
+  }
+  if (has('plates')) { // bandoleira com cartuchos e medalha
+    ctx.strokeStyle = '#3a2616'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(48, 92 + by); ctx.lineTo(90, 136 + by * 0.6); ctx.stroke();
+    ctx.fillStyle = '#c8a24a'; for (let i = 0; i < 4; i++) { const t = 0.15 + i * 0.22, x = 48 + 42 * t, y = 92 + 44 * t + by; ctx.save(); ctx.translate(x, y); ctx.rotate(0.8); ctx.fillRect(-2.2, -4, 4.4, 8); ctx.fillStyle = '#7a5a1a'; ctx.fillRect(-2.2, -4, 4.4, 2.2); ctx.fillStyle = '#c8a24a'; ctx.restore(); }
+    ctx.fillStyle = '#e8c866'; ctx.beginPath(); ctx.arc(62, 106 + by, 3.4, 0, TAU); ctx.fill(); ctx.fillStyle = '#a8321f'; ctx.fillRect(60.6, 108 + by, 2.8, 6);
+  }
+  if (has('horns')) { // chifres de osso
+    for (const m of [0, 1]) { const X = (x) => (m ? M(x) : x), sg = m ? -1 : 1;
+      ctx.fillStyle = lin(ctx, X(60), 44, X(48), 20, [[0, '#8a7a62'], [0.5, '#e8dcc6'], [1, '#f6f0e2']]);
+      ctx.beginPath(); ctx.moveTo(X(61), 46 + by); ctx.bezierCurveTo(X(47), 44 + by, X(44), 30 + by, X(52), 17 + by); ctx.bezierCurveTo(X(52), 30 + by, X(58), 36 + by, X(69), 41 + by); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(60,40,20,.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.strokeStyle = 'rgba(90,70,40,.5)'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(X(55 - i * 3), (40 - i * 7) + by); ctx.lineTo(X(60 - i * 3), (42 - i * 7) + by); ctx.stroke(); }
+    }
+  }
+  if (has('spikes')) { // espinhos
+    for (const [x, y, h, w, a] of [[78, 86, 20, 5, 0.2], [86, 88, 17, 4.5, 0.55], [92, 92, 13, 4, 0.9]]) {
+      ctx.save(); ctx.translate(x, y + by); ctx.rotate(a); poly([[-w, 0], [0, -h], [w, 0]], lin(ctx, 0, -h, 0, 0, [[0, '#d8c8c0'], [0.35, '#6a2a24'], [1, '#1a0707']]), 'rgba(0,0,0,.6)', 1); ctx.restore();
+    }
+    for (const [x, h] of [[60, 12], [68, 16], [76, 14], [84, 10]]) poly([[x - 3.6, 46 + by], [x, 46 - h + by], [x + 3.6, 46 + by]], '#7a2018', '#ff6a4a', 1);
+  }
+  if (has('crown')) { // coroa de chamas
+    glow(ctx, 74, 36 + by, 30, '#ffd35a', 0.5);
+    const tips = [[57, 30], [65, 20], [74, 14], [83, 20], [91, 30]];
+    ctx.fillStyle = lin(ctx, 56, 14, 92, 46, [[0, '#fff4b8'], [0.5, '#e8b040'], [1, '#9a6a14']]);
+    ctx.beginPath(); ctx.moveTo(54, 50 + by); ctx.lineTo(55, 40 + by);
+    tips.forEach(([x, y], i) => { ctx.lineTo(x, y + by); const n = tips[i + 1]; ctx.lineTo(n ? (x + n[0]) / 2 : x + 2, (n ? (y + n[1]) / 2 + 12 : 40) + by); });
+    ctx.lineTo(93, 50 + by); ctx.quadraticCurveTo(74, 56 + by, 54, 50 + by); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(90,50,0,.6)'; ctx.lineWidth = 1.2; ctx.stroke();
+    for (const [x, y] of tips) { glow(ctx, x, y - 3 + by, 9, '#ffb347', 0.8); ctx.fillStyle = '#fffbe8'; ctx.beginPath(); ctx.arc(x, y + 1 + by, 1.7, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#ff5a4a'; ctx.beginPath(); ctx.arc(74, 46 + by, 2.4, 0, TAU); ctx.fill();
+  }
+}
+
 export function setPlayerSkin(id) { SK = PLAYER_SKINS[id] || PLAYER_SKINS.padrao; }
 
 function drawGuardian(ctx, f) {
@@ -179,6 +280,7 @@ function drawGuardian(ctx, f) {
   ctx.strokeStyle = '#1b1311'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(101.5, ly + 3); ctx.lineTo(101.5, ly + 23); ctx.moveTo(106, ly + 3); ctx.lineTo(106, ly + 23); ctx.stroke();
   glow(ctx, 103.5, ly + 14, 20, SK.flame, 0.9);
+  if (SK.acc.length) drawAcc(ctx, SK.acc, by, sw);
 }
 
 // ───────────── SAQUEADOR ─────────────
