@@ -156,7 +156,7 @@ export async function mountGame(root) {
     btn('sm', '♪', () => { save.music = !save.music; save.sfx = save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); SV.save(); syncSound(); }, { id: 'snd', title: 'Som ligado/desligado' }));
   let online = null;
   const startDailyRun = (info) => { save.biome = info.biome; save.diff = info.diff; save.depth = 1; SV.save(); renderAll(); startRun({ daily: true }); };
-  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime }); online.buttons.forEach((b) => b.classList.add('h-online')); topbar.append(...online.buttons); }
+  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime, onRank: true }); online.buttons.forEach((b) => b.classList.add('h-online')); topbar.append(...online.buttons); }
   const syncSound = () => { const b = topbar.querySelector('#snd'); b.textContent = save.music ? '♪' : '✕'; b.classList.toggle('off', !save.music); };
 
   // painel esquerdo: sobrevivente
@@ -422,19 +422,22 @@ export async function mountGame(root) {
       const ni = BIOME_ORDER.indexOf(r.biome) + 1; if (ni < BIOME_ORDER.length && save.biomeWins[r.biome] === 1) unlockMsg.push(`Novo mapa: ${BIOMES[BIOME_ORDER[ni]].name}`);
     }
     const gainEl = el('b', { class: 'g' }, '⬢ 0'), close = () => { resEl.classList.remove('show'); };
+    const rankEl = el('div', { class: 'rs-rank' }); let shareTxt = `Resisti ${fmtTime(r.time)} em ${b.name} na Última Brasa${r.victory ? ' e derrubei o chefe' : ''}. Consegue me passar?`;
+    const shareBtn = btn('sm', 'Compartilhar', async () => { const url = 'https://ultima-brasa.vercel.app/'; try { if (navigator.share) await navigator.share({ title: 'Última Brasa', text: shareTxt, url }); else { await navigator.clipboard.writeText(shareTxt + ' ' + url); showToast('Texto copiado. Cole onde quiser.'); } } catch { /* cancelado */ } });
+    if (online) { rankEl.textContent = O.user() ? 'Enviando ao ranking…' : 'Entre na conta para aparecer no ranking.'; if (!O.user() && r.time >= 60) rankEl.append(' ', btn('sm pri', 'Entrar', () => online.openAccount())); if (r.time < 60) rankEl.textContent = 'Partidas com menos de 1 minuto não entram no ranking.'; }
     resEl.innerHTML = '';
     const btns = r.victory ? [btn('go sm2', 'Continuar (modo infinito)', () => { close(); hud.classList.add('on'); game.continueRun(); }), btn('', 'Coletar e voltar ao abrigo', () => { bank(r); close(); toHub(); })]
       : [btn('go sm2', 'Nova expedição', () => { bank(r); close(); startRun(); }), btn('', 'Voltar ao abrigo', () => { bank(r); close(); toHub(); })];
     resEl.append(el('div', { class: 'rs-card' + (r.victory ? ' win' : '') },
       el('div', { class: 'rs-t' }, r.victory ? 'Chefe derrotado' : 'A brasa se apagou'), el('div', { class: 'rs-s' }, r.victory ? `${b.name} · profundidade ${r.depth} concluída` : `${b.name} · resistiu ${fmtTime(r.time)}`),
       el('div', { class: 'rs-grid' }, ...[['Tempo', fmtTime(r.time), rec.time], ['Abates', fmt(r.kills), rec.kills], ['Nível', r.level, rec.level], ['Maior combo', r.combo, rec.combo], ['Elites', r.elites], ['Sucata achada', '⬢ ' + fmt(Math.floor(r.scrapFound))]].map(([a, v, nr], i) => el('div', { class: nr ? 'rec' : '', style: `animation-delay:${0.15 + i * 0.09}s` }, el('span', {}, a), el('b', {}, v, nr ? el('em', {}, 'RECORDE') : null)))),
-      el('div', { class: 'rs-gain' }, r.victory ? 'Sucata a coletar ' : 'Sucata recolhida ', gainEl),
+      el('div', { class: 'rs-gain' }, r.victory ? 'Sucata a coletar ' : 'Sucata recolhida ', gainEl), rankEl,
       ...unlockMsg.map((m) => el('div', { class: 'rs-unlock' }, m)),
       r.victory ? el('p', { class: 'dim' }, 'No modo infinito um chefe mais forte surge a cada 2:30 e a sucata continua acumulando. Se morrer, você ainda recolhe tudo.') : null,
-      el('div', { class: 'rs-btns' }, ...btns)));
+      el('div', { class: 'rs-btns' }, ...btns, shareBtn)));
     resEl.classList.add('show'); A.sfx(r.victory ? 'bell' : 'creak', { vol: 0.6, rate: r.victory ? 1 : 0.7 });
     const t0 = performance.now(); const tick = () => { const u = Math.min(1, (performance.now() - t0) / 1300); gainEl.textContent = '⬢ ' + fmt(Math.floor(r.gain * (1 - Math.pow(1 - u, 3)))); if (u < 1) requestAnimationFrame(tick); }; tick();
-    SV.save(); checkMilestones(); try { online?.onRunEnd(r, runFlags.daily); } catch (e) { /* online é opcional */ }
+    SV.save(); checkMilestones(); try { Promise.resolve(online?.onRunEnd(r, runFlags.daily)).then((o) => { if (!o) { if (O.user() && online && r.time >= 60) rankEl.textContent = 'Não foi possível enviar ao ranking agora.'; return; } rankEl.innerHTML = ''; rankEl.append('Ranking: ', el('b', {}, '#' + o.rank), ` · ${fmt(o.pts)} pontos${runFlags.daily ? ' (desafio do dia)' : ''}`); shareTxt = `Fiz ${fmt(o.pts)} pontos (#${o.rank}) na Última Brasa. Consegue me passar?`; }); } catch (e) { /* online é opcional */ }
   }
 
   // ───────── fluxo ─────────

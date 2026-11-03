@@ -93,11 +93,11 @@ export function mountOnline(H) {
   }
 
   async function onRunEnd(r, daily) {
-    if (!O.user() || !prof) { if (O.enabled() && !O.user() && r.time >= 60) toast('Entre na sua conta para enviar esta run ao ranking.', 4200); return; }
-    const res = await O.submitRun(r, daily); const d = res.data;
-    if (res.ok && d?.ok) toast(`Ranking: #${d.rank} · ${fmt(d.pts)} pontos${daily ? ' (desafio do dia)' : ''}`, 5000);
+    if (!O.user() || !prof) return null;
+    const res = await O.submitRun(r, daily); const d = res.data; let out = null;
+    if (res.ok && d?.ok) { out = { rank: d.rank, pts: d.pts }; if (!H.onRank) toast(`Ranking: #${d.rank} · ${fmt(d.pts)} pontos${daily ? ' (desafio do dia)' : ''}`, 5000); }
     else if (d?.err && d.err !== 'run rejeitada') toast(d.err, 4000);
-    pushNow(false);
+    pushNow(false); return out;
   }
 
   async function boot() {

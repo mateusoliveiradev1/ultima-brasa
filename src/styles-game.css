@@ -454,3 +454,5 @@
   .h-relic{max-height:50px}.h-relics{grid-template-columns:repeat(6,50px)}
   .tt-sec{white-space:nowrap;font-size:12.5px}
 }
+.rs-rank{min-height:24px;margin:2px 0 4px;font-size:16px;color:var(--ash);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.rs-rank b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:30px;color:var(--glow);letter-spacing:1px}
