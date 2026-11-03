@@ -9,6 +9,7 @@ import { mountOnline } from './online-ui.js';
 import * as A from './audio.js';
 import { Game, buildArt, skillIcon } from './game.js';
 import { mountForja } from '../forja/forja.js';
+import { PLAYER_SKINS } from '../shared/art-chars.js';
 import * as store from '../fx/store.js';
 
 const el = (tag, props = {}, ...kids) => {
@@ -19,6 +20,14 @@ const el = (tag, props = {}, ...kids) => {
   kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c)));
   return e;
 };
+const SKINS = [
+  { id: 'padrao', name: 'Sobrevivente', hint: 'A skin original.', ok: () => true },
+  { id: 'ruinas', name: 'Saqueador', hint: 'Derrote o chefe das Ruínas Cinzentas.', ok: (s) => (s.biomeWins.ruinas || 0) > 0 },
+  { id: 'pantano', name: 'Musgo Tóxico', hint: 'Derrote o chefe do Pântano Tóxico.', ok: (s) => (s.biomeWins.pantano || 0) > 0 },
+  { id: 'deserto', name: 'Nômade da Duna', hint: 'Derrote o chefe do Deserto de Sucata.', ok: (s) => (s.biomeWins.deserto || 0) > 0 },
+  { id: 'tundra', name: 'Geada', hint: 'Derrote o chefe da Tundra Cinzenta.', ok: (s) => (s.biomeWins.tundra || 0) > 0 },
+  { id: 'cinzas', name: 'Cinzas Eternas', hint: 'Renasça uma vez na Árvore da Brasa.', ok: (s) => s.rebirths > 0 },
+];
 const PASSIVE_ICO = { dmg: '✦', cdr: '⟳', spd: '»', hp: '♥', regen: '✚', magnet: '◎', area: '◌', luck: '☘', armor: '▣', crit: '✺' };
 
 export async function mountGame(root) {
@@ -35,6 +44,8 @@ export async function mountGame(root) {
   await new Promise((r) => setTimeout(r, 30));
   const art = await buildArt((p) => { bar.style.width = Math.round(p * 100) + '%'; });
   loading.remove();
+  if (!SKINS.find((k) => k.id === save.skin)?.ok(save)) save.skin = 'padrao';
+  art.setSkin(save.skin);
 
   let game = null, screen = 'title', forja = null, hudT = 0, lastHud = 0;
   const hooks = {
@@ -163,9 +174,9 @@ export async function mountGame(root) {
   const rankName = el('div', { class: 'h-rank' }), rankBar = el('i'), rankSub = el('div', { class: 'h-ranksub' }), cinzasRow = el('div', { class: 'h-cinzas' });
   const treeBadge = el('span', { class: 'badge' }), treeBtn = btn('go tb', ['ÁRVORE DA BRASA', treeBadge], () => openTree());
   const msBtn = btn('', '', () => openMilestones());
-  const statsBox = el('div', { class: 'h-stats' });
+  const statsBox = el('div', { class: 'h-stats' }), skinBox = el('div', { class: 'h-skins' });
   const survivor = el('section', { class: 'g-panel h-surv' }, el('h2', {}, 'Seu progresso', el('small', {}, 'vale para todas as partidas')),
-    el('div', { class: 'h-rankbox' }, rankName, el('div', { class: 'g-bar' }, rankBar), rankSub), cinzasRow, el('div', { class: 'h-actions' }, treeBtn, msBtn), statsBox);
+    el('div', { class: 'h-rankbox' }, rankName, el('div', { class: 'g-bar' }, rankBar), rankSub), cinzasRow, skinBox, el('div', { class: 'h-actions' }, treeBtn, msBtn), statsBox);
 
   // painel direito: expedição
   const mapsBox = el('div', { class: 'h-maps' }), relicRow = el('div', { class: 'h-relics' });
@@ -186,6 +197,21 @@ export async function mountGame(root) {
   function setTab(t) { hub.dataset.tab = t; tabs.querySelector('#tsurv').classList.toggle('on', t === 'surv'); tabs.querySelector('#texp').classList.toggle('on', t === 'exp'); }
 
   const affordable = () => TREE.filter((n) => (save.meta[n.id] || 0) < n.max && nodeOpen(n.id, save.meta) && save.scrap >= nodeCost(n.id, save.meta[n.id] || 0)).length;
+  function renderSkins() {
+    skinBox.innerHTML = ''; const cur = SKINS.find((k) => k.id === save.skin) || SKINS[0];
+    const row = el('div', { class: 'sk-row' }), label = el('div', { class: 'sk-name' }, el('b', {}, cur.name), el('small', {}, 'Só muda a aparência'));
+    for (const k of SKINS) {
+      const P = PLAYER_SKINS[k.id], open = k.ok(save);
+      row.append(el('button', { class: 'sk' + (save.skin === k.id ? ' sel' : '') + (open ? '' : ' lock'), title: open ? k.name : `${k.name}: ${k.hint}`, 'aria-label': open ? k.name : `${k.name} (bloqueada). ${k.hint}`, style: `--a:${P.cloak[0]};--b:${P.scarf[1]};--c:${P.lant}`, onmouseenter: sfxOver,
+        onclick: () => { sfxClick(); if (!open) { showToast(`${k.name}: ${k.hint}`, 3600); return; } save.skin = k.id; art.setSkin(k.id); SV.save(); renderSkins(); } }, el('i')));
+    }
+    skinBox.append(el('div', { class: 'h-sub' }, 'Aparência'), row, label);
+  }
+  function checkSkins(quiet) {
+    const got = []; for (const k of SKINS) if (k.ok(save) && !save.skins[k.id]) { save.skins[k.id] = true; if (k.id !== 'padrao') got.push(k); }
+    if (got.length) { SV.save(); if (!quiet) { A.sfx('bell', { vol: 0.4, rate: 1.1 }); showToast('Nova skin liberada: ' + got.map((k) => k.name).join(', ') + '. Escolha em Seu progresso.', 5600); } renderSkins(); }
+    return got;
+  }
   function renderSurvivor() {
     const p = patente(), lo = patenteNeed(p), hi = patenteNeed(p + 1);
     rankName.innerHTML = `Patente <b>${p}</b>`; rankBar.style.width = Math.max(0, Math.min(100, ((save.lifetime - lo) / (hi - lo)) * 100)) + '%';
@@ -228,7 +254,7 @@ export async function mountGame(root) {
   }
   function renderHubTop() { scrapVal.textContent = fmt(Math.floor(save.scrap)); const r = catadorRate(save.meta.catador) * catadorMul(save.meta) * SV.prestigeMul(); scrapRate.textContent = r > 0 ? `+${r.toFixed(2)}/s` : ''; }
   function renderSummary() { const d = DIFFS.find((x) => x.id === save.diff); summaryLine.textContent = `${BIOMES[save.biome].name} · ${SKILLS[save.startSkill].name} · ${d ? d.name : 'Normal'}`; diffDesc.textContent = d ? d.desc : ''; diffDesc.style.color = d ? d.color : ''; }
-  function renderAll() { renderDiffs(); renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); renderSummary(); syncSound(); if (treeOpen) refreshTree(); }
+  function renderAll() { renderSkins(); renderDiffs(); renderMaps(); renderRelics(); renderDepth(); renderSurvivor(); renderHubTop(); renderSummary(); syncSound(); if (treeOpen) refreshTree(); }
   function ENEMIES_NAME(id) { return ({ colosso: 'O Colosso', matriarca: 'A Matriarca', titan: 'Titã das Dunas', gigante: 'Gigante de Gelo' })[id]; }
 
   // ───────── Marcos ─────────
@@ -338,10 +364,10 @@ export async function mountGame(root) {
   }
   function doRebirth(gain) {
     for (const n of TREE) if (!n.id.startsWith('r_')) save.meta[n.id] = 0;
-    save.scrap = 0; save.earnedLife = 0; save.cinzas += gain; save.rebirths++; SV.save(); rebirthBox.classList.remove('show'); selNode = null; A.sfx('bell', { vol: 0.7, rate: 0.7 }); showToast(`Você renasceu das cinzas. +${gain} Cinzas.`, 4200); renderAll();
+    save.scrap = 0; save.earnedLife = 0; save.cinzas += gain; save.rebirths++; SV.save(); checkSkins(false); rebirthBox.classList.remove('show'); selNode = null; A.sfx('bell', { vol: 0.7, rate: 0.7 }); showToast(`Você renasceu das cinzas. +${gain} Cinzas.`, 4200); renderAll();
   }
   renderAll();
-  checkMilestones();
+  checkMilestones(); checkSkins(false);
 
   // renda passiva dos Catadores
   let acc = 0; setInterval(() => {
@@ -419,6 +445,7 @@ export async function mountGame(root) {
     if (r.victory && !runFlags.won) {
       runFlags.won = true; save.wins++; { const dn = r.diff || 'normal'; const first = !(save.diffWins[dn] > 0); save.diffWins[dn] = (save.diffWins[dn] || 0) + 1; const di = DIFFS.findIndex((x) => x.id === dn); if (first && DIFFS[di + 1]) unlockMsg.push(`Dificuldade liberada: ${DIFFS[di + 1].name}`); } save.biomeWins[r.biome] = (save.biomeWins[r.biome] || 0) + 1;
       if (r.depth >= save.depthMax && save.depthMax < 30) { save.depthMax = r.depth + 1; unlockMsg.push(`Profundidade ${save.depthMax} liberada!`); }
+      const newSkins = checkSkins(true); newSkins.forEach((k) => unlockMsg.push(`Nova skin: ${k.name}`));
       const ni = BIOME_ORDER.indexOf(r.biome) + 1; if (ni < BIOME_ORDER.length && save.biomeWins[r.biome] === 1) unlockMsg.push(`Novo mapa: ${BIOMES[BIOME_ORDER[ni]].name}`);
     }
     const gainEl = el('b', { class: 'g' }, '⬢ 0'), close = () => { resEl.classList.remove('show'); };

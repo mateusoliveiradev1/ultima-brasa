@@ -87,6 +87,19 @@ function grime(ctx, rnd, x0, y0, x1, y1, n = 26) {
 }
 
 // ───────────── GUARDIÃO (jogador) ─────────────
+
+// ───────────── skins do sobrevivente (só cor: nunca mudam o jogo) ─────────────
+export const PLAYER_SKINS = {
+  padrao: { cloak: ['#3a2c27', '#241a17', '#110b0a'], patch: [PAL.rust, '#7a3216', '#53231a'], hood: ['#46372f', '#1a1210'], tail: ['#6a2512', '#b24a24'], scarf: ['#a8431f', '#d9622f'], lant: PAL.ember, core: ['#fffbe8', '#ffd98a', '#ff7a2a'], flame: PAL.flame, eye: '#ffd28a', eyeGlow: PAL.glow, light: '255,150,70', belt: '#5e3320', buckle: '#c28a3a', pack: '#6e3a22', gauge: PAL.toxic },
+  ruinas: { cloak: ['#3a3e46', '#262a31', '#111317'], patch: ['#5b616b', '#444a53', '#2c3037'], hood: ['#484d57', '#171a1f'], tail: ['#7a1a14', '#c0322a'], scarf: ['#b02a22', '#e0463a'], lant: '#ffe08a', core: ['#ffffff', '#fff1b8', '#ffc247'], flame: '#fff1b8', eye: '#fff1b8', eyeGlow: '#ffe08a', light: '255,226,150', belt: '#3c4048', buckle: '#d9d2c0', pack: '#5b616b', gauge: '#ff5a4a' },
+  pantano: { cloak: ['#243a2c', '#162619', '#08120b'], patch: ['#2f5a3a', '#3b6b32', '#1d3a26'], hood: ['#2c4634', '#0d1a11'], tail: ['#0f5a48', '#22b08a'], scarf: ['#17806a', '#42e0b4'], lant: '#42e0b4', core: ['#f0fff8', '#a8ffe0', '#22c08f'], flame: '#a8ffe0', eye: '#b6ffe6', eyeGlow: '#42e0b4', light: '70,224,180', belt: '#2a3b2c', buckle: '#8fd9b6', pack: '#3d5a3a', gauge: '#d6ff5a' },
+  deserto: { cloak: ['#7a5c36', '#5a4226', '#2c1f12'], patch: ['#a67c44', '#8a6230', '#5e421f'], hood: ['#8a6a40', '#2f2112'], tail: ['#0f4f7a', '#2d8ccc'], scarf: ['#1d6ea8', '#4fb4f0'], lant: '#ffb347', core: ['#fffbe8', '#ffd98a', '#e8892a'], flame: '#ffe0a0', eye: '#ffe0a0', eyeGlow: '#ffb347', light: '255,190,100', belt: '#4a3420', buckle: '#e0b25a', pack: '#8a6230', gauge: '#4fb4f0' },
+  tundra: { cloak: ['#5a6a78', '#3a4854', '#1a222a'], patch: ['#8aa0b4', '#6a8096', '#46586a'], hood: ['#6a7c8a', '#1e2830'], tail: ['#9fb4c4', '#e8f2fa'], scarf: ['#d0e2f0', '#ffffff'], lant: '#8fe0ff', core: ['#ffffff', '#c8f2ff', '#4cc4f0'], flame: '#c8f2ff', eye: '#d8f6ff', eyeGlow: '#8fe0ff', light: '140,224,255', belt: '#3a4a58', buckle: '#d8e6f0', pack: '#6a8096', gauge: '#8fe0ff' },
+  cinzas: { cloak: ['#1c1514', '#0f0a09', '#050303'], patch: ['#3a2a22', '#241a16', '#150e0b'], hood: ['#241a17', '#070404'], tail: ['#8a5a14', '#e0a82a'], scarf: ['#c98a1c', '#ffd35a'], lant: '#ffd35a', core: ['#ffffff', '#fff0b0', '#ffb520'], flame: '#fff0b0', eye: '#fff0b0', eyeGlow: '#ffd35a', light: '255,200,90', belt: '#2a1d14', buckle: '#ffd35a', pack: '#3a2a22', gauge: '#ffd35a' },
+};
+let SK = PLAYER_SKINS.padrao;
+export function setPlayerSkin(id) { SK = PLAYER_SKINS[id] || PLAYER_SKINS.padrao; }
+
 function drawGuardian(ctx, f) {
   const ph = (f / 4) * TAU, sw = Math.sin(ph), bob = Math.abs(Math.cos(ph)) * 3.5, by = -bob;
   const rnd = mulberry32(11);
@@ -96,9 +109,9 @@ function drawGuardian(ctx, f) {
   // mochila + canos
   ctx.fillStyle = lin(ctx, 36, 96, 54, 132, [[0, '#3b2c25'], [1, '#18110f']]);
   ctx.beginPath(); ctx.roundRect(34, 96 + by, 18, 36, 5); ctx.fill();
-  ctx.fillStyle = '#6e3a22'; ctx.fillRect(34, 108 + by, 18, 3); ctx.fillRect(34, 122 + by, 18, 3);
+  ctx.fillStyle = SK.pack; ctx.fillRect(34, 108 + by, 18, 3); ctx.fillRect(34, 122 + by, 18, 3);
   limb(ctx, 38, 98 + by, 33, 80 + by, 5, 5, '#53311f');
-  glow(ctx, 44, 117 + by, 7, PAL.toxic, 0.9); // medidor tóxico (acento raro)
+  glow(ctx, 44, 117 + by, 7, SK.gauge, 0.9); // medidor (acento)
   ctx.fillStyle = '#bfffee'; ctx.beginPath(); ctx.arc(44, 117 + by, 1.8, 0, TAU); ctx.fill();
 
   // manto
@@ -108,21 +121,21 @@ function drawGuardian(ctx, f) {
     [82, 149], [76, 162], [67, 152 + hemsw], [59, 165], [51, 154], [43, 163 + hemsw], [38, 148], [35, 120], [38, 98],
   ].map(([x, y]) => [x + (y > 110 ? hemsw * (y - 110) / 50 - 3 : 0), y + by * (y < 110 ? 1 : 0.35)]);
   smooth(ctx, cloak);
-  ctx.fillStyle = lin(ctx, 40, 80, 92, 160, [[0, '#3a2c27'], [0.55, '#241a17'], [1, '#110b0a']]);
+  ctx.fillStyle = lin(ctx, 40, 80, 92, 160, [[0, SK.cloak[0]], [0.55, SK.cloak[1]], [1, SK.cloak[2]]]);
   ctx.fill();
   ctx.save(); ctx.clip();
-  patches(ctx, rnd, 9, 34, 84, 96, 164, [PAL.rust, '#7a3216', '#53231a'], 6, 15, 0.55);
+  patches(ctx, rnd, 9, 34, 84, 96, 164, SK.patch, 6, 15, 0.55);
   grime(ctx, rnd, 36, 90, 94, 160, 30);
   // dobras
   ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 2;
   for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(50 + i * 11, 96); ctx.quadraticCurveTo(48 + i * 11 + hemsw, 125, 46 + i * 12 + hemsw, 160); ctx.stroke(); }
   // luz quente vinda da lanterna (lado direito)
-  ctx.fillStyle = rad(ctx, 104, 122 + by, 4, 60, [[0, 'rgba(255,150,70,.5)'], [1, 'rgba(255,150,70,0)']]);
+  ctx.fillStyle = rad(ctx, 104, 122 + by, 4, 60, [[0, `rgba(${SK.light},.5)`], [1, `rgba(${SK.light},0)`]]);
   ctx.fillRect(30, 70, 80, 100);
   ctx.restore();
   // cinto
-  ctx.fillStyle = '#5e3320'; ctx.fillRect(40, 119 + by * 0.6, 54, 4);
-  ctx.fillStyle = '#c28a3a'; ctx.fillRect(64, 118 + by * 0.6, 6, 6);
+  ctx.fillStyle = SK.belt; ctx.fillRect(40, 119 + by * 0.6, 54, 4);
+  ctx.fillStyle = SK.buckle; ctx.fillRect(64, 118 + by * 0.6, 6, 6);
 
   // perna da frente
   limb(ctx, 70, 140 + by, 70 + sw * 12, 176, 14, 11, '#241a15');
@@ -132,8 +145,8 @@ function drawGuardian(ctx, f) {
   // cachecol (cauda balançando)
   const tail = [[56, 88 + by], [40 + sw * 3, 92 + by], [22 + sw * 6, 100 + by + 2], [10 + sw * 8, 112 + by - 3], [24 + sw * 6, 108 + by], [42 + sw * 3, 100 + by]];
   smooth(ctx, tail);
-  ctx.fillStyle = lin(ctx, 10, 90, 56, 100, [[0, '#6a2512'], [1, '#b24a24']]); ctx.fill();
-  ctx.fillStyle = lin(ctx, 52, 78, 90, 94, [[0, '#a8431f'], [1, '#d9622f']]);
+  ctx.fillStyle = lin(ctx, 10, 90, 56, 100, [[0, SK.tail[0]], [1, SK.tail[1]]]); ctx.fill();
+  ctx.fillStyle = lin(ctx, 52, 78, 90, 94, [[0, SK.scarf[0]], [1, SK.scarf[1]]]);
   ctx.beginPath(); ctx.roundRect(52, 78 + by, 40, 14, 6); ctx.fill();
   ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(60, 80 + by); ctx.lineTo(62, 91 + by); ctx.moveTo(74, 80 + by); ctx.lineTo(76, 91 + by); ctx.stroke();
@@ -141,8 +154,8 @@ function drawGuardian(ctx, f) {
   // capuz
   const hood = [[44, 66], [47, 48], [62, 38], [80, 42], [91, 58], [88, 76], [72, 82], [54, 80]].map(([x, y]) => [x, y + by]);
   smooth(ctx, hood);
-  ctx.fillStyle = lin(ctx, 44, 38, 90, 80, [[0, '#46372f'], [1, '#1a1210']]); ctx.fill();
-  ctx.save(); ctx.clip(); patches(ctx, rnd, 3, 44, 40, 90, 80, [PAL.rust], 5, 10, 0.5); ctx.restore();
+  ctx.fillStyle = lin(ctx, 44, 38, 90, 80, [[0, SK.hood[0]], [1, SK.hood[1]]]); ctx.fill();
+  ctx.save(); ctx.clip(); patches(ctx, rnd, 3, 44, 40, 90, 80, [SK.patch[0]], 5, 10, 0.5); ctx.restore();
   // rosto na sombra
   ctx.fillStyle = '#080504';
   ctx.beginPath(); ctx.ellipse(77, 63 + by, 12, 13, 0.1, 0, TAU); ctx.fill();
@@ -150,8 +163,8 @@ function drawGuardian(ctx, f) {
   ctx.strokeStyle = '#1a1210'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(66, 61 + by); ctx.lineTo(92, 61 + by); ctx.stroke();
   [[73, 61], [84, 61]].forEach(([x, y]) => {
     ctx.fillStyle = '#2b1e17'; ctx.beginPath(); ctx.arc(x, y + by, 5.6, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#ffd28a'; ctx.beginPath(); ctx.arc(x, y + by, 3.6, 0, TAU); ctx.fill();
-    glow(ctx, x, y + by, 12, PAL.glow, 0.75);
+    ctx.fillStyle = SK.eye; ctx.beginPath(); ctx.arc(x, y + by, 3.6, 0, TAU); ctx.fill();
+    glow(ctx, x, y + by, 12, SK.eyeGlow, 0.75);
   });
 
   // braço + lanterna
@@ -159,13 +172,13 @@ function drawGuardian(ctx, f) {
   limb(ctx, 95, 104 + by + sw, 103, 112 + by + sw, 7, 6, '#1b1311');
   const ly = 114 + by + sw;
   ctx.strokeStyle = '#1a1210'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(103, 110 + by + sw); ctx.lineTo(103, ly + 2); ctx.stroke();
-  glow(ctx, 103, ly + 14, 38, PAL.ember, 0.55);
+  glow(ctx, 103, ly + 14, 38, SK.lant, 0.55);
   ctx.fillStyle = '#1b1311'; ctx.fillRect(97, ly, 13, 3); ctx.fillRect(97, ly + 24, 13, 3);
-  ctx.fillStyle = rad(ctx, 103.5, ly + 14, 0, 12, [[0, '#fffbe8'], [0.35, '#ffd98a'], [1, '#ff7a2a']]);
+  ctx.fillStyle = rad(ctx, 103.5, ly + 14, 0, 12, [[0, SK.core[0]], [0.35, SK.core[1]], [1, SK.core[2]]]);
   ctx.beginPath(); ctx.roundRect(98, ly + 2, 11, 22, 3); ctx.fill();
   ctx.strokeStyle = '#1b1311'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(101.5, ly + 3); ctx.lineTo(101.5, ly + 23); ctx.moveTo(106, ly + 3); ctx.lineTo(106, ly + 23); ctx.stroke();
-  glow(ctx, 103.5, ly + 14, 20, PAL.flame, 0.9);
+  glow(ctx, 103.5, ly + 14, 20, SK.flame, 0.9);
 }
 
 // ───────────── SAQUEADOR ─────────────

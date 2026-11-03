@@ -456,3 +456,14 @@
 }
 .rs-rank{min-height:24px;margin:2px 0 4px;font-size:16px;color:var(--ash);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
 .rs-rank b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:30px;color:var(--glow);letter-spacing:1px}
+
+/* skins */
+.h-skins{padding:2px 16px 0}.h-skins .h-sub{padding-left:2px}
+.sk-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.sk{position:relative;width:44px;height:44px;border-radius:50%;padding:0;background:#140e0c;border:2px solid #3a2a24;display:grid;place-items:center;transition:.15s}
+.sk i{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);box-shadow:0 0 0 2px #0d0807,0 0 10px color-mix(in srgb,var(--c) 45%,transparent)}
+.sk:hover{border-color:var(--rustLight);transform:translateY(-2px)}
+.sk.sel{border-color:var(--ember);box-shadow:0 0 14px rgba(255,122,42,.5)}
+.sk.lock i{filter:grayscale(1) brightness(.45);box-shadow:none}
+.sk.lock::after{content:'';position:absolute;width:14px;height:14px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23e9dcc6' d='M5 7V5a3 3 0 016 0v2h1v7H4V7zm2 0h2V5a1 1 0 00-2 0z'/%3E%3C/svg%3E")}
+.sk-name{margin-top:6px;display:flex;gap:10px;align-items:baseline}.sk-name b{font-size:16px;color:var(--bone)}.sk-name small{font-size:12.5px;color:var(--ash)}

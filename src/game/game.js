@@ -2,7 +2,7 @@
 // Os efeitos das habilidades vêm do mesmo motor da Forja (FxSystem) — o que se pinta lá aparece aqui.
 import { TAU, clamp, lerp, mulberry32, cv, rgba } from '../shared/util.js';
 import { PAL, FOG } from '../shared/theme.js';
-import { buildSheet, buildPickups, buildSoft } from '../shared/art-chars.js';
+import { buildSheet, buildPickups, buildSoft, setPlayerSkin } from '../shared/art-chars.js';
 import { buildGround } from '../shared/art-env.js';
 import { buildAllProps } from '../shared/art-props.js';
 import { buildBiomeProps, tintGround, recolor } from '../shared/art-biomes.js';
@@ -51,6 +51,7 @@ export async function buildArt(onProgress = () => {}) {
   const step = () => new Promise((r) => setTimeout(r, 0));
   const art = { sheets: {}, flash: {} };
   for (const n of ['player', 'raider', 'ghoul', 'drone', 'brute', 'boss', 'hound', 'shaman', 'scorpion']) { const s = buildSheet(n); art.sheets[n] = s; art.flash[n] = flashOf(s.canvas); onProgress(0.15 + Math.random() * 0.01); await step(); }
+  art.setSkin = (id) => { setPlayerSkin(id); const s = buildSheet('player'); art.sheets.player = s; art.flash.player = flashOf(s.canvas); };
   art.pick = buildPickups(); art.scrap = scrapSprite(); art.soft = buildSoft(); onProgress(0.3); await step();
   art.ground = buildGround(512); onProgress(0.5); await step();
   art.baseProps = buildAllProps(); art.chest = chestSprite(); art.biomeCache = {}; onProgress(0.8); await step();
