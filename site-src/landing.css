@@ -152,6 +152,17 @@ p{margin:0;text-wrap:pretty}
   .top-act .ghost{display:none}
   .foot a:last-child{margin-left:0}
 }
+@media (max-height:520px) and (orientation:landscape){
+  .hero{display:flex;min-height:100svh;align-items:center}
+  .hero::before{display:block}
+  .hero-img{position:absolute;inset:0;z-index:-2;height:auto;margin:0;-webkit-mask-image:none;mask-image:none;background-position:70% 50%}
+  .hero-in{padding:72px 0 24px;margin:0 auto}
+  .hero h1{font-size:clamp(2.6rem,12vh,4rem)}
+  .hero .lead{margin-top:10px;font-size:1rem;max-width:44ch}
+  .hero .fine{display:none}
+  .btn.xl{min-height:44px;padding-block:10px}
+  .sec{padding-block:48px}
+}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .hero-img{animation:none}
