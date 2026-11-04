@@ -4,6 +4,7 @@ import { TAU, cv, clamp } from '../shared/util.js';
 import { buildSheet, SHEETS } from '../shared/art-chars.js';
 import { buildGround } from '../shared/art-env.js';
 import * as T from '../shared/art-fx.js';
+import * as T2 from '../shared/art-fx2.js';
 import { FxSystem, KINDS, ALPHA_CURVES, DEFAULT_DEF, normalizeDef, cloneDef, serializeDef, getTex } from '../fx/core.js';
 import { drawFx, touchTex } from '../fx/canvas-renderer.js';
 import * as store from '../fx/store.js';
@@ -11,8 +12,8 @@ import { SKILL_FX } from '../fx/defaults.js';
 import { Painter } from './painter.js';
 import { KENNEY_BASES, kenneyCanvas } from '../assets/kenney-tex.js';
 
-const SKILL_NAMES = { lamina: 'Lâmina de Ferrugem', brasas: 'Brasas Orbitais', arco: 'Arco Tóxico', nova: 'Nova de Cinzas', chuva: 'Chuva de Sucata', lanca: 'Lança de Brasa', impacto: 'Impacto (acerto)' };
-const BASES = { 'Corte (crescente)': T.texSlash, 'Chama': T.texFlame, 'Faísca': T.texSpark, 'Faísca tóxica': T.texToxicSpark, 'Fumaça': T.texSmoke, 'Raio': T.texBolt, 'Anel de choque': T.texRing, 'Lança': T.texLance, 'Meteoro': T.texMeteor, 'Explosão': T.texImpact, 'Fogo animado — alto': T.texFireSheetTall, 'Fogo animado — grande': T.texFireSheetBig, 'Fogo tóxico animado': T.texFireSheetToxic, 'Fogo animado v2 — alto': T.texFireV2, 'Fogo animado v2 — grande': T.texFireV2Big, 'Fogo animado v2 — tóxico': T.texFireV2Toxic, 'Fogo animado v2 — violeta': T.texFireV2Violet, 'Brasa voadora': T.texEmber, 'Fumaça de brasa (animada)': T.texSmokeSheet };
+const SKILL_NAMES = { lamina: 'Lâmina de Ferrugem', brasas: 'Brasas Orbitais', arco: 'Arco Tóxico', nova: 'Nova de Cinzas', chuva: 'Chuva de Sucata', lanca: 'Lança de Brasa', serra: 'Disco de Serra', mina: 'Mina de Brasa', marreta: 'Marreta Sísmica', rastro: 'Rastro de Fogo', totem: 'Totem de Cinzas', vortice: 'Vórtice', veneno: 'Poça Tóxica', lamina_evo: 'Lâmina — evolução', brasas_evo: 'Brasas — evolução', arco_evo: 'Arco — evolução', nova_evo: 'Nova — evolução', chuva_evo: 'Chuva — evolução', lanca_evo: 'Lança — evolução', serra_evo: 'Serra — evolução', mina_evo: 'Mina — evolução', marreta_evo: 'Marreta — evolução', rastro_evo: 'Rastro — evolução', totem_evo: 'Totem — evolução', vortice_evo: 'Vórtice — evolução', impacto: 'Impacto (acerto)' };
+const BASES = { 'Corte (crescente)': T.texSlash, 'Chama': T.texFlame, 'Faísca': T.texSpark, 'Faísca tóxica': T.texToxicSpark, 'Fumaça': T.texSmoke, 'Raio': T.texBolt, 'Anel de choque': T.texRing, 'Lança': T.texLance, 'Meteoro': T.texMeteor, 'Explosão': T.texImpact, 'Fogo animado — alto': T.texFireSheetTall, 'Fogo animado — grande': T.texFireSheetBig, 'Fogo tóxico animado': T.texFireSheetToxic, 'Fogo animado v2 — alto': T.texFireV2, 'Fogo animado v2 — grande': T.texFireV2Big, 'Fogo animado v2 — tóxico': T.texFireV2Toxic, 'Fogo animado v2 — violeta': T.texFireV2Violet, 'Brasa voadora': T.texEmber, 'Fumaça de brasa (animada)': T.texSmokeSheet, 'Cristal de gelo': T2.texIceShard, 'Raio ramificado': T2.texLightning, 'Redemoinho de vazio': T2.texVoid, 'Estrela sagrada': T2.texHoly, 'Garras': T2.texClaw, 'Rachaduras no chão': T2.texCracks, 'Círculo de runas': T2.texRune, 'Brilho em estrela': T2.texStar, 'Orbe de energia': T2.texOrb, 'Esporos tóxicos': T2.texSpores, 'Cortes cruzados': T2.texSlashX, 'Onda de fumaça': T2.texSmokeRing, 'Respingo de brasa': T2.texSplat, 'Disco de serra': T.texSaw };
 const WHICH = { body: 'Corpo', part: 'Partícula', hit: 'Impacto', smoke: 'Fumaça' };
 
 const el = (tag, props = {}, ...kids) => {

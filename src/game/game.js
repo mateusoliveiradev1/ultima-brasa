@@ -280,7 +280,7 @@ export class Game {
     return P;
   }
   cast(id) {
-    const h = this.hero, st = this.sk[id] || (this.sk[id] = { cd: 0, inst: null }), P = this.sp(id), def = store.resolveFx(SKILLS[id].fx), area = this.stats.area;
+    const h = this.hero, st = this.sk[id] || (this.sk[id] = { cd: 0, inst: null }), P = this.sp(id), def = (this.evo?.[id] && store.resolveFx(id + '_evo')) || store.resolveFx(SKILLS[id].fx), area = this.stats.area;
     if (!def) return true;
     const orbitFix = (inst) => { if (inst && inst.def.kind === 'orbit' && id !== 'brasas') this.timers.push({ t: 1.1, fn: () => this.fx.kill(inst) }); return inst; };
     switch (id) {
@@ -366,7 +366,7 @@ export class Game {
         const tgt = this.nearest(h.x, h.z, 15);
         for (let i = 0; i < P.count && mines.length + i < 10; i++) {
           const a = tgt ? Math.atan2(tgt.z - h.z, tgt.x - h.x) + (rnd() - 0.5) * 2.2 : rnd() * TAU, r = 1.6 + rnd() * 2.6;
-          this.addDevice({ type: 'mina', x: h.x + Math.cos(a) * r, z: h.z + Math.sin(a) * r, life: P.life, arm: 0.7 + i * 0.1, P, area, fxId: 'mina', fxScale: 0.9 });
+          this.addDevice({ type: 'mina', x: h.x + Math.cos(a) * r, z: h.z + Math.sin(a) * r, life: P.life, arm: 0.7 + i * 0.1, P, area, fxId: this.evo?.mina ? 'mina_evo' : 'mina', fxScale: 0.9 });
         }
         A.sfx('latch', { vol: 0.3, rate: 0.8 });
         return true;
@@ -399,7 +399,7 @@ export class Game {
         if (this.mode !== 'hub' && !this.nearest(h.x, h.z, 15)) return false;
         const tot = this.devices.filter((d) => d.type === 'totem'); while (tot.length >= P.max) { const o = tot.shift(); o.life = 0; }
         const tgt = this.nearest(h.x, h.z, 15), a = tgt ? Math.atan2(tgt.z - h.z, tgt.x - h.x) + (rnd() - 0.5) : rnd() * TAU;
-        this.addDevice({ type: 'totem', x: h.x + Math.cos(a) * 2, z: h.z + Math.sin(a) * 2, life: P.life, shot: 0.4, pulse: 2.2, P, area, fxId: 'totem', fxScale: 0.9 });
+        this.addDevice({ type: 'totem', x: h.x + Math.cos(a) * 2, z: h.z + Math.sin(a) * 2, life: P.life, shot: 0.4, pulse: 2.2, P, area, fxId: this.evo?.totem ? 'totem_evo' : 'totem', fxScale: 0.9 });
         this.ring(h.x + Math.cos(a) * 2, h.z + Math.sin(a) * 2, 2.2, '#ffd35a', 0.5, 0.12); A.sfx('chime', { vol: 0.25, rate: 0.7 });
         return true;
       }
@@ -407,7 +407,7 @@ export class Game {
         const near = this.enemies.filter((e) => this.ok(e) && Math.hypot(e.x - h.x, e.z - h.z) < 13 * area);
         if (!near.length && this.mode !== 'hub') return false;
         const c = near.length ? near[(rnd() * near.length) | 0] : { x: h.x + 4, z: h.z }, R = P.radius * area, ev = !!this.evo?.vortice;
-        this.zone({ x: c.x, z: c.z, r: R, life: P.life, dmg: P.dmg, tick: P.tick, pull: P.pull, fxId: 'vortice', fxScale: R / 2.4, end: ev ? (z) => { const R2 = z.r * 1.2; this.fx.spawn(store.resolveFx('nova'), { x: z.x, z: z.z, radius: R2, dx: 1, dz: 0 }); this.areaDamage(z.x, z.z, R2, P.dmg * 14, { kb: 6 }); this.cam.shake = Math.max(this.cam.shake, 0.8); A.synth('boom', { vol: 0.45 }); } : null });
+        this.zone({ x: c.x, z: c.z, r: R, life: P.life, dmg: P.dmg, tick: P.tick, pull: P.pull, fxId: ev ? 'vortice_evo' : 'vortice', fxScale: R / 2.4, end: ev ? (z) => { const R2 = z.r * 1.2; this.fx.spawn(store.resolveFx('nova'), { x: z.x, z: z.z, radius: R2, dx: 1, dz: 0 }); this.areaDamage(z.x, z.z, R2, P.dmg * 14, { kb: 6 }); this.cam.shake = Math.max(this.cam.shake, 0.8); A.synth('boom', { vol: 0.45 }); } : null });
         A.synth('whoosh', { vol: 0.25 });
         return true;
       }
@@ -488,7 +488,8 @@ export class Game {
     for (const id of Object.keys(this.skillLv)) {
       const st = this.sk[id] || (this.sk[id] = { cd: 0.2, inst: null }), P = this.sp(id);
       if (id === 'brasas') {
-        const def = store.resolveFx('brasas'); if (!def) continue;
+        const def = (this.evo?.brasas && store.resolveFx('brasas_evo')) || store.resolveFx('brasas'); if (!def) continue;
+        if (st.inst && st.inst.def.id !== def.id) { this.fx.kill(st.inst); st.inst = null; }
         if (!st.inst || !this.fx.insts.includes(st.inst)) st.inst = this.fx.spawn(def, { x: this.hero.x, z: this.hero.z, follow: this.hero, loop: true, count: P.count });
         st.inst.count = P.count; st.inst.sc = (P.radius * this.stats.area) / (def.args.orbitRadius || 2.6);
         if (this.evo?.brasas && this.mode === 'run') { st.burstT = (st.burstT ?? 4) - dt; if (st.burstT <= 0 && this.nearest(this.hero.x, this.hero.z, 8)) { st.burstT = 4; const R = 6 * this.stats.area; this.fx.spawn(store.resolveFx('nova'), { x: this.hero.x, z: this.hero.z, radius: R, dx: 1, dz: 0 }); this.areaDamage(this.hero.x, this.hero.z, R, P.dmg * 4, { kb: 4 }); this.cam.shake = Math.max(this.cam.shake, 0.3); A.synth('boom', { vol: 0.25 }); } }
@@ -501,7 +502,7 @@ export class Game {
         st.acc = (st.acc || 0) + dt; const h = this.hero;
         if (h.moving && st.acc >= P.gap) { st.acc = 0; const ev = !!this.evo?.rastro, r = P.radius * this.stats.area, dm = P.dmg;
           const ours = this.zones.filter((z) => z.kind === 'rastro'); if (ours.length >= 22) { ours[0].life = 0; }
-          this.zone({ kind: 'rastro', x: h.x, z: h.z, r, life: P.life, dmg: dm, tick: P.tick, fxId: 'rastro', fxScale: r / 1.2, burn: ev, end: ev ? (z) => { this.areaDamage(z.x, z.z, z.r * 1.7, dm * 2.5, { sec: true, kb: 2 }); this.burst(z.x, z.z, 6, 0.6, 5); } : null }); }
+          this.zone({ kind: 'rastro', x: h.x, z: h.z, r, life: P.life, dmg: dm, tick: P.tick, fxId: ev ? 'rastro_evo' : 'rastro', fxScale: r / 1.2, burn: ev, end: ev ? (z) => { this.areaDamage(z.x, z.z, z.r * 1.7, dm * 2.5, { sec: true, kb: 2 }); this.burst(z.x, z.z, 6, 0.6, 5); } : null }); }
         continue;
       }
       st.cd -= dt; if (st.cd > 0) continue;

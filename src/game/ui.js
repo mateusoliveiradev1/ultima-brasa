@@ -582,5 +582,5 @@ export async function mountGame(root) {
   setInterval(() => { if (screen === 'run' && !forja) updateHud(); }, 66);
   // expõe para testes automatizados
   showTitle();
-  window.__game = { tree: TREE, game, save, startRun, toHub, openForja, closeForja };
+  window.__game = { tree: TREE, game, save, startRun, toHub, openForja, closeForja, fxStore: store };
 }
