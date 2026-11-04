@@ -81,6 +81,12 @@ export const EVOS = {
   chuva: { name: 'Chuva Apocalíptica', need: 'luck', ico: '☄', desc: '+6 fragmentos e +70% de dano.' },
   lanca: { name: 'Lança Solar', need: 'spd', ico: '➤', desc: '+2 lanças perfurantes e +70% de dano.' },
 };
+export const INF = {
+  dmg: { name: 'Brasa Infinita: Fúria', desc: '+4% de dano. Acumula sem limite.', ico: '✦', c: '#ffb347' },
+  hp: { name: 'Brasa Infinita: Casco', desc: '+5% de vida máxima (e cura essa parte). Acumula sem limite.', ico: '♥', c: '#ff6a4a' },
+  cd: { name: 'Brasa Infinita: Ritmo', desc: '-1,5% de recarga das habilidades. Acumula.', ico: '⟳', c: '#6fb8ff' },
+  heal: { name: 'Fôlego de Brasa', desc: 'Recupera 50% da vida agora.', ico: '✚', c: '#42e0b4' },
+};
 export const RARITY = { comum: { c: '#ffb347', n: 'PASSIVA' }, rara: { c: '#6fb8ff', n: 'RARA' }, maldita: { c: '#d94bff', n: 'MALDITA' }, evo: { c: '#ff5a2a', n: 'EVOLUÇÃO' } };
 
 

@@ -54,6 +54,7 @@ export const signUpPassword = async (email, password) => {
 export const signOut = () => put(null);
 
 export const myProfile = () => rpc('my_profile');
+export const setSkin = (skin) => rpc('set_skin', { p_skin: skin });
 export const setNick = (nick) => rpc('set_nick', { p_nick: nick });
 export const pushSave = (save, at) => rpc('save_push', { p_save: save, p_at: at });
 export const pullSave = () => rpc('save_pull');

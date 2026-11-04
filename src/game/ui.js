@@ -1,7 +1,7 @@
 // Interface do jogo: abrigo (hub) com Árvore da Brasa, HUD da expedição, cartas de nível, resultado e a Forja embutida.
 import { fmt, fmtTime, cv } from '../shared/util.js';
 import { GAME_TITLE } from '../shared/theme.js';
-import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, EVOS, RARITY, DIFFS, DIFF, diffUnlocked, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
+import { SKILLS, SKILL_IDS, PASSIVES, TREE, NODE, BRANCH, nodeCost, nodeOpen, hasRelic, RELIC_NODE, catadorRate, catadorMul, EVOS, INF, RARITY, DIFFS, DIFF, diffUnlocked, DEPTH_MULT, BOSS_TIME, cinzasFor, REBIRTH_MIN, patenteOf, patenteNeed, MILESTONES } from './data.js';
 import { BIOMES, BIOME_ORDER, biomeUnlocked } from './biomes.js';
 import * as SV from './save.js';
 import * as O from './online.js';
@@ -9,7 +9,9 @@ import { mountOnline } from './online-ui.js';
 import * as A from './audio.js';
 import { Game, buildArt, skillIcon } from './game.js';
 import { mountForja } from '../forja/forja.js';
-import { PLAYER_SKINS } from '../shared/art-chars.js';
+import { PLAYER_SKINS, buildSheet, setPlayerSkin } from '../shared/art-chars.js';
+import { RAR, SKIN_META, SKIN_ORDER } from '../shared/skins.js';
+import { EVENTS, EVENT_GOAL, activeEvents, nextEvent, fmtDM } from '../shared/events.js';
 import * as store from '../fx/store.js';
 
 const el = (tag, props = {}, ...kids) => {
@@ -20,20 +22,24 @@ const el = (tag, props = {}, ...kids) => {
   kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c)));
   return e;
 };
-const RAR = { comum: { n: 'Comum', c: '#b9ada0' }, rara: { n: 'Rara', c: '#4fb4f0' }, epica: { n: 'Épica', c: '#b57aff' }, lendaria: { n: 'Lendária', c: '#ffb347' } };
 const bossAt = (s, biome, minIdx) => DIFFS.some((d, i) => i >= minIdx && (s.bw?.[`${biome}|${d.id}`] || 0) > 0);
-const SKINS = [
-  { id: 'padrao', name: 'Sobrevivente', rar: 'comum', hint: 'A skin original.', ok: () => true },
-  { id: 'ruinas', name: 'Saqueador', rar: 'rara', hint: 'Derrote o chefe das Ruínas Cinzentas no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'ruinas', 1) },
-  { id: 'pantano', name: 'Musgo Tóxico', rar: 'rara', hint: 'Derrote o chefe do Pântano Tóxico no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'pantano', 1) },
-  { id: 'deserto', name: 'Nômade da Duna', rar: 'rara', hint: 'Derrote o chefe do Deserto de Sucata no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'deserto', 1) },
-  { id: 'tundra', name: 'Geada', rar: 'rara', hint: 'Derrote o chefe da Tundra Cinzenta no Pesadelo ou mais difícil.', ok: (s) => bossAt(s, 'tundra', 1) },
-  { id: 'cacador', name: 'Caçador de Chefes', rar: 'epica', hint: 'Derrote 25 chefes.', ok: (s) => s.wins >= 25, prog: (s) => [s.wins, 25] },
-  { id: 'veterano', name: 'Veterano de Ferro', rar: 'epica', hint: 'Chegue à patente 20.', ok: (s) => patenteOf(s.lifetime) >= 20, prog: (s) => [patenteOf(s.lifetime), 20] },
-  { id: 'cinzas', name: 'Cinzas Eternas', rar: 'epica', hint: 'Renasça 3 vezes na Árvore da Brasa.', ok: (s) => s.rebirths >= 3, prog: (s) => [s.rebirths, 3] },
-  { id: 'calamidade', name: 'Calamidade', rar: 'epica', hint: 'Derrote um chefe na dificuldade Calamidade.', ok: (s) => (s.diffWins.calamidade || 0) > 0 },
-  { id: 'coroa', name: 'Coroa da Brasa', rar: 'lendaria', hint: 'Derrote um chefe na dificuldade Abissal.', ok: (s) => (s.diffWins.abissal || 0) > 0 },
-];
+const biomeHint = (n) => `Derrote o chefe ${n} no Pesadelo ou mais difícil.`;
+const SKIN_RULES = {
+  padrao: { hint: 'A skin original.', ok: () => true },
+  ruinas: { hint: biomeHint('das Ruínas Cinzentas'), ok: (s) => bossAt(s, 'ruinas', 1) },
+  pantano: { hint: biomeHint('do Pântano Tóxico'), ok: (s) => bossAt(s, 'pantano', 1) },
+  deserto: { hint: biomeHint('do Deserto de Sucata'), ok: (s) => bossAt(s, 'deserto', 1) },
+  tundra: { hint: biomeHint('da Tundra Cinzenta'), ok: (s) => bossAt(s, 'tundra', 1) },
+  cacador: { hint: 'Derrote 25 chefes.', ok: (s) => s.wins >= 25, prog: (s) => [s.wins, 25] },
+  veterano: { hint: 'Chegue à patente 20.', ok: (s) => patenteOf(s.lifetime) >= 20, prog: (s) => [patenteOf(s.lifetime), 20] },
+  cinzas: { hint: 'Renasça 3 vezes na Árvore da Brasa.', ok: (s) => s.rebirths >= 3, prog: (s) => [s.rebirths, 3] },
+  calamidade: { hint: 'Derrote um chefe na dificuldade Calamidade.', ok: (s) => (s.diffWins.calamidade || 0) > 0 },
+  laureado: { hint: 'Termine uma semana do ranking no top 10 (precisa de conta).', ok: (s) => (s.titles?.top10 || 0) > 0 },
+  coroa: { hint: 'Derrote um chefe na dificuldade Abissal.', ok: (s) => (s.diffWins.abissal || 0) > 0 },
+  campeao: { hint: 'Termine uma semana do ranking em 1º lugar (precisa de conta).', ok: (s) => (s.titles?.champ || 0) > 0 },
+};
+for (const ev of EVENTS) SKIN_RULES[ev.skin] = { ev, hint: '', ok: (s) => !!s.evDone?.[ev.id] };
+const SKINS = SKIN_ORDER.map((id) => ({ id, ...SKIN_META[id], ...SKIN_RULES[id] }));
 const PASSIVE_ICO = { dmg: '✦', cdr: '⟳', spd: '»', hp: '♥', regen: '✚', magnet: '◎', area: '◌', luck: '☘', armor: '▣', crit: '✺' };
 
 export async function mountGame(root) {
@@ -82,7 +88,7 @@ export async function mountGame(root) {
   const dlgCard = el('div', { class: 'ms-card dlg' }), dlg = el('div', { class: 'g-overlay ms', onclick: (e) => { if (e.target === dlg) closeDlg(); } }, dlgCard);
   ui.append(dlg);
   const openDlg = (title, ...kids) => { dlgCard.innerHTML = ''; dlgCard.append(el('h2', {}, title), ...kids, el('div', { class: 'dlg-foot' }, btn('sm pri', 'Fechar', closeDlg))); dlg.classList.add('show'); };
-  const closeDlg = () => { dlg.classList.remove('show'); SV.save(); if (screen === 'title') refreshTitle(); };
+  const closeDlg = () => { dlgCard.classList.remove('wide'); dlg.classList.remove('show'); SV.save(); if (screen === 'title') refreshTitle(); };
   dlg.addEventListener('pointerdown', (e) => { if (e.target === dlg) closeDlg(); });
   const sw = (label, sub, key, on) => { const b = el('button', { class: 'sw' + (save.opts[key] ?? save[key] ? ' on' : ''), onmouseenter: sfxOver, onclick: () => { sfxClick(); on(); b.classList.toggle('on'); } }, el('i')); return el('div', { class: 'op-row' }, el('div', {}, el('b', {}, label), el('small', {}, sub)), b); };
   function openOptions() {
@@ -114,6 +120,7 @@ export async function mountGame(root) {
       el('p', { class: 'dim' }, 'Feito com Canvas 2D e Web Audio, sem dependências em tempo de execução. Licenças completas no repositório, pasta licenses/.'));
   }
 
+  const evChip = el('button', { class: 'tt-event', onclick: () => { sfxClick(); goHub(); } });
   const embers = el('canvas', { class: 'tt-embers' });
   const stat = el('div', { class: 'tt-stat' });
   const mkBtn = (label, sub, fn, cls = '') => el('button', { class: 'tt-btn ' + cls, onmouseenter: (e) => focusItem(e.currentTarget), onclick: () => { sfxClick(); fn(); } }, el('b', {}, label), el('small', {}, sub));
@@ -127,7 +134,7 @@ export async function mountGame(root) {
   const title = el('div', { class: 'g-title' }, embers,
     el('div', { class: 'tt-side' },
       el('h1', { class: 'tt-logo', 'aria-label': GAME_TITLE }, el('span', { class: 'a' }, 'ÚLTIMA'), el('span', { class: 'b' }, 'BRASA')),
-      el('div', { class: 'tt-tag' }, 'O mundo acabou. A chama não.'),
+      el('div', { class: 'tt-tag' }, 'O mundo acabou. A chama não.'), evChip,
       el('div', { class: 'tt-menu' }, ...items), el('div', { class: 'tt-secs' }, ...sec), stat),
     el('div', { class: 'tt-foot' }, el('span', {}, VERSION), el('span', {}, '↑ ↓ Enter')));
   ui.append(title);
@@ -141,6 +148,7 @@ export async function mountGame(root) {
     requestAnimationFrame(emberLoop);
   }
   function refreshTitle() {
+    const ea = activeEvents()[0]; evChip.style.display = ea ? '' : 'none'; if (ea) evChip.textContent = `Evento: ${ea.ev.name} · termina em ${ea.daysLeft} dia${ea.daysLeft > 1 ? 's' : ''}`;
     const fresh = save.runs === 0 && save.lifetime < 50;
     playBtn.querySelector('b').textContent = fresh ? 'JOGAR' : 'CONTINUAR'; playBtn.querySelector('small').textContent = fresh ? 'Comece sua primeira expedição' : `Abrigo · ${BIOMES[save.biome].name}`;
     if (accItem) accItem.querySelector('small').textContent = online?.label() || 'Guarde seu progresso na nuvem';
@@ -173,7 +181,7 @@ export async function mountGame(root) {
     btn('sm', '♪', () => { save.music = !save.music; save.sfx = save.music; A.setEnabled({ sfx: save.sfx, music: save.music }); SV.save(); syncSound(); }, { id: 'snd', title: 'Som ligado/desligado' }));
   let online = null;
   const startDailyRun = (info) => { save.biome = info.biome; save.diff = info.diff; save.depth = 1; SV.save(); renderAll(); startRun({ daily: true }); };
-  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime, onRank: true }); online.buttons.forEach((b) => b.classList.add('h-online')); topbar.append(...online.buttons); }
+  if (O.enabled()) { online = mountOnline({ el, btn, openDlg, closeDlg, save, SV, SKIN_META, RAR, onProfile: (p) => { if (p?.titles) { save.titles = p.titles; SV.save(); checkSkins(false); } if (p && p.skin !== save.skin) online?.setSkin(save.skin); }, toast: (t, ms) => showToast(t, ms), BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily: startDailyRun, fmt, fmtTime, onRank: true }); online.buttons.forEach((b) => b.classList.add('h-online')); topbar.append(...online.buttons); }
   const syncSound = () => { const b = topbar.querySelector('#snd'); b.textContent = save.music ? '♪' : '✕'; b.classList.toggle('off', !save.music); };
 
   // painel esquerdo: sobrevivente
@@ -203,19 +211,62 @@ export async function mountGame(root) {
   function setTab(t) { hub.dataset.tab = t; tabs.querySelector('#tsurv').classList.toggle('on', t === 'surv'); tabs.querySelector('#texp').classList.toggle('on', t === 'exp'); }
 
   const affordable = () => TREE.filter((n) => (save.meta[n.id] || 0) < n.max && nodeOpen(n.id, save.meta) && save.scrap >= nodeCost(n.id, save.meta[n.id] || 0)).length;
-  let skinInfo = null;
-  function renderSkins() {
-    skinBox.innerHTML = ''; const eq = SKINS.find((k) => k.id === save.skin) || SKINS[0], inf = SKINS.find((k) => k.id === skinInfo) || eq;
-    const row = el('div', { class: 'sk-row' }), got = SKINS.filter((k) => k.ok(save)).length;
-    for (const k of SKINS) {
-      const P = PLAYER_SKINS[k.id], open = k.ok(save), R = RAR[k.rar];
-      row.append(el('button', { class: 'sk' + (save.skin === k.id ? ' sel' : '') + (inf.id === k.id ? ' look' : '') + (open ? '' : ' lock'), title: open ? k.name : `${k.name}: ${k.hint}`, 'aria-label': `${k.name}, ${R.n}${open ? '' : ' (bloqueada). ' + k.hint}`, style: `--a:${P.cloak[0]};--b:${P.scarf[1]};--c:${P.lant};--r:${R.c}`, onmouseenter: sfxOver,
-        onclick: () => { sfxClick(); skinInfo = k.id; if (open) { save.skin = k.id; art.setSkin(k.id); SV.save(); } renderSkins(); } }, el('i')));
+  // ---- eventos sazonais ----
+  const evKey = (a) => `${a.ev.id}-${a.year}`;
+  const evPts = (a) => (save.ev[evKey(a)] || 0);
+  function eventHint(k) { // texto de como ganhar uma skin sazonal
+    const a = activeEvents().find((x) => x.ev.id === k.ev.id);
+    if (a) return `Evento ${k.ev.name} (termina em ${a.daysLeft} dia${a.daysLeft > 1 ? 's' : ''}): junte ${EVENT_GOAL} pontos. Chefe derrotado = 3, partida de 2 min ou mais = 1.`;
+    return `Skin sazonal do evento ${k.ev.name}. Fora de temporada: volta todo ano. Quem perdeu espera a próxima edição.`;
+  }
+  function addEventPts(r) {
+    const msgs = []; for (const a of activeEvents()) {
+      if (save.evDone[a.ev.id] === a.year) continue; const add = (r.victory ? 3 : 0) + (r.time >= 120 && !r.victory ? 1 : 0); if (!add) continue;
+      const k = evKey(a), v = Math.min(EVENT_GOAL, (save.ev[k] || 0) + add); save.ev[k] = v;
+      msgs.push(`${a.ev.name}: +${add} (${v}/${EVENT_GOAL})`);
+      if (v >= EVENT_GOAL) { save.evDone[a.ev.id] = a.year; msgs.push(`Evento concluído! Skin liberada: ${SKIN_META[a.ev.skin].name}`); }
     }
-    const open = inf.ok(save), pr = inf.prog && !open ? inf.prog(save) : null, R = RAR[inf.rar];
-    skinBox.append(el('div', { class: 'h-sub' }, 'Aparência', el('small', {}, `${got}/${SKINS.length}`)), row,
-      el('div', { class: 'sk-info' }, el('div', { class: 'sk-name' }, el('b', { style: `color:${R.c}` }, inf.name), el('em', { style: `color:${R.c};border-color:${R.c}` }, R.n), open && save.skin === inf.id ? el('small', {}, 'Equipada') : null),
-        open ? null : el('div', { class: 'sk-hint' }, el('span', {}, inf.hint), pr ? el('div', { class: 'g-bar' }, el('i', { style: `width:${Math.min(100, (pr[0] / pr[1]) * 100)}%` })) : null, pr ? el('small', {}, `${fmt(Math.min(pr[0], pr[1]))} / ${fmt(pr[1])}`) : null)));
+    if (msgs.length) SV.save(); return msgs;
+  }
+  // miniatura real da skin (desenha o sprite com a paleta dela)
+  const thumbs = new Map();
+  function skinThumb(id) {
+    let c = thumbs.get(id); if (c) return c;
+    setPlayerSkin(id); const S = buildSheet('player'); setPlayerSkin(save.skin);
+    c = document.createElement('canvas'); c.width = 128; c.height = 192; c.getContext('2d').drawImage(S.canvas, 0, 0, S.fw, S.fh, 0, 0, 128, 192); thumbs.set(id, c); return c;
+  }
+  const thumbEl = (id, cls) => { const c = document.createElement('canvas'); c.width = 128; c.height = 192; c.className = cls; c.getContext('2d').drawImage(skinThumb(id), 0, 0); return c; };
+  let skinInfo = null;
+  function skinDetail(k) {
+    const open = k.ok(save), R = RAR[k.rar], pr = k.prog && !open ? k.prog(save) : null, hint = k.ev ? eventHint(k) : k.hint;
+    const eva = k.ev ? activeEvents().find((x) => x.ev.id === k.ev.id) : null, ep = eva && !open ? evPts(eva) : null;
+    return el('div', { class: 'sk-info' }, el('div', { class: 'sk-name' }, el('b', { style: `color:${R.c}` }, k.name), el('em', { style: `color:${R.c};border-color:${R.c}` }, R.n), open && save.skin === k.id ? el('small', {}, 'Equipada') : null),
+      open ? el('div', { class: 'sk-hint' }, k.ev ? `Evento ${k.ev.name}. Sua para sempre.` : 'Desbloqueada.') : el('div', { class: 'sk-hint' }, el('span', {}, hint),
+        pr ? el('div', { class: 'g-bar' }, el('i', { style: `width:${Math.min(100, (pr[0] / pr[1]) * 100)}%` })) : null, pr ? el('small', {}, `${fmt(Math.min(pr[0], pr[1]))} / ${fmt(pr[1])}`) : null,
+        ep != null ? el('div', { class: 'g-bar' }, el('i', { style: `width:${(ep / EVENT_GOAL) * 100}%` })) : null, ep != null ? el('small', {}, `${ep} / ${EVENT_GOAL} pontos`) : null));
+  }
+  function equip(k) { if (!k.ok(save)) return false; save.skin = k.id; art.setSkin(k.id); SV.save(); try { online?.setSkin(k.id); } catch {} renderSkins(); return true; }
+  function openSkins() {
+    dlgCard.classList.add('wide'); const info = el('div', { class: 'sk-sel' }), grid = el('div', { class: 'sk-grid' });
+    const draw = () => {
+      grid.innerHTML = ''; const cur = SKINS.find((k) => k.id === (skinInfo || save.skin)) || SKINS[0]; info.innerHTML = ''; info.append(skinDetail(cur));
+      for (const k of SKINS) { const open = k.ok(save), R = RAR[k.rar];
+        grid.append(el('button', { class: 'sk-card' + (save.skin === k.id ? ' sel' : '') + (cur.id === k.id ? ' look' : '') + (open ? '' : ' lock'), style: `--r:${R.c}`, 'aria-label': `${k.name}, ${R.n}${open ? '' : ', bloqueada'}`, onmouseenter: sfxOver,
+          onclick: () => { sfxClick(); skinInfo = k.id; if (open) equip(k); draw(); } }, thumbEl(k.id, 'sk-img'), el('b', {}, k.name), el('small', { style: `color:${R.c}` }, k.ev ? 'Sazonal' : R.n))); }
+    };
+    skinInfo = save.skin; draw(); openDlg('Aparência', info, grid, el('p', { class: 'dim' }, 'Só muda o visual: nenhuma skin dá vantagem na partida.'));
+  }
+  function renderSkins() {
+    skinBox.innerHTML = ''; const eq = SKINS.find((k) => k.id === save.skin) || SKINS[0], R = RAR[eq.rar], got = SKINS.filter((k) => k.ok(save)).length;
+    skinBox.append(el('div', { class: 'h-sub' }, 'Aparência', el('small', {}, `${got}/${SKINS.length}`)),
+      el('button', { class: 'sk-cur', style: `--r:${R.c}`, onmouseenter: sfxOver, onclick: () => { sfxClick(); openSkins(); } }, thumbEl(eq.id, 'sk-mini'), el('div', {}, el('b', { style: `color:${R.c}` }, eq.name), el('small', {}, R.n + ' · tocar para trocar'))));
+    for (const a of activeEvents()) {
+      const done = save.evDone[a.ev.id] === a.year || save.skins[a.ev.skin], v = evPts(a), sk = SKIN_META[a.ev.skin];
+      skinBox.append(el('button', { class: 'ev-card' + (done ? ' done' : ''), onmouseenter: sfxOver, onclick: () => { sfxClick(); skinInfo = a.ev.skin; openSkins(); } },
+        el('div', { class: 'ev-top' }, el('b', {}, a.ev.name), el('small', {}, `termina em ${a.daysLeft} dia${a.daysLeft > 1 ? 's' : ''}`)),
+        el('div', { class: 'ev-sub' }, done ? `Skin liberada: ${sk.name}` : `Ganhe a skin ${sk.name}: ${Math.min(v, EVENT_GOAL)}/${EVENT_GOAL}`),
+        done ? null : el('div', { class: 'g-bar' }, el('i', { style: `width:${(v / EVENT_GOAL) * 100}%` }))));
+    }
   }
   function checkSkins(quiet) {
     const got = []; for (const k of SKINS) if (k.ok(save) && !save.skins[k.id]) { save.skins[k.id] = true; if (k.id !== 'padrao') got.push(k); }
@@ -405,7 +456,7 @@ export async function mountGame(root) {
   let slotKey = '';
   function updateHud() {
     const s = game.hud();
-    hpFill.style.width = Math.max(0, (s.hp / s.maxHp) * 100) + '%'; hpTxt.textContent = `${Math.ceil(Math.max(0, s.hp))} / ${s.maxHp}`; lvlTxt.textContent = s.level;
+    hpFill.style.width = Math.max(0, Math.min(1, s.hp / s.maxHp) * 100) + '%'; hpTxt.textContent = `${Math.ceil(Math.max(0, Math.min(s.hp, s.maxHp)))} / ${Math.round(s.maxHp)}`; lvlTxt.textContent = s.level;
     xpFill.style.width = ((s.xp / s.xpNext) * 100).toFixed(1) + '%'; timeTxt.textContent = fmtTime(s.time);
     subTxt.textContent = game.bossSpawned ? '' : `${game.endless ? 'Próximo chefe' : 'Chefe'} em ${fmtTime(s.bossIn)}`;
     killsTxt.textContent = fmt(s.kills); scrapTxt.textContent = fmt(s.scrap);
@@ -425,7 +476,7 @@ export async function mountGame(root) {
   function showLevelUp(choices, rerolls) {
     lvTitle.innerHTML = `Subiu de nível <b>${game.level}</b>`; cardsBox.innerHTML = '';
     choices.forEach((c, i) => {
-      const isSkill = c.kind === 'skill', isEvo = c.kind === 'evo', def = isSkill ? SKILLS[c.id] : isEvo ? EVOS[c.id] : PASSIVES[c.id], R = RARITY[isEvo ? 'evo' : def.rar || 'comum'], col = isSkill ? def.color : R.c, max = isSkill ? 6 : isEvo ? 1 : def.max;
+      const isSkill = c.kind === 'skill', isEvo = c.kind === 'evo', isInf = c.kind === 'inf', def = isSkill ? SKILLS[c.id] : isEvo ? EVOS[c.id] : isInf ? INF[c.id] : PASSIVES[c.id], R = isInf ? { c: def.c, n: c.id === 'heal' ? 'CURA' : 'INFINITA' } : RARITY[isEvo ? 'evo' : def.rar || 'comum'], col = isSkill ? def.color : R.c, max = isSkill ? 6 : isEvo ? 1 : isInf ? Math.max(8, c.lv) : def.max;
       let icon; if (isSkill) { icon = skillIcon(c.id, 96); icon.className = 'ic'; } else icon = el('div', { class: 'ic glyph' }, isEvo ? def.ico : (def.ico || PASSIVE_ICO[c.id]));
       const pips = el('div', { class: 'pips' }); for (let k = 1; k <= max; k++) pips.append(el('i', { class: k < c.lv ? 'on' : k === c.lv ? 'new' : '' }));
       cardsBox.append(el('button', { class: 'lv-card' + (c.isNew ? ' fresh' : ''), style: `--c:${col}`, onmouseenter: sfxOver, onclick: () => { sfxClick(); game.choose(i); } },
@@ -459,6 +510,7 @@ export async function mountGame(root) {
       const ni = BIOME_ORDER.indexOf(r.biome) + 1; if (ni < BIOME_ORDER.length && save.biomeWins[r.biome] === 1) unlockMsg.push(`Novo mapa: ${BIOMES[BIOME_ORDER[ni]].name}`);
     }
     const gainEl = el('b', { class: 'g' }, '⬢ 0'), close = () => { resEl.classList.remove('show'); };
+    const evMsgs = addEventPts(r); checkSkins(true).forEach((k) => unlockMsg.push(`Nova skin: ${k.name}`)); evMsgs.forEach((m) => unlockMsg.push(m));
     const rankEl = el('div', { class: 'rs-rank' }); let shareTxt = `Resisti ${fmtTime(r.time)} em ${b.name} na Última Brasa${r.victory ? ' e derrubei o chefe' : ''}. Consegue me passar?`;
     const shareBtn = btn('sm', 'Compartilhar', async () => { const url = 'https://ultima-brasa.vercel.app/'; try { if (navigator.share) await navigator.share({ title: 'Última Brasa', text: shareTxt, url }); else { await navigator.clipboard.writeText(shareTxt + ' ' + url); showToast('Texto copiado. Cole onde quiser.'); } } catch { /* cancelado */ } });
     if (online) { rankEl.textContent = O.user() ? 'Enviando ao ranking…' : 'Entre na conta para aparecer no ranking.'; if (!O.user() && r.time >= 60) rankEl.append(' ', btn('sm pri', 'Entrar', () => online.openAccount())); if (r.time < 60) rankEl.textContent = 'Partidas com menos de 1 minuto não entram no ranking.'; }

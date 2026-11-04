@@ -2,7 +2,7 @@
 import * as O from './online.js';
 
 export function mountOnline(H) {
-  const { el, btn, openDlg, closeDlg, save, SV, toast, BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily, fmt, fmtTime } = H;
+  const { el, btn, openDlg, closeDlg, save, SV, SKIN_META, onProfile, toast, BIOMES, BIOME_ORDER, DIFFS, diffUnlocked, biomeUnlocked, startDaily, fmt, fmtTime } = H;
   let prof = null, checked = false, pushT = 0, pushing = false;
   const accountBtn = btn('sm', 'Entrar', () => openAccount(), { title: 'Conta, save na nuvem e ranking' });
   const rankBtn = btn('sm', 'Ranking', () => openRank(), { title: 'Rankings e desafio do dia' });
@@ -11,7 +11,7 @@ export function mountOnline(H) {
 
   async function loadProfile() {
     if (!O.user()) { prof = null; refreshLabel(); return null; }
-    const r = await O.myProfile(); prof = r.ok ? r.data : null; refreshLabel(); return prof;
+    const r = await O.myProfile(); prof = r.ok ? r.data : null; refreshLabel(); try { onProfile?.(prof); } catch { /* opcional */ } return prof;
   }
   // ── save na nuvem ──
   const summary = (s) => `⬢ ${fmt(Math.floor(s.lifetime || 0))} no total · ${s.wins || 0} chefes · ${s.cinzas || 0} Cinzas`;
@@ -86,12 +86,14 @@ export function mountOnline(H) {
       const r = await O.leaderboard(st.tab === 'all' ? 'all' : st.tab === 'week' ? 'week' : st.tab === 'day' ? 'day' : 'all', st.biome, st.diff, st.tab === 'progress' ? 'progress' : 'run');
       list.innerHTML = ''; if (!r.ok) { list.append(el('div', { class: 'dim' }, 'Não foi possível carregar o ranking: ' + r.err)); return; }
       const rows = r.data || []; if (!rows.length) { list.append(el('div', { class: 'dim' }, 'Ainda não há ninguém aqui. Termine uma partida de 1 minuto ou mais para abrir o ranking.')); return; }
-      rows.forEach((x, i) => { if (x.me && i > 0 && x.rank > rows[i - 1].rank + 1) list.append(el('div', { class: 'rk-gap dim' }, '···')); list.append(el('div', { class: 'rk-row' + (x.me ? ' me' : '') }, el('b', { class: 'rk-n' }, '#' + x.rank), el('span', { class: 'rk-nick' }, x.nick, x.victory ? el('i', { title: 'Derrotou o chefe' }, ' ★') : null),
+      rows.forEach((x, i) => { if (x.me && i > 0 && x.rank > rows[i - 1].rank + 1) list.append(el('div', { class: 'rk-gap dim' }, '···')); list.append(el('div', { class: 'rk-row' + (x.me ? ' me' : '') }, el('b', { class: 'rk-n' }, '#' + x.rank), el('span', { class: 'rk-nick' }, skinDot(x.skin), x.nick, x.victory ? el('i', { title: 'Derrotou o chefe' }, ' ★') : null),
         el('span', { class: 'rk-s dim' }, x.secs ? `${fmtTime(x.secs)} · ${fmt(x.kills)} abates · nv ${x.lvl}` : ''), el('b', { class: 'rk-p' }, fmt(x.pts)))); });
     }
     box.append(tabs, filt, dailyBox, list); openDlg('Ranking', box); render();
   }
 
+  const skinDot = (id) => { const m = SKIN_META[id]; return m ? el('i', { class: 'rk-sk', title: m.name, style: `--a:${m.c[0]};--b:${m.c[1]}` }) : null; };
+  const setSkin = (id) => { if (O.user() && prof) O.setSkin(id); };
   async function onRunEnd(r, daily) {
     if (!O.user() || !prof) return null;
     const res = await O.submitRun(r, daily); const d = res.data; let out = null;
@@ -106,5 +108,5 @@ export function mountOnline(H) {
     checked = true;
   }
   boot();
-  return { buttons: [rankBtn, accountBtn], onRunEnd, openRank, openAccount, label: () => (O.user() ? (prof?.nick ? `Conectado como ${prof.nick}` : 'Escolha seu apelido') : 'Entrar ou criar conta') };
+  return { buttons: [rankBtn, accountBtn], onRunEnd, setSkin, openRank, openAccount, label: () => (O.user() ? (prof?.nick ? `Conectado como ${prof.nick}` : 'Escolha seu apelido') : 'Entrar ou criar conta') };
 }

@@ -99,6 +99,13 @@ export const PLAYER_SKINS = {
   cacador: { acc: ['horns'], aura: { kind: 'mist', col: '#ff6a3a' }, cloak: ['#4a3a2a', '#2e2218', '#140d09'], patch: ['#6a4a2a', '#4a331c', '#2a1c10'], hood: ['#5a4632', '#1c130c'], tail: ['#5a1a14', '#a8321f'], scarf: ['#8a2a1e', '#c8442c'], lant: '#ff6a3a', core: ['#fff1e0', '#ffb27a', '#e0431a'], flame: '#ffb27a', eye: '#ff8a5a', eyeGlow: '#ff5a2a', light: '255,110,60', belt: '#3a2616', buckle: '#e8dcc6', pack: '#4a331c', gauge: '#ff6a3a' },
   veterano: { acc: ['plates'], aura: { kind: 'sparks', col: '#bcd8ff' }, cloak: ['#2e3a4a', '#1d2733', '#0c1117'], patch: ['#44566a', '#2e3f52', '#1c2836'], hood: ['#3c4b5c', '#121a22'], tail: ['#7a5a1a', '#c8a24a'], scarf: ['#b08a2e', '#e8c866'], lant: '#ffd98a', core: ['#ffffff', '#ffeec0', '#e8b040'], flame: '#fff0c0', eye: '#ffeec0', eyeGlow: '#ffd98a', light: '255,220,140', belt: '#2a2018', buckle: '#e8c866', pack: '#44566a', gauge: '#e8c866' },
   calamidade: { acc: ['spikes'], aura: { kind: 'embers', col: '#ff3a2a' }, cloak: ['#4a1a1a', '#2c0e0e', '#120505'], patch: ['#7a2020', '#4a1212', '#2a0a0a'], hood: ['#5a2020', '#160606'], tail: ['#5a0f0f', '#c0201a'], scarf: ['#8a1414', '#e0321e'], lant: '#ff3a2a', core: ['#fff0e0', '#ff8a5a', '#d01a10'], flame: '#ff8a5a', eye: '#ff4a3a', eyeGlow: '#ff2a1a', light: '255,60,40', belt: '#2a0d0d', buckle: '#c8c0b0', pack: '#5a2020', gauge: '#ff3a2a' },
+  bruxo: { acc: ['witch', 'pumpkin'], aura: { kind: 'embers', col: '#ff8a1c' }, cloak: ['#3a2250', '#241436', '#0e0716'], patch: ['#5a3a7a', '#3a2250', '#241436'], hood: ['#46285e', '#140a1e'], tail: ['#c25a10', '#ff8a1c'], scarf: ['#e86a10', '#ffb04a'], lant: '#ff8a1c', core: ['#fff1d0', '#ffb347', '#ff6a10'], flame: '#ffb347', eye: '#b6ff5a', eyeGlow: '#8fff3a', light: '255,140,40', belt: '#2a1a3a', buckle: '#ff8a1c', pack: '#4a2a68', gauge: '#8fff3a' },
+  caipira: { acc: ['strawhat', 'patchwork', 'polka'], aura: { kind: 'sparks', col: '#ffcf4a', rate: 0.08 }, cloak: ['#6a4630', '#46301f', '#22160c'], patch: ['#8a5a36', '#6a4630', '#3a2616'], hood: ['#7a5236', '#2a1a0e'], tail: ['#9a1c1c', '#d92a2a'], scarf: ['#c42424', '#ee4a3a'], lant: '#ffcf4a', core: ['#fffbe0', '#ffe28a', '#ff9a1c'], flame: '#ffe28a', eye: '#ffe9a8', eyeGlow: '#ffcf4a', light: '255,200,90', belt: '#4a2a14', buckle: '#ffcf4a', pack: '#8a5a36', gauge: '#ffcf4a' },
+  natal: { acc: ['santa', 'hemfur'], aura: { kind: 'snow', col: '#ffffff' }, cloak: ['#7a1c1c', '#4a0e0e', '#1c0505'], patch: ['#a82a2a', '#7a1c1c', '#4a0e0e'], hood: ['#8a2222', '#2a0808'], tail: ['#175f2c', '#2fb04c'], scarf: ['#1f8a3a', '#46d06a'], lant: '#ffd35a', core: ['#ffffff', '#fff0b0', '#ffb520'], flame: '#fff0b0', eye: '#fff0b0', eyeGlow: '#ffd35a', light: '255,220,130', belt: '#1c1c1c', buckle: '#ffd35a', pack: '#7a1c1c', gauge: '#46d06a' },
+  reveillon: { acc: ['partyhat', 'sash'], aura: { kind: 'confetti' }, cloak: ['#d8d4cc', '#9a968c', '#3a3832'], patch: ['#f0ece4', '#c8c4ba', '#8a867c'], hood: ['#e4e0d8', '#5a564c'], tail: ['#b8892a', '#ffd35a'], scarf: ['#d8a838', '#fff0a8'], lant: '#fff0a8', core: ['#ffffff', '#fff8d0', '#ffd35a'], flame: '#fff8d0', eye: '#fff8d0', eyeGlow: '#ffe58a', light: '255,235,170', belt: '#b8892a', buckle: '#fff0a8', pack: '#c8c4ba', gauge: '#fff0a8' },
+  folia: { acc: ['feathers', 'mask'], aura: { kind: 'confetti' }, cloak: ['#5a1a6a', '#3a0e48', '#16041c'], patch: ['#8a2a9a', '#5a1a6a', '#3a0e48'], hood: ['#6a2a7a', '#1c0824'], tail: ['#c0188a', '#ff4fa8'], scarf: ['#18a0c8', '#4fd8ff'], lant: '#ffe35a', core: ['#ffffff', '#fff2a8', '#ff9a30'], flame: '#fff2a8', eye: '#fffbe0', eyeGlow: '#ffe35a', light: '255,230,120', belt: '#3a0e48', buckle: '#ffd35a', pack: '#6a2a7a', gauge: '#4fd8ff' },
+  laureado: { acc: ['laurel'], aura: { kind: 'sparks', col: '#e8c24a' }, cloak: ['#2a3a52', '#1a2638', '#0a1018'], patch: ['#3a5a82', '#2a3a52', '#1a2638'], hood: ['#344a68', '#0e1622'], tail: ['#8a6a1a', '#d8b040'], scarf: ['#c8a030', '#f0d070'], lant: '#f0d070', core: ['#ffffff', '#fff2b0', '#e0a830'], flame: '#fff2b0', eye: '#fff2b0', eyeGlow: '#f0d070', light: '255,225,130', belt: '#1a2638', buckle: '#f0d070', pack: '#3a5a82', gauge: '#f0d070' },
+  campeao: { acc: ['halo', 'plates'], aura: { kind: 'flames', col: '#7ad0ff', rate: 0.06 }, cloak: ['#1a2a4a', '#101c34', '#060c1a'], patch: ['#c8a030', '#8a6a1a', '#3a2c0a'], hood: ['#24386a', '#0a1228'], tail: ['#9a7a1a', '#ffd35a'], scarf: ['#e0b030', '#fff0a8'], lant: '#9ae0ff', core: ['#ffffff', '#d8f4ff', '#4cc4f0'], flame: '#d8f4ff', eye: '#d8f4ff', eyeGlow: '#7ad0ff', light: '140,220,255', belt: '#8a6a1a', buckle: '#fff0a8', pack: '#24386a', gauge: '#7ad0ff' },
   coroa: { acc: ['crown'], aura: { kind: 'flames', col: '#ffd35a', rate: 0.05 }, cloak: ['#bfae8c', '#8a7a5c', '#40351f'], patch: ['#ffd35a', '#e8b040', '#a8802a'], hood: ['#cdbd9c', '#5a4a30'], tail: ['#c8962a', '#ffd35a'], scarf: ['#e8b040', '#fff0a8'], lant: '#fff0a8', core: ['#ffffff', '#fff8d0', '#ffd35a'], flame: '#fff8d0', eye: '#fff8d0', eyeGlow: '#ffe58a', light: '255,235,150', belt: '#8a6a2a', buckle: '#fff0a8', pack: '#c8a24a', gauge: '#fff0a8' },
 };
 let SK = PLAYER_SKINS.padrao;
@@ -186,6 +193,72 @@ function drawAcc(ctx, list, by, sw) {
     }
     for (const [x, h] of [[60, 12], [68, 16], [76, 14], [84, 10]]) poly([[x - 3.6, 46 + by], [x, 46 - h + by], [x + 3.6, 46 + by]], '#7a2018', '#ff6a4a', 1);
   }
+  if (has('witch')) { // chapéu de bruxo
+    ctx.fillStyle = lin(ctx, 54, 8, 90, 46, [[0, '#6a3a9a'], [1, '#1e1030']]);
+    ctx.beginPath(); ctx.moveTo(53, 46 + by); ctx.bezierCurveTo(57, 28 + by, 70, 18 + by, 94, 10 + by); ctx.bezierCurveTo(88, 20 + by, 84, 34 + by, 88, 46 + by); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2a1840'; ctx.beginPath(); ctx.ellipse(70, 46 + by, 30, 7, -0.06, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(190,140,255,.45)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(70, 45 + by, 29, 6, -0.06, Math.PI, TAU); ctx.stroke();
+    ctx.strokeStyle = '#ff8a1c'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(55, 41 + by); ctx.quadraticCurveTo(70, 46 + by, 87, 41 + by); ctx.stroke();
+    ctx.fillStyle = '#ffd35a'; ctx.fillRect(68, 41 + by, 7, 6);
+  }
+  if (has('pumpkin')) { // lanterna vira abóbora
+    const cy = 128 + by + sw;
+    glow(ctx, 103.5, cy, 34, '#ff8a1c', 0.6);
+    for (const [dx, rx] of [[-6.5, 5.6], [6.5, 5.6], [0, 6.6]]) {
+      ctx.fillStyle = lin(ctx, 103.5 + dx - rx, cy - 11, 103.5 + dx + rx, cy + 11, [[0, '#ffb04a'], [0.5, '#ee7a14'], [1, '#a8400a']]);
+      ctx.beginPath(); ctx.ellipse(103.5 + dx, cy, rx, 11, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(80,25,0,.55)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.fillStyle = '#4a8a2a'; ctx.fillRect(102, cy - 15, 3.4, 5); ctx.strokeStyle = '#5ab03a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(105, cy - 13); ctx.quadraticCurveTo(110, cy - 14, 109, cy - 9); ctx.stroke();
+    ctx.fillStyle = '#fff4c0'; poly([[97, cy - 4], [100.5, cy - 4], [99, cy - 8]], '#fff4c0'); poly([[106.5, cy - 4], [110, cy - 4], [108.5, cy - 8]], '#fff4c0');
+    ctx.beginPath(); ctx.moveTo(98, cy + 3); ctx.lineTo(100.5, cy + 6); ctx.lineTo(103, cy + 3); ctx.lineTo(105.5, cy + 6); ctx.lineTo(108, cy + 3); ctx.lineTo(109, cy + 7); ctx.lineTo(98, cy + 7); ctx.closePath(); ctx.fill();
+    glow(ctx, 103.5, cy, 12, '#fff1b0', 0.7);
+  }
+  if (has('strawhat')) { // chapéu de palha
+    ctx.fillStyle = lin(ctx, 56, 24, 84, 50, [[0, '#f0d78a'], [1, '#b8924a']]); ctx.beginPath(); ctx.ellipse(70, 38 + by, 15, 13, 0, Math.PI, TAU); ctx.lineTo(85, 42 + by); ctx.lineTo(55, 42 + by); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c62828'; ctx.fillRect(55, 36 + by, 30, 5);
+    ctx.fillStyle = lin(ctx, 36, 40, 104, 54, [[0, '#d8b45e'], [0.5, '#f0d78a'], [1, '#b8924a']]); ctx.beginPath(); ctx.ellipse(70, 45 + by, 35, 8, -0.04, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(110,70,20,.5)'; ctx.lineWidth = 1; for (let i = 0; i < 12; i++) { const x = 40 + i * 5.3; ctx.beginPath(); ctx.moveTo(x, 45 + by - 5 + Math.abs(i - 6) * 0.2); ctx.lineTo(x + 2, 45 + by + 6 - Math.abs(i - 6) * 0.3); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(110,70,20,.55)'; ctx.beginPath(); ctx.ellipse(70, 45 + by, 35, 8, -0.04, 0, TAU); ctx.stroke();
+  }
+  if (has('patchwork')) { // remendos de chita no manto
+    for (const [x, y, w, c] of [[46, 126, 13, '#d03a28'], [72, 138, 12, '#e8c24a'], [54, 102, 11, '#3a7ac8'], [78, 112, 10, '#d03a28']]) {
+      ctx.fillStyle = c; ctx.globalAlpha = 0.92; ctx.fillRect(x, y + by * 0.3, w, w); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#f6edc8'; ctx.lineWidth = 1; ctx.setLineDash([2.2, 2]); ctx.strokeRect(x + 1.2, y + 1.2 + by * 0.3, w - 2.4, w - 2.4); ctx.setLineDash([]);
+    }
+  }
+  if (has('polka')) { ctx.fillStyle = '#fff'; for (const [x, y] of [[58, 84], [66, 83], [75, 84], [84, 83], [62, 88], [71, 88], [80, 88]]) { ctx.beginPath(); ctx.arc(x, y + by, 1.5, 0, TAU); ctx.fill(); } }
+  if (has('santa')) { // gorro de Natal
+    ctx.fillStyle = lin(ctx, 52, 12, 96, 46, [[0, '#f04a3a'], [1, '#8a1414']]);
+    ctx.beginPath(); ctx.moveTo(51, 47 + by); ctx.bezierCurveTo(52, 28 + by, 62, 16 + by, 78, 14 + by); ctx.bezierCurveTo(92, 14 + by, 98, 24 + by, 99, 34 + by); ctx.bezierCurveTo(90, 26 + by, 84, 30 + by, 90, 47 + by); ctx.closePath(); ctx.fill();
+    for (let i = 0; i < 9; i++) { ctx.fillStyle = i % 2 ? '#e8eef2' : '#fff'; ctx.beginPath(); ctx.arc(52 + i * 4.6, 46 + by + Math.sin(i * 1.3) * 0.8, 4.8, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(99, 36 + by, 6, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.beginPath(); ctx.arc(100.5, 38 + by, 3.2, 0, TAU); ctx.fill();
+  }
+  if (has('hemfur')) { for (let i = 0; i < 9; i++) { ctx.fillStyle = i % 2 ? '#e8eef2' : '#fff'; ctx.beginPath(); ctx.arc(40 + i * 6.6, 154 + (i % 2) * 3 + by * 0.3, 4.6, 0, TAU); ctx.fill(); } }
+  if (has('partyhat')) { // chapéu de festa
+    ctx.fillStyle = lin(ctx, 56, 6, 94, 46, [[0, '#fff0a8'], [1, '#b8892a']]); poly([[55, 47 + by], [76, 6 + by], [95, 47 + by]], ctx.fillStyle, 'rgba(90,60,0,.5)', 1);
+    ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.4; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(62 + i * 3, (38 - i * 11) + by); ctx.lineTo(90 - i * 7, (46 - i * 11 + 8) + by); ctx.stroke(); }
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(76, 6 + by, 5, 0, TAU); ctx.fill(); glow(ctx, 76, 6 + by, 14, '#fff0a8', 0.7);
+  }
+  if (has('sash')) { ctx.strokeStyle = '#d8a838'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(50, 92 + by); ctx.lineTo(92, 138 + by * 0.6); ctx.stroke(); ctx.strokeStyle = '#fff0a8'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(49, 90 + by); ctx.lineTo(91, 136 + by * 0.6); ctx.stroke(); ctx.fillStyle = '#fff'; for (const t of [0.2, 0.45, 0.7]) { ctx.beginPath(); ctx.arc(50 + 42 * t, 92 + 46 * t + by, 1.3, 0, TAU); ctx.fill(); } }
+  if (has('feathers')) { // cocar de penas
+    const cols = ['#ff4fa8', '#4fd0ff', '#ffd35a', '#7aff6a', '#ff7a3a', '#b57aff', '#ff4fa8'];
+    cols.forEach((c, i) => { const a = -2.75 + (i / 6) * 2.35, L = 30 - Math.abs(i - 3) * 2.2; ctx.save(); ctx.translate(70, 48 + by); ctx.rotate(a);
+      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(L * 0.3, -6, L * 0.8, -5, L, 0); ctx.bezierCurveTo(L * 0.8, 5, L * 0.3, 6, 0, 0); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(L - 2, 0); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(L * 0.3, 0, L * 0.8, 0, L, 0); ctx.bezierCurveTo(L * 0.8, 5, L * 0.3, 6, 0, 0); ctx.fill(); ctx.restore(); });
+    ctx.fillStyle = '#ffd35a'; ctx.beginPath(); ctx.ellipse(70, 48 + by, 15, 4.5, 0, 0, TAU); ctx.fill();
+  }
+  if (has('mask')) { // máscara de gala
+    ctx.fillStyle = lin(ctx, 64, 52, 94, 70, [[0, '#ffe58a'], [1, '#c8902a']]); ctx.beginPath(); ctx.moveTo(63, 59 + by); ctx.quadraticCurveTo(78, 50 + by, 95, 58 + by); ctx.quadraticCurveTo(96, 69 + by, 86, 70 + by); ctx.quadraticCurveTo(79, 66 + by, 72, 70 + by); ctx.quadraticCurveTo(62, 69 + by, 63, 59 + by); ctx.fill();
+    ctx.strokeStyle = 'rgba(90,50,0,.6)'; ctx.lineWidth = 1; ctx.stroke();
+    for (const x of [73, 84]) { ctx.fillStyle = '#0a0504'; ctx.beginPath(); ctx.arc(x, 61 + by, 5.6, 0, TAU); ctx.fill(); ctx.fillStyle = SK.eye; ctx.beginPath(); ctx.arc(x, 61 + by, 3.6, 0, TAU); ctx.fill(); glow(ctx, x, 61 + by, 12, SK.eyeGlow, 0.7); }
+    ctx.fillStyle = '#fff'; for (const [x, y] of [[66, 60], [92, 60], [78.5, 56], [78.5, 66]]) { ctx.beginPath(); ctx.arc(x, y + by, 1, 0, TAU); ctx.fill(); }
+  }
+  if (has('laurel')) { // coroa de louros
+    for (let i = 0; i < 11; i++) { const th = Math.PI + 0.25 + (i / 10) * (Math.PI - 0.5), x = 70 + Math.cos(th) * 21.5, y = 60 + by + Math.sin(th) * 22.5; ctx.save(); ctx.translate(x, y); ctx.rotate(th + Math.PI / 2 + (i < 5 ? -0.5 : 0.5));
+      ctx.fillStyle = i % 3 === 0 ? '#e8c24a' : '#7ac24a'; ctx.beginPath(); ctx.ellipse(0, 0, 3, 6.2, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(30,60,10,.5)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(0, 5); ctx.stroke(); ctx.restore(); }
+  }
+  if (has('halo')) { glow(ctx, 70, 28 + by, 22, '#ffe58a', 0.45); ctx.strokeStyle = '#ffe58a'; ctx.lineWidth = 3.2; ctx.beginPath(); ctx.ellipse(70, 28 + by, 18, 5, -0.05, 0, TAU); ctx.stroke(); ctx.strokeStyle = '#fffbe0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(70, 27.2 + by, 18, 5, -0.05, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
   if (has('crown')) { // coroa de chamas
     glow(ctx, 74, 36 + by, 30, '#ffd35a', 0.5);
     const tips = [[57, 30], [65, 20], [74, 14], [83, 20], [91, 30]];

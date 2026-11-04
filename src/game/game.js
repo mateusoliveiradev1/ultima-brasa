@@ -51,7 +51,7 @@ export async function buildArt(onProgress = () => {}) {
   const step = () => new Promise((r) => setTimeout(r, 0));
   const art = { sheets: {}, flash: {} };
   for (const n of ['player', 'raider', 'ghoul', 'drone', 'brute', 'boss', 'hound', 'shaman', 'scorpion']) { const s = buildSheet(n); art.sheets[n] = s; art.flash[n] = flashOf(s.canvas); onProgress(0.15 + Math.random() * 0.01); await step(); }
-  art.setSkin = (id) => { art.skinId = PLAYER_SKINS[id] ? id : 'padrao'; const au = PLAYER_SKINS[art.skinId].aura; if (art.tex && au) { art.tex.aura = tintImg(art.k.k_spark, au.col); art.tex.auraSoft = tintImg(art.k.k_smoke, au.col); } setPlayerSkin(id); const s = buildSheet('player'); art.sheets.player = s; art.flash.player = flashOf(s.canvas); };
+  art.setSkin = (id) => { art.skinId = PLAYER_SKINS[id] ? id : 'padrao'; const au = PLAYER_SKINS[art.skinId].aura; if (art.tex && au) { if (au.kind === 'confetti') ['#ff4fa8', '#4fd0ff', '#ffd35a', '#7aff6a'].forEach((c, i) => { art.tex['auraC' + i] = tintImg(art.k.k_star, c); }); else { art.tex.aura = tintImg(art.k.k_spark, au.col); art.tex.auraSoft = tintImg(art.k.k_smoke, au.col); } } setPlayerSkin(id); const s = buildSheet('player'); art.sheets.player = s; art.flash.player = flashOf(s.canvas); };
   art.pick = buildPickups(); art.scrap = scrapSprite(); art.soft = buildSoft(); onProgress(0.3); await step();
   art.ground = buildGround(512); onProgress(0.5); await step();
   art.baseProps = buildAllProps(); art.chest = chestSprite(); art.biomeCache = {}; onProgress(0.8); await step();
@@ -117,7 +117,7 @@ export class Game {
     this.hero = { x: 0, z: 0, vx: 0, vz: 0, dx: 1, dz: 0, face: 1, hp: 100, maxHp: 100, iframes: 0, dashT: 0, dashCd: 0, ddx: 1, ddz: 0, anim: 0, hurt: 0, moving: false };
     this.cam.x = 0; this.cam.z = 0; this.cam.shake = 0;
     this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = xpNeed(1); this.pending = 0; this.scrapRun = 0; this.scrapPieces = 0;
-    this.sk = {}; this.skillLv = {}; this.pass = {}; PASSIVE_IDS.forEach((k) => (this.pass[k] = 0));
+    this.inf = {}; this.sk = {}; this.skillLv = {}; this.pass = {}; PASSIVE_IDS.forEach((k) => (this.pass[k] = 0));
     this.hitFx = 0; this.hitSfx = 0; this.deathSfx = 0; this.spawnAcc = 0; this.packT = 22; this.bruteT = 105; this.boss = null; this.bossSpawned = false; this.bossDead = false; this.dying = 0; this.over = false; this.slow = 1; this.hurtFlash = 0; this.rerolls = 0; this.hubT = 0; this.lvlQueued = false; this.combo = 0; this.comboT = 0; this.maxCombo = 0; this.elitesKilled = 0; this.pools = []; this.chests = 0; this.eventT = 70; this.event = null; this.revives = 0; this.endless = false; this.bossN = 0; this.tideT = 0; this.bossAt = BOSS_TIME; this.eliteT = 55; this.rings = []; this.ghosts = []; this.ghostT = 0; this.flashA = 0; this.flashCol = '#7dffcf'; this.hitStop = 0; this.trailT = 0;
   }
   enterHub(o) {
@@ -142,7 +142,7 @@ export class Game {
     for (const id in p) { const lv = p[id], fx = PASSIVES[id]?.fx; if (lv && fx) for (const k in fx) t[k] = (t[k] || 0) + fx[k] * lv; }
     return {
       t,
-      maxHp: (100 + g(m, 'vida') * 12 + g(p, 'hp') * 25) * (1 + T('hpPct')), dmg: (1 + g(m, 'dano') * 0.06 + T('dmgP')) * (1 + g(p, 'dmg') * 0.12) * mul.dmg, cd: Math.max(0.25, (1 - g(m, 'recarga') * 0.025 - T('cdrFlat')) * (1 - g(p, 'cdr') * 0.08)),
+      maxHp: Math.round((100 + g(m, 'vida') * 12 + g(p, 'hp') * 25) * (1 + T('hpPct')) * (1 + 0.05 * (this.inf?.hp || 0))), dmg: (1 + g(m, 'dano') * 0.06 + T('dmgP')) * (1 + g(p, 'dmg') * 0.12) * (1 + 0.04 * (this.inf?.dmg || 0)) * mul.dmg, cd: Math.max(0.25, (1 - g(m, 'recarga') * 0.025 - T('cdrFlat')) * (1 - g(p, 'cdr') * 0.08) * Math.pow(0.985, this.inf?.cd || 0)),
       speed: 5.4 * (1 + g(m, 'vel') * 0.025 + T('speedP')) * (1 + g(p, 'spd') * 0.08), magnet: 2.7 * (1 + g(m, 'ima') * 0.08 + T('magP')) * (1 + g(p, 'magnet') * 0.3), regen: g(m, 'regen') * 0.15 + T('regenFlat') + g(p, 'regen') * 0.7,
       armor: g(m, 'chapa') * 0.5 + T('armorFlat') + g(p, 'armor'), crit: 0.05 + g(m, 'crit') * 0.02 + T('critFlat') + g(p, 'crit') * 0.08 + g(p, 'luck') * 0.05, critMul: 2 + g(m, 'critd') * 0.1 + T('critMulP'), area: 1 + g(p, 'area') * 0.1 + g(m, 'area') * 0.03 + T('areaP'),
       luck: (1 + g(m, 'sorte') * 0.08 + g(p, 'luck') * 0.15) * (1 + T('luckP')) * mul.scrap, xp: (1 + g(m, 'xpg') * 0.06) * (1 + T('xpP')), cards: 3 + g(m, 'cartas'), slots: 4 + g(m, 'slots'), dashCd: 1.4 * Math.max(0.2, 1 - g(m, 'dash') * 0.06 - T('dashCdP')),
@@ -379,6 +379,7 @@ export class Game {
     for (const id of PASSIVE_IDS) { const d = PASSIVES[id], lv = this.pass[id] || 0; if (lv >= d.max || (d.minLv && this.level < d.minLv)) continue; if (d.rar === 'maldita' && Object.values(this.cursed || {}).filter(Boolean).length >= 3) continue; opts.push({ kind: 'pass', id, lv: lv + 1, w: d.rar === 'rara' ? 0.7 : d.rar === 'maldita' ? 0.45 : 1.5, rar: d.rar }); }
     for (const id in EVOS) if ((this.skillLv[id] || 0) >= 5 && !this.evo?.[id] && (this.pass[EVOS[id].need] || 0) >= 2) opts.push({ kind: 'evo', id, lv: 1, w: 6, rar: 'evo' });
     const out = [], n = this.stats.cards;
+    if (opts.length < n + 2) for (const id of ['dmg', 'hp', 'cd', 'heal']) opts.push({ kind: 'inf', id, lv: (this.inf[id] || 0) + 1, w: 2.5, rar: 'inf' }); // pool esgotando: cartas infinitas
     while (out.length < n && opts.length) {
       let tot = opts.reduce((a, o) => a + o.w, 0), r = rnd() * tot, i = 0;
       for (; i < opts.length; i++) { r -= opts[i].w; if (r <= 0) break; }
@@ -396,6 +397,7 @@ export class Game {
   choose(i) {
     const c = this.choicesNow?.[i]; if (!c || !this.paused) return;
     if (c.kind === 'skill') { this.skillLv[c.id] = c.lv; if (!this.sk[c.id]) this.sk[c.id] = { cd: 0.2, inst: null }; }
+    else if (c.kind === 'inf') { if (c.id === 'heal') this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + this.hero.maxHp * 0.5); else { this.inf[c.id] = c.lv; const old = this.stats.maxHp; this.stats = this.computeStats(this.meta, this.pass, false, this.mul); if (this.stats.maxHp > old) this.hero.hp += this.stats.maxHp - old; this.hero.maxHp = this.stats.maxHp; this.hero.hp = Math.min(this.hero.hp, this.hero.maxHp); } A.synth('chime', { vol: 0.4 }); }
     else if (c.kind === 'evo') { (this.evo ||= {})[c.id] = true; this.ring(this.hero.x, this.hero.z, 8, '#ff5a2a', 0.9, 0.24); this.hooks.onWarn?.(EVOS[c.id].name + '!'); A.synth('chime', { vol: 0.5 }); }
     else { const pd = PASSIVES[c.id]; this.pass[c.id] = c.lv; if (pd.rar === 'maldita') (this.cursed ||= {})[c.id] = true; if (pd.pick) { if (pd.pick.shield) this.shield = (this.shield || 0) + pd.pick.shield; if (pd.pick.revive) this.revives++; if (pd.pick.foeHp) this.dm.hp *= pd.pick.foeHp; } const old = this.stats.maxHp; this.stats = this.computeStats(this.meta, this.pass, false, this.mul); if (this.stats.maxHp > old) { this.hero.hp += this.stats.maxHp - old; } this.hero.maxHp = this.stats.maxHp; }
     this.pending = Math.max(0, this.pending - 1); this.paused = false; this.choicesNow = null; A.sfx('latch', { vol: 0.5 }); this.hooks.onChosen?.();
@@ -523,7 +525,7 @@ export class Game {
   }
   auraTick(dt) {
     const au = PLAYER_SKINS[this.art.skinId]?.aura; if (!au || this.paused || this.over || this.dying > 0) return;
-    this.auraT = (this.auraT || 0) - dt; if (this.auraT > 0) return; this.auraT = au.rate || 0.11;
+    this.auraT = (this.auraT || 0) - dt; if (this.auraT > 0) return; this.auraT = au.rate || (au.kind === 'confetti' ? 0.06 : 0.11);
     const h = this.hero, x = h.x + (rnd() - 0.5) * 0.8, z = h.z + (rnd() - 0.5) * 0.5, k = au.kind, y = 0.2 + rnd() * 1.5;
     const S = (o) => this.addSpark({ x, y, z, vx: 0, vy: 0, vz: 0, g: 0, a: 1, rot: rnd() * TAU, ...o });
     if (k === 'embers') S({ tex: 'aura', vx: (rnd() - 0.5) * 0.7, vy: 1.1 + rnd(), vz: (rnd() - 0.5) * 0.4, life: 1.1 + rnd() * 0.6, s0: 0.3, s1: 0.05, add: true });
@@ -532,6 +534,7 @@ export class Game {
     else if (k === 'sand') S({ tex: 'auraSoft', y: 0.1 + rnd() * 0.5, vx: 1.2 + rnd(), vz: (rnd() - 0.5) * 0.4, vy: 0.1, life: 1, s0: 0.4, s1: 0.8, a: 0.4 });
     else if (k === 'snow') S({ tex: 'aura', y: 1.8 + rnd() * 0.6, vx: (rnd() - 0.5) * 0.6, vy: -1, vz: (rnd() - 0.5) * 0.4, life: 1.5, s0: 0.2, s1: 0.16, a: 0.95 });
     else if (k === 'mist') S({ tex: 'auraSoft', y: 0.2 + rnd() * 0.8, vx: (rnd() - 0.5) * 0.5, vy: 0.5, life: 1.2, s0: 0.6, s1: 1, a: 0.35, add: true });
+    else if (k === 'confetti') S({ tex: 'auraC' + ((rnd() * 4) | 0), y: 1.6 + rnd() * 0.8, vx: (rnd() - 0.5) * 1.2, vy: -0.5 - rnd() * 0.4, vz: (rnd() - 0.5) * 0.6, life: 1.7, s0: 0.24, s1: 0.18, a: 0.95, rate: 0.06 });
     else if (k === 'flames') S({ tex: 'aura', y: 0.3 + rnd() * 1.4, vx: (rnd() - 0.5) * 0.8, vy: 2 + rnd() * 1.5, vz: (rnd() - 0.5) * 0.5, life: 0.7, s0: 0.5, s1: 0.08, add: true });
   }
   tickCommon(dt) {
