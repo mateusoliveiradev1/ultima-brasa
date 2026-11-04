@@ -118,7 +118,7 @@ export class Game {
     this.cam.x = 0; this.cam.z = 0; this.cam.shake = 0;
     this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = xpNeed(1); this.pending = 0; this.scrapRun = 0; this.scrapPieces = 0;
     this.inf = {}; this.sk = {}; this.skillLv = {}; this.pass = {}; PASSIVE_IDS.forEach((k) => (this.pass[k] = 0));
-    this.hitFx = 0; this.hitSfx = 0; this.deathSfx = 0; this.spawnAcc = 0; this.packT = 22; this.bruteT = 105; this.boss = null; this.bossSpawned = false; this.bossDead = false; this.dying = 0; this.over = false; this.slow = 1; this.hurtFlash = 0; this.rerolls = 0; this.hubT = 0; this.lvlQueued = false; this.combo = 0; this.comboT = 0; this.maxCombo = 0; this.elitesKilled = 0; this.pools = []; this.chests = 0; this.eventT = 70; this.event = null; this.revives = 0; this.endless = false; this.bossN = 0; this.tideT = 0; this.bossAt = BOSS_TIME; this.eliteT = 55; this.rings = []; this.ghosts = []; this.ghostT = 0; this.flashA = 0; this.flashCol = '#7dffcf'; this.hitStop = 0; this.trailT = 0;
+    this.hitFx = 0; this.hitSfx = 0; this.deathSfx = 0; this.spawnAcc = 0; this.packT = 22; this.bruteT = 105; this.boss = null; this.bossSpawned = false; this.bossDead = false; this.dying = 0; this.over = false; this.slow = 1; this.hurtFlash = 0; this.rerolls = 0; this.hubT = 0; this.lvlQueued = false; this.combo = 0; this.comboT = 0; this.maxCombo = 0; this.elitesKilled = 0; this.pools = []; this.zones = []; this.devices = []; this.sawProj = 0; this.chests = 0; this.eventT = 70; this.event = null; this.revives = 0; this.endless = false; this.bossN = 0; this.tideT = 0; this.bossAt = BOSS_TIME; this.eliteT = 55; this.rings = []; this.ghosts = []; this.ghostT = 0; this.flashA = 0; this.flashCol = '#7dffcf'; this.hitStop = 0; this.trailT = 0;
   }
   enterHub(o) {
     this.reset(); this.setBiome(o.biome || this.biomeId || 'ruinas'); this.mode = 'hub'; this.paused = false; this.hubSkill = o.skill || 'lamina';
@@ -207,8 +207,11 @@ export class Game {
     if (o.text !== false) this.floatText(e.x + (rnd() - 0.5) * 0.6, (e.d.fly ? e.hover : 0) + 1.5 * (e.sc || 1) * (e.d.boss ? 2 : 1), e.z, Math.round(d), crit ? '#fff2c8' : '#ffb347', crit);
     if (crit && this.hitFx < 6) { this.hitFx++; this.spawnImpact(e.x, e.z, 0.9); if (this.mode === 'run') { this.hitStop = Math.max(this.hitStop, e.d.boss ? 0.02 : 0.035); this.cam.shake = Math.max(this.cam.shake, 0.12); } }
     if (this.hitSfx < 3) { this.hitSfx++; A.sfx(pick(['hit1', 'hit2', 'hit3']), { vol: crit ? 0.5 : 0.28, pan: clamp((e.x - this.cam.x) / 12, -1, 1) }); }
+    if (!o.noStatus && this.mode === 'run') { if (T.ignite && rnd() < T.ignite) this.applyBurn(e, 5); if (T.chill && rnd() < T.chill) e.chillT = 2.5; }
+    if (o.burn) this.applyBurn(e, 6);
     if (e.hp <= 0) this.killEnemy(e);
   }
+  applyBurn(e, dps, t = 3) { e.burnT = Math.max(e.burnT || 0, t); e.burnD = Math.max(e.burnD || 0, dps); }
   spawnImpact(x, z, sc = 0.8) { const d = store.resolveFx('impacto'); if (d) this.fx.spawn(d, { x, z, dx: 1, dz: 0, scale: sc }); }
   comboMul() { return 1 + Math.min(0.6, Math.floor(this.combo / 10) * 0.05); }
   killEnemy(e) {
@@ -269,9 +272,11 @@ export class Game {
     const P = SKILLS[id].p(this.skillLv[id] || 1), t = this.stats?.t; if (!t) return P;
     const dm = 1 + (t['s_' + id + '_dmg'] || 0) + (t.sAll || 0), cd = Math.max(0.3, 1 - (t['s_' + id + '_cd'] || 0) - (t.sAllCd || 0)), n = t['s_' + id + '_n'] || 0;
     P.dmg *= dm; if (P.cd) P.cd *= cd;
-    if (this.evo?.[id]) { P.dmg *= 1.7; if (P.cd) P.cd *= id === 'nova' ? 0.85 : 1; if (id === 'arco') P.chains += 4; else if (id === 'brasas') { P.count += 3; P.radius *= 1.2; } else if (id === 'lanca') { P.count += 2; P.pierce += 3; } else if (id === 'chuva') P.count += 6; else if (id === 'nova') P.radius *= 1.25; else if (id === 'lamina') P.hits += 1; }
+    { const tg = SKILLS[id].tag; P.dmg *= 1 + (t['tag_' + tg] || 0); if (P.cd) P.cd *= Math.max(0.5, 1 - (t['tagcd_' + tg] || 0)); }
+    if (this.evo?.[id]) { P.dmg *= 1.25; if (id === 'brasas') { P.count += 2; } else if (id === 'arco') P.chains += 2; else if (id === 'nova') P.radius *= 1.1; else if (id === 'lamina') P.hits += 1; else if (id === 'rastro') { P.radius *= 1.5; P.life *= 1.5; } else if (id === 'totem') P.max += 1; else if (id === 'vortice') { P.pull *= 1.8; P.radius *= 1.2; } else if (id === 'mina') P.count += 1; else if (id === 'marreta') P.dmg *= 1.1; }
     if (id === 'arco') P.chains += n; else if (id === 'brasas') P.count += n; else if (id === 'lanca') P.count += n; else if (id === 'chuva') P.count += 2 * n;
     else if (id === 'nova') P.radius *= 1 + 0.06 * n; else if (id === 'lamina') { P.range *= 1 + 0.05 * n; P.arc += 3 * n; }
+    else if (id === 'serra') P.bounces += n; else if (id === 'mina') P.count += n; else if (id === 'totem') P.max += n;
     return P;
   }
   cast(id) {
@@ -292,8 +297,9 @@ export class Game {
               for (const e of this.enemies) {
                 if (!this.ok(e)) continue; const ex = e.x - h.x, ez = e.z - h.z, d = Math.hypot(ex, ez);
                 if (d > R + e.r) continue; let da = Math.abs(Math.atan2(ez, ex) - ang); if (da > Math.PI) da = TAU - da;
-                if (da <= half + Math.atan2(e.r, Math.max(d, 0.5))) this.hurt(e, P.dmg, { kb: 2.4, kdx: ex / (d || 1), kdz: ez / (d || 1) });
+                if (da <= half + Math.atan2(e.r, Math.max(d, 0.5))) this.hurt(e, P.dmg, { kb: 2.4, kdx: ex / (d || 1), kdz: ez / (d || 1), burn: !!this.evo?.lamina });
               }
+              if (this.evo?.lamina) { const w = { x: h.x + ddx, z: h.z + ddz, dx: ddx, dz: ddz, speed: 12, dead: false, hit: new Set(), pierce: 6, dmg: P.dmg * 0.55, life: 0.95, hitR: 1.1 * area, burn: true }; this.proj.push(w); const fd = store.resolveFx('labareda'); if (fd) this.fx.spawn(fd, { x: w.x, z: w.z, dx: ddx, dz: ddz, follow: w, scale: 0.85 }); }
             } });
           } });
         }
@@ -305,13 +311,17 @@ export class Game {
         const targets = list.map((e) => ({ x: e.x, z: e.z }));
         orbitFix(this.fx.spawn(def, { x: h.x, z: h.z, targets }));
         list.forEach((e, i) => this.timers.push({ t: i * 0.03, fn: () => this.hurt(e, P.dmg, { kb: 1 }) }));
+        if (this.evo?.arco) for (const e of list) this.zone({ x: e.x, z: e.z, r: 1.5 * area, life: 3.2, dmg: P.dmg * 0.22, tick: 0.45, fxId: 'veneno', fxScale: 0.7 });
         A.synth('zap', { vol: 0.28 }); A.sfx('glass', { vol: 0.3, rate: 1.4 });
         return true;
       }
       case 'nova': {
         if (this.mode !== 'hub' && !this.nearest(h.x, h.z, P.radius * area + 2)) return false;
         const R = P.radius * area; orbitFix(this.fx.spawn(def, { x: h.x, z: h.z, radius: R, dx: 1, dz: 0 }));
-        this.timers.push({ t: 0.1, fn: () => this.areaDamage(h.x, h.z, R, P.dmg, { kb: P.knock }) });
+        if (this.evo?.nova) {
+          this.timers.push({ t: 0.05, fn: () => { this.areaDamage(h.x, h.z, R * 1.5, P.dmg * 0.3, { kb: -8, sec: true }); this.ring(h.x, h.z, R * 1.5, '#a05cff', 0.5, 0.1); } });
+          this.timers.push({ t: 0.6, fn: () => { const R2 = R * 1.4; this.fx.spawn(def, { x: h.x, z: h.z, radius: R2, dx: 1, dz: 0, scale: 1 }); this.areaDamage(h.x, h.z, R2, P.dmg * 1.8, { kb: P.knock + 3 }); this.cam.shake = Math.max(this.cam.shake, 0.6); A.synth('boom', { vol: 0.35 }); } });
+        } else this.timers.push({ t: 0.1, fn: () => this.areaDamage(h.x, h.z, R, P.dmg, { kb: P.knock }) });
         this.cam.shake = Math.max(this.cam.shake, 0.35); A.sfx('hitHeavy', { vol: 0.5, rate: 0.7 }); A.synth('boom', { vol: 0.25 });
         return true;
       }
@@ -320,7 +330,11 @@ export class Game {
         if (!near.length && this.mode !== 'hub') return false;
         const pts = []; const pool = near.length ? near : this.enemies;
         for (let i = 0; i < P.count; i++) { const e = pool[(rnd() * pool.length) | 0]; pts.push({ x: e.x + (rnd() - 0.5) * 1.6, z: e.z + (rnd() - 0.5) * 1.2 }); }
-        orbitFix(this.fx.spawn(def, { x: h.x, z: h.z, count: P.count, points: pts, onLand: (d) => { this.areaDamage(d.x, d.z, P.hitR * area, P.dmg, { kb: 2 }); A.sfx(pick(['pot', 'hit3']), { vol: 0.3, rate: 0.9, gap: 0.03 }); this.cam.shake = Math.max(this.cam.shake, 0.12); } }));
+        orbitFix(this.fx.spawn(def, { x: h.x, z: h.z, count: P.count, points: pts, onLand: (d) => { this.areaDamage(d.x, d.z, P.hitR * area, P.dmg, { kb: 2 }); if (this.evo?.chuva) this.zone({ x: d.x, z: d.z, r: 1.5, life: 2.6, dmg: P.dmg * 0.18, tick: 0.4, fxId: 'rastro', fxScale: 0.75, burn: true }); A.sfx(pick(['pot', 'hit3']), { vol: 0.3, rate: 0.9, gap: 0.03 }); this.cam.shake = Math.max(this.cam.shake, 0.12); } }));
+        if (this.evo?.chuva && near.length) {
+          const big = near.reduce((a, b) => (b.maxHp > a.maxHp ? b : a)); const bx = big.x, bz = big.z;
+          this.timers.push({ t: 0.35, fn: () => { this.fx.spawn(def, { x: bx, z: bz, count: 1, points: [{ x: bx, z: bz }], scale: 2.2, onLand: (d) => { this.areaDamage(d.x, d.z, 3.6 * area, P.dmg * 3.4, { kb: 5 }); this.ring(d.x, d.z, 3.6 * area, '#ff7a2a', 0.6, 0.18); this.cam.shake = Math.max(this.cam.shake, 0.7); A.synth('boom', { vol: 0.4 }); } }); } });
+        }
         A.sfx('draw', { vol: 0.3, rate: 0.7 });
         return true;
       }
@@ -329,14 +343,146 @@ export class Game {
         let dx = t.x - h.x, dz = t.z - h.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
         for (let i = 0; i < P.count; i++) {
           const off = (i - (P.count - 1) / 2) * 0.17, c = Math.cos(off), s = Math.sin(off), ddx = dx * c - dz * s, ddz = dx * s + dz * c;
-          const pr = { x: h.x + ddx * 0.8, z: h.z + ddz * 0.8, dx: ddx, dz: ddz, speed: P.speed, dead: false, hit: new Set(), pierce: P.pierce, dmg: P.dmg, life: 1.5, hitR: P.hitR * area };
+          const pr = { x: h.x + ddx * 0.8, z: h.z + ddz * 0.8, dx: ddx, dz: ddz, speed: P.speed, dead: false, hit: new Set(), pierce: P.pierce, dmg: P.dmg, life: 1.5, hitR: P.hitR * area, split: !!this.evo?.lanca };
           this.proj.push(pr); orbitFix(this.fx.spawn(def, { x: pr.x, z: pr.z, dx: ddx, dz: ddz, follow: pr }));
         }
         A.sfx('draw', { vol: 0.4, rate: 1.3 }); A.synth('whoosh', { vol: 0.2 });
         return true;
       }
+      case 'serra': {
+        const t = this.nearest(h.x, h.z, 13 * area); if (!t) return false;
+        let dx = t.x - h.x, dz = t.z - h.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+        for (let i = 0; i < P.count; i++) {
+          const off = P.count > 1 ? (i ? 0.4 : -0.4) : 0, c = Math.cos(off), sn = Math.sin(off), ddx = dx * c - dz * sn, ddz = dx * sn + dz * c;
+          const pr = { x: h.x + ddx * 0.8, z: h.z + ddz * 0.8, dx: ddx, dz: ddz, speed: P.speed, dead: false, hit: new Set(), pierce: 9999, dmg: P.dmg, life: 3.4, hitR: P.hitR * area, saw: { b: P.bounces, ret: false, evo: !!this.evo?.serra } };
+          this.proj.push(pr); this.fx.spawn(def, { x: pr.x, z: pr.z, dx: ddx, dz: ddz, follow: pr, scale: 0.9 + 0.05 * (this.skillLv.serra || 1) });
+        }
+        A.sfx('draw', { vol: 0.35, rate: 1.6 }); A.synth('whoosh', { vol: 0.2 });
+        return true;
+      }
+      case 'mina': {
+        if (this.mode !== 'hub' && !this.nearest(h.x, h.z, 15)) return false;
+        const mines = this.devices.filter((d) => d.type === 'mina');
+        const tgt = this.nearest(h.x, h.z, 15);
+        for (let i = 0; i < P.count && mines.length + i < 10; i++) {
+          const a = tgt ? Math.atan2(tgt.z - h.z, tgt.x - h.x) + (rnd() - 0.5) * 2.2 : rnd() * TAU, r = 1.6 + rnd() * 2.6;
+          this.addDevice({ type: 'mina', x: h.x + Math.cos(a) * r, z: h.z + Math.sin(a) * r, life: P.life, arm: 0.7 + i * 0.1, P, area, fxId: 'mina', fxScale: 0.9 });
+        }
+        A.sfx('latch', { vol: 0.3, rate: 0.8 });
+        return true;
+      }
+      case 'marreta': {
+        const t = this.nearest(h.x, h.z, 10 * area); if (!t && this.mode !== 'hub') return false;
+        let dx = t ? t.x - h.x : h.face || 1, dz = t ? t.z - h.z : 0; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; h.dx = dx; h.dz = dz; if (Math.abs(dx) > 0.2) h.face = dx > 0 ? 1 : -1;
+        this.cam.shake = Math.max(this.cam.shake, 0.45); A.sfx('hitHeavy', { vol: 0.55, rate: 0.6 }); A.synth('boom', { vol: 0.3 });
+        if (this.evo?.marreta) {
+          let prev = 0;
+          [3.6, 6.4, 9.2].forEach((R0, i) => { const R = R0 * area, a0 = prev; prev = R; this.timers.push({ t: i * 0.22, fn: () => { this.fx.spawn(def, { x: h.x, z: h.z, radius: R, dx: 1, dz: 0 }); this.ringDamage(h.x, h.z, a0, R, P.dmg * 0.85, { kb: P.knock }); this.cam.shake = Math.max(this.cam.shake, 0.4); } }); });
+          return true;
+        }
+        const R = P.range * area, W = P.width * area;
+        [0.28, 0.58, 0.9].forEach((k, i) => this.timers.push({ t: i * 0.07, fn: () => this.fx.spawn(def, { x: h.x + dx * R * k, z: h.z + dz * R * k, radius: W * 1.9, dx: 1, dz: 0 }) }));
+        this.timers.push({ t: 0.08, fn: () => {
+          for (const e of this.enemies) {
+            if (!this.ok(e)) continue; const ex = e.x - h.x, ez = e.z - h.z, along = ex * dx + ez * dz, perp = Math.abs(ex * -dz + ez * dx);
+            if (along > -0.5 && along < R + e.r && perp < W + e.r) this.hurt(e, P.dmg, { kb: P.knock * 0.7, kdx: dx, kdz: dz });
+          }
+        } });
+        return true;
+      }
+      case 'rastro': { // no hub não há movimento: solta fogo à frente
+        if (this.mode !== 'hub') return true;
+        this.zone({ x: h.x + (h.face || 1) * (1.5 + rnd() * 2), z: h.z + (rnd() - 0.5) * 2, r: P.radius, life: P.life, dmg: P.dmg, tick: P.tick, fxId: 'rastro', fxScale: P.radius / 1.2 });
+        return true;
+      }
+      case 'totem': {
+        if (this.mode !== 'hub' && !this.nearest(h.x, h.z, 15)) return false;
+        const tot = this.devices.filter((d) => d.type === 'totem'); while (tot.length >= P.max) { const o = tot.shift(); o.life = 0; }
+        const tgt = this.nearest(h.x, h.z, 15), a = tgt ? Math.atan2(tgt.z - h.z, tgt.x - h.x) + (rnd() - 0.5) : rnd() * TAU;
+        this.addDevice({ type: 'totem', x: h.x + Math.cos(a) * 2, z: h.z + Math.sin(a) * 2, life: P.life, shot: 0.4, pulse: 2.2, P, area, fxId: 'totem', fxScale: 0.9 });
+        this.ring(h.x + Math.cos(a) * 2, h.z + Math.sin(a) * 2, 2.2, '#ffd35a', 0.5, 0.12); A.sfx('chime', { vol: 0.25, rate: 0.7 });
+        return true;
+      }
+      case 'vortice': {
+        const near = this.enemies.filter((e) => this.ok(e) && Math.hypot(e.x - h.x, e.z - h.z) < 13 * area);
+        if (!near.length && this.mode !== 'hub') return false;
+        const c = near.length ? near[(rnd() * near.length) | 0] : { x: h.x + 4, z: h.z }, R = P.radius * area, ev = !!this.evo?.vortice;
+        this.zone({ x: c.x, z: c.z, r: R, life: P.life, dmg: P.dmg, tick: P.tick, pull: P.pull, fxId: 'vortice', fxScale: R / 2.4, end: ev ? (z) => { const R2 = z.r * 1.2; this.fx.spawn(store.resolveFx('nova'), { x: z.x, z: z.z, radius: R2, dx: 1, dz: 0 }); this.areaDamage(z.x, z.z, R2, P.dmg * 14, { kb: 6 }); this.cam.shake = Math.max(this.cam.shake, 0.8); A.synth('boom', { vol: 0.45 }); } : null });
+        A.synth('whoosh', { vol: 0.25 });
+        return true;
+      }
     }
     return true;
+  }
+  // ───── zonas, dispositivos e status ─────
+  zone(o) {
+    const z = { tick: 0.4, t: 0, acc: 0, ...o };
+    if (this.zones.length > 44) { const old = this.zones.shift(); if (old.inst) this.fx.kill(old.inst); }
+    this.zones.push(z);
+    const d = o.fxId && store.resolveFx(o.fxId); if (d) z.inst = this.fx.spawn(d, { x: z.x, z: z.z, follow: z, loop: true, count: 1, scale: o.fxScale || 1 });
+    return z;
+  }
+  addDevice(o) {
+    const d = { t: 0, ...o }; this.devices.push(d);
+    const f = o.fxId && store.resolveFx(o.fxId); if (f) d.inst = this.fx.spawn(f, { x: d.x, z: d.z, follow: d, loop: true, count: 1, scale: o.fxScale || 1 });
+    return d;
+  }
+  ringDamage(x, z, r0, r1, dmg, o = {}) {
+    for (const e of this.enemies) { if (!this.ok(e)) continue; const d = Math.hypot(e.x - x, e.z - z); if (d + e.r > r0 && d - e.r < r1) { const k = d || 1; this.hurt(e, dmg, { ...o, kdx: (e.x - x) / k, kdz: (e.z - z) / k }); } }
+  }
+  tickStatus(dt) {
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (e.chillT > 0) e.chillT -= dt;
+      if (e.burnT > 0) {
+        e.burnT -= dt; e.burnAcc = (e.burnAcc || 0) + dt;
+        if (rnd() < dt * 8) this.addSpark({ tex: 'flameHot', x: e.x + (rnd() - 0.5) * 0.5, y: 0.5 + rnd() * 0.8, z: e.z, vx: 0, vy: 1.6, vz: 0, life: 0.45, s0: 0.45, s1: 0.1, a: 0.9, add: true, rot: 0 });
+        if (e.burnAcc >= 0.5) { e.burnAcc = 0; this.hurt(e, e.burnD || 5, { sec: true, text: false, noStatus: true }); }
+        if (e.burnT <= 0) e.burnD = 0;
+      }
+    }
+  }
+  tickZones(dt) {
+    for (const z of this.zones) {
+      z.life -= dt; z.t += dt; z.acc += dt;
+      if (z.pull) for (const e of this.enemies) { if (!this.ok(e)) continue; const dx = z.x - e.x, dz = z.z - e.z, d = Math.hypot(dx, dz); if (d < z.r + e.r && d > 0.4) { const k = z.pull * dt * 3 * (e.d.boss ? 0.25 : e.d.heavy ? 0.5 : 1) * (0.5 + 0.5 * (1 - d / (z.r + 1))); e.kx += (dx / d) * k; e.kz += (dz / d) * k; } }
+      if (z.acc >= z.tick) { z.acc = 0; for (const e of this.enemies) { if (!this.ok(e)) continue; if (Math.hypot(e.x - z.x, e.z - z.z) < z.r + e.r) { this.hurt(e, z.dmg, { sec: true, text: false, noStatus: !!z.noStatus }); if (z.burn) this.applyBurn(e, 5); } } }
+      if (z.life <= 0) { z.dead = true; if (z.inst) this.fx.kill(z.inst); z.end?.(z); }
+    }
+    this.zones = this.zones.filter((z) => !z.dead);
+  }
+  explodeMine(m, small = false) {
+    const P = m.P, R = P.radius * m.area * (small ? 0.6 : 1), dm = P.dmg * (small ? 0.5 : 1);
+    this.fx.spawn(store.resolveFx('nova'), { x: m.x, z: m.z, radius: R, dx: 1, dz: 0 }); this.areaDamage(m.x, m.z, R, dm, { kb: 4 });
+    this.cam.shake = Math.max(this.cam.shake, small ? 0.15 : 0.35); A.sfx('hitHeavy', { vol: small ? 0.25 : 0.45, rate: 0.9, gap: 0.05 }); this.ring(m.x, m.z, R, '#ff7a2a', 0.4, 0.14);
+    if (!small && this.evo?.mina) for (let i = 0; i < 3; i++) { const a = (i / 3) * TAU + rnd(), cx = m.x + Math.cos(a) * 2.2, cz = m.z + Math.sin(a) * 2.2; this.timers.push({ t: 0.25 + i * 0.12, fn: () => this.explodeMine({ x: cx, z: cz, P, area: m.area }, true) }); }
+  }
+  tickDevices(dt) {
+    for (const d of this.devices) {
+      d.life -= dt; d.t += dt;
+      if (d.type === 'mina') {
+        d.arm -= dt;
+        if (d.arm <= 0) { let trig = false; for (const e of this.enemies) { if (this.ok(e) && Math.hypot(e.x - d.x, e.z - d.z) < 1.5 + e.r) { trig = true; break; } } if (trig) { d.life = 0; this.explodeMine(d); } }
+        if (d.life <= 0 && !d.boom) d.boom = true;
+      } else if (d.type === 'totem') {
+        const P = d.P, h = this.hero; d.shot -= dt; d.pulse -= dt;
+        if (d.shot <= 0) {
+          const t = this.nearest(d.x, d.z, P.range * d.area);
+          if (t) {
+            d.shot = P.rate; const ev = !!this.evo?.totem, n = ev ? 3 : 1, fd = store.resolveFx('lanca');
+            const list = ev ? this.enemies.filter((e) => this.ok(e) && Math.hypot(e.x - d.x, e.z - d.z) < P.range * d.area).sort((a, b) => Math.hypot(a.x - d.x, a.z - d.z) - Math.hypot(b.x - d.x, b.z - d.z)).slice(0, n) : [t];
+            for (const e of list) { const dx = e.x - d.x, dz = e.z - d.z, L = Math.hypot(dx, dz) || 1; this.hurt(e, P.dmg, { kb: 0.6, kdx: dx / L, kdz: dz / L }); if (fd) this.fx.spawn(fd, { x: d.x, z: d.z, dx, dz, scale: 0.5, maxT: L / 16, speed: 16 }); }
+            A.sfx('draw', { vol: 0.18, rate: 1.7, gap: 0.05 });
+          } else d.shot = 0.2;
+        }
+        if (this.evo?.totem) {
+          if (this.mode === 'run' && Math.hypot(h.x - d.x, h.z - d.z) < 6) h.hp = Math.min(h.maxHp, h.hp + h.maxHp * 0.012 * dt);
+          if (d.pulse <= 0) { d.pulse = 2.4; this.fx.spawn(store.resolveFx('nova'), { x: d.x, z: d.z, radius: 4.2, dx: 1, dz: 0 }); this.areaDamage(d.x, d.z, 4.2, P.dmg * 1.2, { kb: 5 }); this.ring(d.x, d.z, 4.2, '#ffd35a', 0.5, 0.12); }
+        }
+      }
+      if (d.life <= 0) { d.dead = true; if (d.inst) this.fx.kill(d.inst); }
+    }
+    this.devices = this.devices.filter((d) => !d.dead);
   }
   updateSkills(dt) {
     for (const id of Object.keys(this.skillLv)) {
@@ -345,24 +491,48 @@ export class Game {
         const def = store.resolveFx('brasas'); if (!def) continue;
         if (!st.inst || !this.fx.insts.includes(st.inst)) st.inst = this.fx.spawn(def, { x: this.hero.x, z: this.hero.z, follow: this.hero, loop: true, count: P.count });
         st.inst.count = P.count; st.inst.sc = (P.radius * this.stats.area) / (def.args.orbitRadius || 2.6);
+        if (this.evo?.brasas && this.mode === 'run') { st.burstT = (st.burstT ?? 4) - dt; if (st.burstT <= 0 && this.nearest(this.hero.x, this.hero.z, 8)) { st.burstT = 4; const R = 6 * this.stats.area; this.fx.spawn(store.resolveFx('nova'), { x: this.hero.x, z: this.hero.z, radius: R, dx: 1, dz: 0 }); this.areaDamage(this.hero.x, this.hero.z, R, P.dmg * 4, { kb: 4 }); this.cam.shake = Math.max(this.cam.shake, 0.3); A.synth('boom', { vol: 0.25 }); } }
         const pts = this.fx.orbitPoints(st.inst);
         for (const e of this.enemies) { if (!this.ok(e)) continue; e.orbCd -= dt; if (e.orbCd > 0) continue;
           for (const q of pts) if ((q.x - e.x) ** 2 + (q.z - e.z) ** 2 < (P.hitR * this.stats.area + e.r) ** 2) { this.hurt(e, P.dmg, { kb: 1.2, kdx: e.x - this.hero.x, kdz: e.z - this.hero.z }); e.orbCd = P.tick; A.sfx('latch', { vol: 0.14, rate: 1.5, gap: 0.08 }); break; } }
         continue;
       }
+      if (id === 'rastro') {
+        st.acc = (st.acc || 0) + dt; const h = this.hero;
+        if (h.moving && st.acc >= P.gap) { st.acc = 0; const ev = !!this.evo?.rastro, r = P.radius * this.stats.area, dm = P.dmg;
+          const ours = this.zones.filter((z) => z.kind === 'rastro'); if (ours.length >= 22) { ours[0].life = 0; }
+          this.zone({ kind: 'rastro', x: h.x, z: h.z, r, life: P.life, dmg: dm, tick: P.tick, fxId: 'rastro', fxScale: r / 1.2, burn: ev, end: ev ? (z) => { this.areaDamage(z.x, z.z, z.r * 1.7, dm * 2.5, { sec: true, kb: 2 }); this.burst(z.x, z.z, 6, 0.6, 5); } : null }); }
+        continue;
+      }
       st.cd -= dt; if (st.cd > 0) continue;
-      st.cd = this.cast(id) ? P.cd * this.stats.cd : 0.12;
+      const okc = this.cast(id); st.cd = okc ? P.cd * this.stats.cd : 0.12;
+      if (okc && this.stats.t.echo && this.mode === 'run' && rnd() < this.stats.t.echo) this.timers.push({ t: 0.28, fn: () => this.cast(id) });
     }
   }
   updateProjectiles(dt) {
     for (const p of this.proj) {
       p.life -= dt; if (p.life <= 0) { p.dead = true; continue; }
+      const sw = p.saw;
+      if (sw && sw.ret) { const dx = this.hero.x - p.x, dz = this.hero.z - p.z, L = Math.hypot(dx, dz) || 1; p.dx = dx / L; p.dz = dz / L; p.speed = 13; if (L < 0.9) { p.dead = true; continue; } }
       p.x += p.dx * p.speed * dt; p.z += p.dz * p.speed * dt;
       for (const e of this.enemies) {
         if (!this.ok(e) || p.hit.has(e)) continue;
-        if ((e.x - p.x) ** 2 + (e.z - p.z) ** 2 < (p.hitR + e.r) ** 2) { p.hit.add(e); this.hurt(e, p.dmg, { kb: 2.5, kdx: p.dx, kdz: p.dz }); if (--p.pierce <= 0) { p.dead = true; break; } }
+        if ((e.x - p.x) ** 2 + (e.z - p.z) ** 2 < (p.hitR + e.r) ** 2) {
+          p.hit.add(e); this.hurt(e, p.dmg, { kb: 2.5, kdx: p.dx, kdz: p.dz, burn: p.burn });
+          if (sw) {
+            this.spawnImpact(e.x, e.z, 0.7); if (this.hitFx < 6) this.burst(e.x, e.z, 3, 0.8, 5);
+            if (!sw.ret) { if (sw.b-- <= 0) { if (sw.evo) { sw.ret = true; p.hit.clear(); p.life = 3.2; } else { p.dead = true; break; } } else { let best = null, bd = 100; for (const o of this.enemies) { if (!this.ok(o) || p.hit.has(o)) continue; const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (d < bd) { bd = d; best = o; } } if (!best) { p.hit.clear(); for (const o of this.enemies) { if (!this.ok(o) || o === e) continue; const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (d < bd) { bd = d; best = o; } } } if (best) { const dx = best.x - p.x, dz = best.z - p.z, L = Math.hypot(dx, dz) || 1; p.dx = dx / L; p.dz = dz / L; } } }
+            continue;
+          }
+          if (p.split && !p.child) {
+            p.split = false; this.areaDamage(p.x, p.z, 2, p.dmg * 0.6, { sec: true, kb: 2 }); this.spawnImpact(p.x, p.z, 1.3);
+            const fd = store.resolveFx('lanca'), ang = Math.atan2(p.dz, p.dx);
+            for (const off of [-0.7, 0, 0.7]) { const a = ang + off, c = { x: p.x, z: p.z, dx: Math.cos(a), dz: Math.sin(a), speed: 14, dead: false, hit: new Set([e]), pierce: 3, dmg: p.dmg * 0.5, life: 0.8, hitR: 0.7, child: true }; this.proj.push(c); if (fd) this.fx.spawn(fd, { x: c.x, z: c.z, dx: c.dx, dz: c.dz, follow: c, scale: 0.6 }); }
+          }
+          if (--p.pierce <= 0) { p.dead = true; break; }
+        }
       }
-      if (this.world.boxesAt(p.x, p.z).some((b) => p.x > b[0] && p.x < b[1] && p.z > b[2] && p.z < b[3])) p.dead = true;
+      if (!(sw && sw.ret) && this.world.boxesAt(p.x, p.z).some((b) => p.x > b[0] && p.x < b[1] && p.z > b[2] && p.z < b[3])) p.dead = true;
     }
     this.proj = this.proj.filter((p) => !p.dead);
   }
@@ -376,7 +546,7 @@ export class Game {
       else if (lv === 0 && owned.length < this.stats.slots) opts.push({ kind: 'skill', id, lv: 1, w: 2.4 * (1 + (this.stats.t.skillBias || 0)), isNew: true });
     }
     const owns = (id) => (this.pass[id] || 0) > 0;
-    for (const id of PASSIVE_IDS) { const d = PASSIVES[id], lv = this.pass[id] || 0; if (lv >= d.max || (d.minLv && this.level < d.minLv)) continue; if (d.rar === 'maldita' && Object.values(this.cursed || {}).filter(Boolean).length >= 3) continue; opts.push({ kind: 'pass', id, lv: lv + 1, w: d.rar === 'rara' ? 0.7 : d.rar === 'maldita' ? 0.45 : 1.5, rar: d.rar }); }
+    for (const id of PASSIVE_IDS) { const d = PASSIVES[id], lv = this.pass[id] || 0; if (lv >= d.max || (d.minLv && this.level < d.minLv)) continue; if (d.tag && !owned.some((o) => SKILLS[o].tag === d.tag)) continue; if (d.rar === 'maldita' && Object.values(this.cursed || {}).filter(Boolean).length >= 3) continue; opts.push({ kind: 'pass', id, lv: lv + 1, w: d.rar === 'rara' ? 0.7 : d.rar === 'maldita' ? 0.45 : 1.5, rar: d.rar }); }
     for (const id in EVOS) if ((this.skillLv[id] || 0) >= 5 && !this.evo?.[id] && (this.pass[EVOS[id].need] || 0) >= 2) opts.push({ kind: 'evo', id, lv: 1, w: 6, rar: 'evo' });
     const out = [], n = this.stats.cards;
     if (opts.length < n + 2) for (const id of ['dmg', 'hp', 'cd', 'heal']) opts.push({ kind: 'inf', id, lv: (this.inf[id] || 0) + 1, w: 2.5, rar: 'inf' }); // pool esgotando: cartas infinitas
@@ -538,7 +708,7 @@ export class Game {
     else if (k === 'flames') S({ tex: 'aura', y: 0.3 + rnd() * 1.4, vx: (rnd() - 0.5) * 0.8, vy: 2 + rnd() * 1.5, vz: (rnd() - 0.5) * 0.5, life: 0.7, s0: 0.5, s1: 0.08, add: true });
   }
   tickCommon(dt) {
-    this.auraTick(dt);
+    this.auraTick(dt); this.tickZones(dt); this.tickDevices(dt); this.tickStatus(dt);
     this.cam.shake = Math.max(0, this.cam.shake - dt * 2.2); this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.2);
     const shk = this.cam.shake * 12 * this.opts.shake; this.cam.sx = (rnd() - 0.5) * shk; this.cam.sz = (rnd() - 0.5) * shk;
     for (const di of this.dmgInd) di.t += dt; this.dmgInd = this.dmgInd.filter((d) => d.t < d.life);
@@ -639,7 +809,7 @@ export class Game {
           }
         }
       }
-      const slowK = e.spawn < 1 ? 0.3 : 1;
+      const slowK = (e.spawn < 1 ? 0.3 : 1) * (e.chillT > 0 ? (e.d.boss ? 0.8 : 0.6) : 1);
       e.mvx = mx * sp * slowK; e.x += (mx * sp * slowK + e.kx) * dt; e.z += (mz * sp * slowK + e.kz) * dt;
       e.kx *= Math.exp(-5 * dt); e.kz *= Math.exp(-5 * dt); e.anim += dt * (0.6 + sp * 0.9);
       const gx = Math.floor(e.x / CELL), gz = Math.floor(e.z / CELL);

@@ -5,7 +5,7 @@ import { normalizeDef } from './core.js';
 let cache = null;
 export function defaultDefs() {
   if (cache) return cache;
-  const tx = { slash: T.texSlash(), flame: T.texFlame(), spark: T.texSpark(), smoke: T.texSmoke(), bolt: T.texBolt(), ring: T.texRing(), lance: T.texLance(), meteor: T.texMeteor(), impact: T.texImpact(), tspark: T.texToxicSpark(), fire: T.texFireSheetTall(), fireBig: T.texFireSheetBig(), fireToxic: T.texFireSheetToxic(), fire2: T.texFireV2(), fire2Big: T.texFireV2Big(), fire2Toxic: T.texFireV2Toxic(), ember: T.texEmber(), smokeS: T.texSmokeSheet() };
+  const tx = { slash: T.texSlash(), flame: T.texFlame(), spark: T.texSpark(), smoke: T.texSmoke(), bolt: T.texBolt(), ring: T.texRing(), lance: T.texLance(), meteor: T.texMeteor(), impact: T.texImpact(), tspark: T.texToxicSpark(), fire: T.texFireSheetTall(), fireBig: T.texFireSheetBig(), fireToxic: T.texFireSheetToxic(), fire2: T.texFireV2(), fire2Big: T.texFireV2Big(), fire2Toxic: T.texFireV2Toxic(), ember: T.texEmber(), smokeS: T.texSmokeSheet(), saw: T.texSaw() };
   const sm = (c) => (c && c.__sheet) || null;
   const mk = (o) => normalizeDef(o);
   const D = {};
@@ -90,7 +90,59 @@ export function defaultDefs() {
     part: { burst: 5, life: 0.35, speed: 5, spread: 360, gravity: 5, drag: 2, size0: 0.4, size1: 0, y: 0.9, stretch: 0.5 },
     args: { useRadius: false }, tex: { body: tx.impact, part: tx.spark },
   });
+  D.serra = mk({
+    id: 'serra', name: 'Disco de Serra', kind: 'projectile', life: 2.4, glow: 1.3, tint: 0.2,
+    colors: ['#fff6dc', '#ffb347', '#6a3a1a'],
+    body: { size0: 1.9, size1: 1.9, y: 0.8, alpha: 'hold', flat: false, spin: 14 },
+    part: { burst: 6, rate: 46, life: 0.45, speed: 3, spread: 360, gravity: 4, drag: 2, size0: 0.4, size1: 0, y: 0.8, stretch: 0.6 },
+    hit: { on: true, size0: 0.8, size1: 2.2, life: 0.2, flat: false, y: 0.8 },
+    args: { speed: 11 }, tex: { body: tx.saw, part: tx.spark, hit: tx.impact },
+  });
+  D.mina = mk({
+    id: 'mina', name: 'Mina de Brasa', kind: 'orbit', life: 0, glow: 1.5, tint: 0.5,
+    colors: ['#fff0d0', '#ff4a2a', '#4a0c08'],
+    body: { size0: 1.3, size1: 1.3, y: 0.3, alpha: 'hold', flat: false, fps: 14, flicker: 1 },
+    part: { burst: 0, rate: 8, life: 0.6, speed: 0.6, spread: 360, gravity: -1, drag: 1, size0: 0.35, size1: 0, y: 0.3, lift: 0.8 },
+    args: { orbitRadius: 0.01, orbitSpeed: 0, count: 1 }, tex: { body: tx.fire2, part: tx.ember }, texMeta: { body: sm(tx.fire2) },
+  });
+  D.marreta = mk({
+    id: 'marreta', name: 'Marreta Sísmica', kind: 'nova', life: 0.5, glow: 1.3, tint: 0.5,
+    colors: ['#ffe9c0', '#d0873a', '#3a2010'],
+    body: { size0: 0.6, size1: 6, y: 0.05, alpha: 'fade', flat: true, ease: 'out' },
+    part: { burst: 26, life: 0.7, speed: 6, spread: 360, gravity: 9, drag: 1.8, size0: 0.55, size1: 0, y: 0.2, stretch: 0.5 },
+    args: { radius: 3.4, useRadius: true }, tex: { body: tx.ring, part: tx.spark },
+  });
+  D.rastro = mk({
+    id: 'rastro', name: 'Rastro de Fogo', kind: 'orbit', life: 0, glow: 1.6, tint: 0.3,
+    colors: ['#fff2c8', '#ff8a2e', '#7a2208'],
+    body: { size0: 2.6, size1: 2.6, y: 0.7, alpha: 'hold', flat: false, fps: 18, flicker: 0.8 },
+    part: { burst: 0, rate: 14, life: 0.9, speed: 0.7, spread: 360, gravity: -1.6, drag: 1, size0: 0.4, size1: 0, y: 0.4, lift: 1.2 },
+    args: { orbitRadius: 0.01, orbitSpeed: 0, count: 1 }, tex: { body: tx.fire2Big, part: tx.ember, smoke: tx.smokeS }, texMeta: { body: sm(tx.fire2Big), smoke: sm(tx.smokeS) },
+    smoke: { on: true, rate: 3, life: 2.0, size0: 0.8, size1: 2.4, rise: 1.0, drift: 0.5, y: 1.4, alpha: 0.2 },
+  });
+  D.veneno = mk({
+    id: 'veneno', name: 'Poça Tóxica', kind: 'orbit', life: 0, glow: 1.6, tint: 0.25,
+    colors: ['#e8fff8', '#42e0b4', '#0b5a48'],
+    body: { size0: 2.4, size1: 2.4, y: 0.6, alpha: 'hold', flat: false, fps: 16, flicker: 1 },
+    part: { burst: 0, rate: 16, life: 1.1, speed: 0.6, spread: 360, gravity: -1.2, drag: 1, size0: 0.35, size1: 0, y: 0.4, lift: 1.0 },
+    args: { orbitRadius: 0.01, orbitSpeed: 0, count: 1 }, tex: { body: tx.fire2Toxic, part: tx.tspark }, texMeta: { body: sm(tx.fire2Toxic) },
+  });
+  D.totem = mk({
+    id: 'totem', name: 'Totem de Cinzas', kind: 'orbit', life: 0, glow: 1.8, tint: 0.4,
+    colors: ['#fff6d8', '#ffd35a', '#6a3a8a'],
+    body: { size0: 3.2, size1: 3.2, y: 1.2, alpha: 'hold', flat: false, fps: 16, flicker: 0.6 },
+    part: { burst: 0, rate: 22, life: 1.2, speed: 0.9, spread: 360, gravity: -1.8, drag: 0.9, size0: 0.4, size1: 0, y: 0.8, lift: 1.7 },
+    args: { orbitRadius: 0.01, orbitSpeed: 0, count: 1 }, tex: { body: tx.fire2Big, part: tx.ember, smoke: tx.smokeS }, texMeta: { body: sm(tx.fire2Big), smoke: sm(tx.smokeS) },
+    smoke: { on: true, rate: 4, life: 2.4, size0: 1.0, size1: 3.0, rise: 1.2, drift: 0.5, y: 2.2, alpha: 0.28 },
+  });
+  D.vortice = mk({
+    id: 'vortice', name: 'Vórtice', kind: 'orbit', life: 0, glow: 1.5, tint: 0.4,
+    colors: ['#f0e0ff', '#a05cff', '#2a1050'],
+    body: { size0: 5, size1: 5, y: 0.06, alpha: 'hold', flat: true, spin: 6 },
+    part: { burst: 0, rate: 34, life: 0.9, speed: 1.4, spread: 360, gravity: -0.6, drag: 1.2, size0: 0.5, size1: 0, y: 0.6, lift: 0.8, stretch: 0.5 },
+    args: { orbitRadius: 0.01, orbitSpeed: 0, count: 1 }, tex: { body: tx.ring, part: tx.spark },
+  });
   cache = D;
   return D;
 }
-export const SKILL_FX = ['lamina', 'brasas', 'arco', 'nova', 'chuva', 'lanca', 'impacto'];
+export const SKILL_FX = ['lamina', 'brasas', 'arco', 'nova', 'chuva', 'lanca', 'serra', 'mina', 'marreta', 'rastro', 'totem', 'vortice', 'veneno', 'impacto'];

@@ -293,3 +293,25 @@ export function texSmokeSheet(opts = {}) {
   }
   sheet.__sheet = { cols, rows: cols, n: N }; return sheet;
 }
+
+// disco de serra: lâmina dentada girando, com brilho quente (apontado em +X, simétrico)
+export function texSaw() {
+  const [c, ctx] = base();
+  const cx = 128, cy = 128, teeth = 12;
+  ctx.fillStyle = rad(ctx, cx, cy, 20, 124, [[0, 'rgba(255,170,70,.0)'], [0.7, 'rgba(255,120,40,.18)'], [1, 'rgba(255,60,10,0)']]);
+  ctx.beginPath(); ctx.arc(cx, cy, 124, 0, TAU); ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < teeth * 2; i++) { const a = (i / (teeth * 2)) * TAU, r = i % 2 ? 84 : 112, a2 = a + (i % 2 ? 0 : 0.08); ctx.lineTo(cx + Math.cos(a2) * r, cy + Math.sin(a2) * r); }
+  ctx.closePath();
+  ctx.fillStyle = lin(ctx, 20, 20, 236, 236, [[0, '#f2e8d8'], [0.45, '#9a8f86'], [1, '#4a403c']]); ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = '#fff6dc'; ctx.stroke();
+  // rasgos de giro e furos
+  ctx.strokeStyle = 'rgba(40,24,18,.55)'; ctx.lineWidth = 5;
+  for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.beginPath(); ctx.arc(cx, cy, 58, a, a + 0.7); ctx.stroke(); }
+  ctx.fillStyle = '#2a1c16'; ctx.beginPath(); ctx.arc(cx, cy, 20, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#ff9a40'; ctx.beginPath(); ctx.arc(cx, cy, 9, 0, TAU); ctx.fill();
+  // faíscas quentes nos dentes
+  add(ctx);
+  for (let i = 0; i < teeth; i++) { const a = (i / teeth) * TAU + 0.05; ctx.fillStyle = 'rgba(255,190,90,.9)'; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * 112, cy + Math.sin(a) * 112, 6, 0, TAU); ctx.fill(); }
+  return c;
+}

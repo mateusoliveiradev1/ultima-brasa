@@ -21,6 +21,24 @@ export const SKILLS = {
   lanca: { id: 'lanca', name: 'Lança de Brasa', tag: 'Projétil', color: '#ffd98a', fx: 'lanca',
     desc: (l) => (l === 1 ? 'Lança incandescente que atravessa inimigos.' : l % 2 === 1 ? 'Lanças extras em leque.' : 'Mais dano e perfuração.'),
     p: (l) => ({ cd: 1.7 * Math.pow(0.92, l - 1), dmg: 40 * (1 + 0.3 * (l - 1)), count: 1 + Math.floor((l - 1) / 2), pierce: 3 + l, speed: 16, hitR: 0.95 }) },
+  serra: { id: 'serra', name: 'Disco de Serra', tag: 'Projétil', color: '#ffd9a0', fx: 'serra',
+    desc: (l) => (l === 1 ? 'Disco que quica de inimigo em inimigo, cortando tudo no caminho.' : l === 4 ? 'Dois discos por lançamento.' : 'Mais dano, mais quicadas.'),
+    p: (l) => ({ cd: 2.5 * Math.pow(0.93, l - 1), dmg: 24 * (1 + 0.3 * (l - 1)), count: l >= 4 ? 2 : 1, bounces: 3 + l, speed: 11, hitR: 0.8 }) },
+  mina: { id: 'mina', name: 'Mina de Brasa', tag: 'Armadilha', color: '#ff5a3a', fx: 'mina',
+    desc: (l) => (l === 1 ? 'Planta uma mina que explode quando um inimigo se aproxima.' : 'Mais minas, explosão maior e mais forte.'),
+    p: (l) => ({ cd: 3.4 * Math.pow(0.93, l - 1), dmg: 46 * (1 + 0.3 * (l - 1)), count: 1 + Math.floor(l / 2), radius: 2.5 + 0.25 * l, life: 16 }) },
+  marreta: { id: 'marreta', name: 'Marreta Sísmica', tag: 'Impacto', color: '#d0873a', fx: 'marreta',
+    desc: (l) => (l === 1 ? 'Golpe pesado que racha o chão em linha e derruba quem está no caminho.' : 'Onda mais longa, larga e forte.'),
+    p: (l) => ({ cd: 3.0 * Math.pow(0.93, l - 1), dmg: 50 * (1 + 0.3 * (l - 1)), range: 5 + 0.5 * l, width: 1.5 + 0.18 * l, knock: 6 }) },
+  rastro: { id: 'rastro', name: 'Rastro de Fogo', tag: 'Zona', color: '#ff8a2e', fx: 'rastro',
+    desc: (l) => (l === 1 ? 'Por onde você passa fica fogo no chão, queimando quem pisar.' : 'Fogo maior, dura mais e queima mais forte.'),
+    p: (l) => ({ dmg: 8 * (1 + 0.3 * (l - 1)), radius: 1.1 + 0.1 * l, life: 2.6 + 0.4 * l, gap: 0.32, tick: 0.4 }) },
+  totem: { id: 'totem', name: 'Totem de Cinzas', tag: 'Armadilha', color: '#ffd35a', fx: 'totem',
+    desc: (l) => (l === 1 ? 'Finca um totem que atira no inimigo mais próximo por alguns segundos.' : 'Totem dura mais, atira mais rápido e mais forte; vários totens ao mesmo tempo.'),
+    p: (l) => ({ cd: 8 * Math.pow(0.93, l - 1), dmg: 22 * (1 + 0.3 * (l - 1)), life: 7 + 0.7 * l, rate: 0.9 * Math.pow(0.9, l - 1), range: 11, max: 1 + Math.floor(l / 3) }) },
+  vortice: { id: 'vortice', name: 'Vórtice', tag: 'Zona', color: '#a05cff', fx: 'vortice',
+    desc: (l) => (l === 1 ? 'Um vórtice arrasta os inimigos para o centro e os tritura.' : 'Maior, dura mais e puxa com mais força.'),
+    p: (l) => ({ cd: 7.5 * Math.pow(0.93, l - 1), dmg: 8 * (1 + 0.3 * (l - 1)), radius: 3.8 + 0.35 * l, life: 3 + 0.4 * l, pull: 7 + l, tick: 0.3 }) },
 };
 export const SKILL_IDS = Object.keys(SKILLS);
 
@@ -71,15 +89,27 @@ C('blind', 'Maré Cega', '≈', 1, '+50% de sucata, mas -20% de velocidade.', { 
 C('hunger', 'Fome Eterna', '☢', 1, 'Inimigos têm +25% de vida, mas você ganha +50% de experiência.', { xpP: 0.5 }, { rar: 'maldita', minLv: 6, pick: { foeHp: 1.25 } });
 C('overclock', 'Sobrecarga', '⚡', 2, '-15% de recarga em tudo, mas recebe +15% de dano.', { cdrFlat: 0.15, dmgTaken: 0.15 }, { rar: 'maldita', minLv: 6 });
 C('ashpact', 'Pacto de Cinzas', '☗', 1, '+30% de experiência e +25% de dano de habilidades, mas recebe +25% de dano.', { xpP: 0.3, sAll: 0.25, dmgTaken: 0.25 }, { rar: 'maldita', minLv: 8 });
+// builds: status, eco e maestria por tipo de habilidade
+C('ignite', 'Chama Viva', '♨', 4, '+12% de chance de incendiar ao acertar (queima por 3 s).', { ignite: 0.12 }, { rar: 'rara', minLv: 3 });
+C('chill', 'Frio de Cinzas', '❄', 3, '+15% de chance de congelar o inimigo, deixando-o 40% mais lento.', { chill: 0.15 }, { rar: 'rara', minLv: 3 });
+C('echo', 'Eco de Brasa', '❋', 3, '+10% de chance de uma habilidade ser lançada duas vezes.', { echo: 0.1 }, { rar: 'rara', minLv: 5 });
+const TAGS = { Corte: ['m_corte', 'Maestria do Corte', '⚔'], Orbital: ['m_orbital', 'Maestria Orbital', '●'], Raio: ['m_raio', 'Maestria do Raio', '〰'], 'Área': ['m_area', 'Maestria da Área', '◯'], Bombardeio: ['m_bomb', 'Maestria do Bombardeio', '☄'], 'Projétil': ['m_proj', 'Maestria do Projétil', '➤'], Armadilha: ['m_trap', 'Maestria das Armadilhas', '✺'], Zona: ['m_zona', 'Maestria das Zonas', '♨'], Impacto: ['m_imp', 'Maestria do Impacto', '⛰'] };
+for (const t in TAGS) { const [id, nm, ic] = TAGS[t]; C(id, nm, ic, 3, `+22% de dano e -6% de recarga em habilidades do tipo ${t}.`, { ['tag_' + t]: 0.22, ['tagcd_' + t]: 0.06 }, { rar: 'rara', minLv: 4, tag: t }); }
 export const PASSIVE_IDS = Object.keys(PASSIVES);
 // evoluções: uma habilidade no nível 5+ junto de uma passiva vira outra coisa
 export const EVOS = {
-  lamina: { name: 'Lâmina Calcinada', need: 'dmg', ico: '⚔', desc: 'Golpe extra e +70% de dano. Corte incandescente.' },
-  brasas: { name: 'Coroa de Brasas', need: 'area', ico: '●', desc: '+3 brasas, órbita maior e +70% de dano.' },
-  arco: { name: 'Tempestade Tóxica', need: 'crit', ico: '〰', desc: '+4 encadeamentos e +70% de dano.' },
-  nova: { name: 'Supernova de Cinzas', need: 'cdr', ico: '◯', desc: 'Raio +25%, +70% de dano e recarga menor.' },
-  chuva: { name: 'Chuva Apocalíptica', need: 'luck', ico: '☄', desc: '+6 fragmentos e +70% de dano.' },
-  lanca: { name: 'Lança Solar', need: 'spd', ico: '➤', desc: '+2 lanças perfurantes e +70% de dano.' },
+  lamina: { name: 'Lâmina Calcinada', need: 'dmg', ico: '⚔', desc: 'Cada golpe lança uma onda de fogo que atravessa inimigos e os incendeia.' },
+  brasas: { name: 'Coroa de Brasas', need: 'area', ico: '●', desc: '+2 brasas. A cada 4 s, a coroa explode para fora e queima tudo ao redor.' },
+  arco: { name: 'Tempestade Tóxica', need: 'crit', ico: '〰', desc: 'Cada alvo atingido deixa uma poça tóxica que continua causando dano.' },
+  nova: { name: 'Supernova de Cinzas', need: 'cdr', ico: '◯', desc: 'Primeiro puxa os inimigos para perto, depois explode numa onda gigante.' },
+  chuva: { name: 'Chuva Apocalíptica', need: 'luck', ico: '☄', desc: 'Cada fragmento deixa fogo no chão e um meteoro gigante cai no inimigo mais forte.' },
+  lanca: { name: 'Lança Solar', need: 'spd', ico: '➤', desc: 'A lança explode ao acertar e se divide em três lanças menores.' },
+  serra: { name: 'Disco Ceifador', need: 'spd', ico: '✲', desc: 'Depois de quicar, o disco volta até você cortando tudo de novo.' },
+  mina: { name: 'Campo Minado', need: 'area', ico: '✺', desc: 'Cada mina solta três minas-filhas ao explodir, em reação em cadeia.' },
+  marreta: { name: 'Terremoto', need: 'armor', ico: '⛰', desc: 'Em vez de uma linha, o golpe vira três ondas de choque circulares em volta de você.' },
+  rastro: { name: 'Trilha Infernal', need: 'regen', ico: '♨', desc: 'O fogo cresce, dura mais, incendeia e explode quando apaga.' },
+  totem: { name: 'Totem Ancestral', need: 'cdr', ico: '☗', desc: 'Atira três projéteis, cura você por perto e pulsa uma onda de choque.' },
+  vortice: { name: 'Buraco Negro', need: 'magnet', ico: '◉', desc: 'Puxa muito mais forte e colapsa numa explosão enorme ao acabar.' },
 };
 export const INF = {
   dmg: { name: 'Brasa Infinita: Fúria', desc: '+4% de dano. Acumula sem limite.', ico: '✦', c: '#ffb347' },
@@ -239,6 +269,18 @@ export const TREE = [
   mk('hab', 2, 3, 'r_nova', 'Relíquia: Nova', '◯', 1, [['slots', 1]], 'Libera a Nova de Cinzas como habilidade inicial', () => 'liberado', {}, { base: 650, grow: 1 }),
   mk('hab', 3, -1.5, 'r_lanca', 'Relíquia: Lança', '➤', 1, [['r_arco', 1], ['r_brasas', 1]], 'Libera a Lança de Brasa como habilidade inicial', () => 'liberado', {}, { base: 1100, grow: 1 }),
   mk('hab', 3, 1.5, 'r_chuva', 'Relíquia: Chuva', '☄', 1, [['r_brasas', 1], ['r_nova', 1]], 'Libera a Chuva de Sucata como habilidade inicial', () => 'liberado', {}, { base: 1900, grow: 1 }),
+  mk('hab', 2, -4.5, 'r_serra', 'Relíquia: Disco de Serra', '✲', 1, [['r_lanca', 1]], 'Libera o Disco de Serra como habilidade inicial', () => 'liberado', {}, { base: 2800, grow: 1 }),
+  mk('hab', 2, -6, 'r_mina', 'Relíquia: Mina de Brasa', '✺', 1, [['r_lanca', 1]], 'Libera a Mina de Brasa como habilidade inicial', () => 'liberado', {}, { base: 3200, grow: 1 }),
+  mk('hab', 2, 4.5, 'r_marreta', 'Relíquia: Marreta Sísmica', '⛰', 1, [['r_chuva', 1]], 'Libera a Marreta Sísmica como habilidade inicial', () => 'liberado', {}, { base: 3600, grow: 1 }),
+  mk('hab', 2, 6, 'r_rastro', 'Relíquia: Rastro de Fogo', '♨', 1, [['r_chuva', 1]], 'Libera o Rastro de Fogo como habilidade inicial', () => 'liberado', {}, { base: 4200, grow: 1 }),
+  mk('hab', 4, -5.25, 'r_totem', 'Relíquia: Totem de Cinzas', '☗', 1, [['r_mina', 1], ['r_serra', 1]], 'Libera o Totem de Cinzas como habilidade inicial', () => 'liberado', {}, { base: 5200, grow: 1 }),
+  mk('hab', 4, 5.25, 'r_vortice', 'Relíquia: Vórtice', '◉', 1, [['r_marreta', 1], ['r_rastro', 1]], 'Libera o Vórtice como habilidade inicial', () => 'liberado', {}, { base: 6400, grow: 1 }),
+  S('hab', 3, -4.5, 'serra_a', 'Serra: Afiada', '✲', 8, [['r_serra', 1]], 's_serra_dmg', 0.06, '% dano', '+6% de dano do Disco de Serra'),
+  S('hab', 3, -6, 'mina_a', 'Mina: Potente', '✺', 8, [['r_mina', 1]], 's_mina_dmg', 0.06, '% dano', '+6% de dano da Mina de Brasa'),
+  S('hab', 3, 4.5, 'marreta_a', 'Marreta: Pesada', '⛰', 8, [['r_marreta', 1]], 's_marreta_dmg', 0.06, '% dano', '+6% de dano da Marreta Sísmica'),
+  S('hab', 3, 6, 'rastro_a', 'Rastro: Brasa Viva', '♨', 8, [['r_rastro', 1]], 's_rastro_dmg', 0.06, '% dano', '+6% de dano do Rastro de Fogo'),
+  S('hab', 5, -5.25, 'totem_a', 'Totem: Afiado', '☗', 8, [['r_totem', 1]], 's_totem_dmg', 0.06, '% dano', '+6% de dano do Totem de Cinzas'),
+  S('hab', 5, 5.25, 'vortice_a', 'Vórtice: Faminto', '◉', 8, [['r_vortice', 1]], 's_vortice_dmg', 0.06, '% dano', '+6% de dano do Vórtice'),
   mk('hab', 5, 0, 'maestria', 'Maestria', '★', 3, [['r_lanca', 1], ['r_chuva', 1]], 'A habilidade inicial começa com nível extra', (l) => `+${l} nv`, {}, { base: 2600, grow: 2.6 }),
   // Lâmina (habilidade inicial) — entradas baratas
   S('hab', 1, -1.5, 'lamina_a', 'Lâmina: Afiada', '⚔', 8, [], 's_lamina_dmg', 0.06, '% dano', '+6% de dano da Lâmina de Ferrugem', { base: 60, grow: 1.5 }),
@@ -261,7 +303,7 @@ export const nodeOpen = (id, meta) => NODE[id].req.every(([r, l]) => (meta[r] ||
 /** soma dos efeitos de cada nó comprado (chave → valor); pedras-angulares entram como 1 */
 export function treeFx(meta) { const t = {}; for (const n of TREE) { const l = meta[n.id] || 0; if (!l) continue; for (const k in n.fx) t[k] = (t[k] || 0) + n.fx[k] * l; } return t; }
 export const catadorMul = (meta) => (1 + (treeFx(meta).catMul || 0)) * (meta.k_linha ? 1.5 : 1);
-export const RELIC_NODE = { arco: 'r_arco', brasas: 'r_brasas', nova: 'r_nova', lanca: 'r_lanca', chuva: 'r_chuva' };
+export const RELIC_NODE = { arco: 'r_arco', brasas: 'r_brasas', nova: 'r_nova', lanca: 'r_lanca', chuva: 'r_chuva', serra: 'r_serra', mina: 'r_mina', marreta: 'r_marreta', rastro: 'r_rastro', totem: 'r_totem', vortice: 'r_vortice' };
 export const hasRelic = (id, meta) => id === 'lamina' || (meta[RELIC_NODE[id]] || 0) > 0;
 
 export const DEPTH_MULT = (d) => ({ hp: 1 + 0.4 * (d - 1), dmg: 1 + 0.22 * (d - 1), scrap: 1 + 0.35 * (d - 1) });
