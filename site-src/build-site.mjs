@@ -17,7 +17,8 @@ const html = fs.readFileSync('site-src/index.html', 'utf8').replace('{{FAVICON}}
 fs.rmSync('site', { recursive: true, force: true });
 const put = (to, data) => { fs.mkdirSync(path.dirname(to), { recursive: true }); typeof data === 'string' ? fs.writeFileSync(to, data) : fs.copyFileSync(data.from, to); };
 put('site/index.html', html);
-for (const f of fs.readdirSync('site-src/img')) put(`site/img/${f}`, { from: `site-src/img/${f}` });
+const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) e.isDirectory() ? walk(`${d}/${e.name}`) : put(`site/${d.slice(9)}/${e.name}`, { from: `${d}/${e.name}` }); };
+walk('site-src/img');
 for (const [from, to] of [['dist/ultima-brasa.html', 'site/jogar/index.html'], ['dist/forja-de-efeitos.html', 'site/forja-de-efeitos/index.html'], ['dist/forja-de-mapas.html', 'site/forja-de-mapas/index.html']]) if (fs.existsSync(from)) put(to, { from });
 put('site/robots.txt', 'User-agent: *\nAllow: /\nDisallow: /forja-de-efeitos/\nDisallow: /forja-de-mapas/\n');
 console.log('site/index.html', (html.length / 1024).toFixed(0) + ' KB;', fs.readdirSync('site').join(', '));

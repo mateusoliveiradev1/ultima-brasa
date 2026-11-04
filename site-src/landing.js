@@ -1,5 +1,7 @@
 // Landing da Última Brasa: ranking ao vivo, desafio do dia e conta (mesma camada online do jogo; a sessão fica no mesmo localStorage).
 import * as O from '../src/game/online.js';
+import { RAR, SKIN_META, SKIN_ORDER, SKIN_HINT } from '../src/shared/skins.js';
+import { EVENT_GOAL, activeEvents, nextEvent, fmtDM } from '../src/shared/events.js';
 
 // links antigos e de teste (?map=…, ?editor=…, ?gl=…) continuam abrindo o jogo
 { const q = new URLSearchParams(location.search); if (['map', 'editor', 'gl', 'daily', 'dev'].some((k) => q.has(k))) location.replace('/jogar/' + location.search + location.hash); }
@@ -16,6 +18,18 @@ const top = $('.top'); const onScroll = () => top.classList.toggle('scrolled', s
 const NAME = { ruinas: 'Ruínas Cinzentas', pantano: 'Pântano Tóxico', deserto: 'Deserto de Sucata', tundra: 'Tundra Cinzenta' };
 const DIFF = { normal: 'Normal', pesadelo: 'Pesadelo', calamidade: 'Calamidade', abissal: 'Abissal' };
 
+// ───── skins e evento ─────
+{
+  const ev = $('#evento'), act = activeEvents()[0], nx = act ? null : nextEvent();
+  const skinOf = (id) => h('img', { src: `/img/skins/${id}.png`, alt: SKIN_META[id].name, width: 64, height: 96, loading: 'lazy' });
+  if (act) { ev.hidden = false; ev.append(skinOf(act.ev.skin), h('div', {}, h('b', {}, `${act.ev.name} está acontecendo`), h('p', {}, `${act.ev.blurb} Junte ${EVENT_GOAL} pontos (chefe = 3, partida de 2 min ou mais = 1) e leve a skin ${SKIN_META[act.ev.skin].name} para sempre. Termina em ${act.daysLeft} ${act.daysLeft === 1 ? 'dia' : 'dias'}.`)), h('a', { class: 'btn primary', href: '/jogar/' }, 'Jogar agora')); }
+  else if (nx) { ev.hidden = false; ev.classList.add('soon'); ev.append(skinOf(nx.ev.skin), h('div', {}, h('b', {}, `Próximo evento: ${nx.ev.name}`), h('p', {}, `De ${fmtDM(nx.start)} a ${fmtDM(nx.end)}. Skin ${SKIN_META[nx.ev.skin].name}.`))); }
+  const list = $('#sk-list'); let curS = 'padrao';
+  const show = (id) => { curS = id; const m = SKIN_META[id]; $('#sk-img').src = `/img/skins/${id}.png`; $('#sk-img').alt = m.name; $('#sk-name').textContent = m.name; const r = $('#sk-rar'); r.textContent = RAR[m.rar].n; r.style.setProperty('--c', RAR[m.rar].c); $('#sk-how').textContent = SKIN_HINT[id]; for (const b of list.children) b.setAttribute('aria-selected', String(b.dataset.id === id)); };
+  for (const id of SKIN_ORDER) { const m = SKIN_META[id]; list.append(h('button', { type: 'button', role: 'option', 'data-id': id, title: m.name, style: `--c:${RAR[m.rar].c}`, onclick: () => show(id) }, h('img', { src: `/img/skins/${id}.png`, alt: m.name, width: 48, height: 72, loading: 'lazy' }))); }
+  show('padrao');
+}
+
 if (!O.enabled()) {
   $('#ranking').hidden = true; $('#conta').hidden = true; $('#top-conta').hidden = true; $('a[href="#ranking"]', document.body).hidden = true;
 } else boot();
@@ -28,7 +42,7 @@ function boot() {
   let cur = { scope: 'all', board: 'run' }, token = 0;
   const board = $('#board');
   const row = (x) => h('li', { class: x.me ? 'me' : '' },
-    h('span', { class: 'pos' }, x.rank), h('span', { class: 'nick' }, x.nick || 'Sobrevivente', x.me ? h('i', {}, 'você') : null),
+    h('span', { class: 'pos' }, x.rank), h('span', { class: 'nick' }, SKIN_META[x.skin] ? h('i', { class: 'sk-dot', title: SKIN_META[x.skin].name, style: `--a:${SKIN_META[x.skin].c[0]};--b:${SKIN_META[x.skin].c[1]}` }) : null, x.nick || 'Sobrevivente', x.me ? h('i', {}, 'você') : null),
     cur.board === 'progress' ? h('span', { class: 'meta' }, 'progresso') : h('span', { class: 'meta' }, `${fmtT(x.secs || 0)} · ${fmtN(x.kills)} abates${x.victory ? ' · chefe' : ''}`),
     h('span', { class: 'pts' }, fmtN(x.pts)));
   async function loadBoard() {

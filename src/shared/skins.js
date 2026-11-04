@@ -21,3 +21,23 @@ export const SKIN_META = {
   folia: { name: 'Folião de Cinzas', rar: 'sazonal', c: ['#5a1a6a', '#4fd8ff', '#ffe35a'] },
 };
 export const SKIN_ORDER = Object.keys(SKIN_META);
+/** como conseguir cada skin (texto curto, usado na landing) */
+export const SKIN_HINT = {
+  padrao: 'Todo sobrevivente começa com ela.',
+  ruinas: 'Derrote o chefe das Ruínas Cinzentas no Pesadelo ou acima.',
+  pantano: 'Derrote o chefe do Pântano Tóxico no Pesadelo ou acima.',
+  deserto: 'Derrote o chefe do Deserto de Sucata no Pesadelo ou acima.',
+  tundra: 'Derrote o chefe da Tundra Cinzenta no Pesadelo ou acima.',
+  cacador: 'Derrote 25 chefes.',
+  veterano: 'Chegue à patente 20.',
+  cinzas: 'Renasça 3 vezes.',
+  calamidade: 'Derrote um chefe na dificuldade Calamidade.',
+  laureado: 'Termine uma semana entre os 10 primeiros do ranking.',
+  coroa: 'Derrote um chefe na dificuldade Abissal.',
+  campeao: 'Termine uma semana em 1º lugar no ranking.',
+  bruxo: 'Evento Noite das Cinzas: complete 12 pontos.',
+  caipira: 'Evento Arraiá da Brasa: complete 12 pontos.',
+  natal: 'Evento Natal de Cinzas: complete 12 pontos.',
+  reveillon: 'Evento Réveillon de Brasa: complete 12 pontos.',
+  folia: 'Evento Carnaval de Cinzas: complete 12 pontos.',
+};
